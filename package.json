@@ -1,5 +1,5 @@
 {
-      "name": "Attendance System Website Design (Community)",
+      "name": "attendance-management",
       "version": "0.1.0",
       "type": "module",
       "private": true,
@@ -69,6 +69,7 @@
             "vite": "6.3.5"
       },
       "scripts": {
+            "start": "node server/index.js",
             "dev": "concurrently \"vite\" \"nodemon server/index.js\"",
             "build": "vite build",
             "server": "nodemon server/index.js",
