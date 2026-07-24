@@ -38,11 +38,18 @@ export const loginUser = async (email: string, password: string) => {
         },
         body: JSON.stringify({ email, password }),
     });
+    
+    const contentType = response.headers.get('content-type');
+    const isJson = contentType && contentType.includes('application/json');
+    const data = isJson ? await response.json() : null;
+
     if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
+        const message = data?.message || (response.status === 404 
+            ? 'API endpoint not found. Please make sure backend server on port 5001 is running.' 
+            : `Server error (${response.status})`);
+        throw new Error(message);
     }
-    return response.json();
+    return data;
 };
 
 export const createEmployee = async (employeeData: any) => {

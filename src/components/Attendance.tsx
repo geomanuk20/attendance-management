@@ -50,6 +50,13 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
     rate: 0
   });
 
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const fetchAttendance = async (employeeId?: string) => {
     try {
       setLoading(true);
@@ -257,8 +264,8 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
         {/* Clock In/Out Section */}
         <Card className="p-8 flex flex-col items-center justify-center space-y-6 bg-gradient-to-br from-background to-secondary/20">
           <div className="text-center space-y-2">
-            <h3 className="text-2xl font-bold">{format(new Date(), 'EEEE, MMMM do, yyyy')}</h3>
-            <p className="text-muted-foreground text-lg">{format(new Date(), 'h:mm a')}</p>
+            <h3 className="text-2xl font-bold">{format(currentTime, 'EEEE, MMMM do, yyyy')}</h3>
+            <p className="text-muted-foreground text-lg font-mono">{format(currentTime, 'h:mm:ss a')}</p>
           </div>
 
           {status === 'Checked Out' && (

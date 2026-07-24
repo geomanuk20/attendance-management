@@ -18,7 +18,7 @@ const getAttendance = asyncHandler(async (req, res) => {
         query.date = date; // Expects simplified date string "YYYY-MM-DD"
     }
 
-    const attendance = await Attendance.find(query).populate('employeeId', 'name department');
+    const attendance = await Attendance.find(query).sort({ createdAt: -1 }).populate('employeeId', 'name department');
     res.json(attendance);
 });
 

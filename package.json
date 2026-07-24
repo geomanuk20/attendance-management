@@ -70,7 +70,8 @@
       },
       "scripts": {
             "start": "node server/index.js",
-            "dev": "concurrently \"vite\" \"nodemon server/index.js\"",
+            "dev": "concurrently \"vite\" \"nodemon server/index.js\" \"cd mobile && npx expo start --localhost\"",
+            "mobile:dev": "concurrently \"nodemon server/index.js\" \"cd mobile && npx expo start --localhost\"",
             "build": "vite build",
             "server": "nodemon server/index.js",
             "client": "vite"

@@ -73,10 +73,15 @@ export function LeaveRequests({ userRole = 'admin' }: LeaveRequestsProps) {
         toast.error('Please fill in all required fields');
         return;
       }
-      await createLeaveRequest({ ...newRequest, employeeId });
+      const payload = {
+        ...newRequest,
+        employeeId,
+        reason: newRequest.leaveType === 'Week Off' ? (newRequest.reason || 'Scheduled Week Off') : newRequest.reason,
+      };
+      await createLeaveRequest(payload);
       toast.success('Leave request submitted successfully');
       setIsDialogOpen(false);
-      setNewRequest({ employeeId: '', leaveType: 'Vacation', startDate: '', endDate: '', reason: '' });
+      setNewRequest({ employeeId: '', leaveType: 'Casual Leave', startDate: '', endDate: '', reason: '' });
       fetchData();
     } catch (error) {
       console.error(error);
@@ -128,11 +133,15 @@ export function LeaveRequests({ userRole = 'admin' }: LeaveRequestsProps) {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'Vacation': return 'text-blue-600';
-      case 'Sick Leave': return 'text-red-600';
-      case 'Personal': return 'text-purple-600';
-      case 'Maternity': return 'text-pink-600';
-      default: return 'text-gray-600';
+      case 'Week Off': return 'text-slate-400 font-semibold';
+      case 'Casual Leave': return 'text-indigo-400 font-medium';
+      case 'Medical Leave': return 'text-emerald-400 font-medium';
+      case 'Annual Leave': return 'text-amber-400 font-medium';
+      case 'Vacation': return 'text-blue-400';
+      case 'Sick Leave': return 'text-red-400';
+      case 'Personal': return 'text-purple-400';
+      case 'Maternity': return 'text-pink-400';
+      default: return 'text-gray-400';
     }
   };
 
@@ -177,10 +186,12 @@ export function LeaveRequests({ userRole = 'admin' }: LeaveRequestsProps) {
                       <SelectValue placeholder="Select leave type" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="Casual Leave">Casual Leave</SelectItem>
+                      <SelectItem value="Medical Leave">Medical Leave</SelectItem>
+                      <SelectItem value="Annual Leave">Annual Leave</SelectItem>
+                      <SelectItem value="Week Off">Week Off</SelectItem>
                       <SelectItem value="Vacation">Vacation</SelectItem>
                       <SelectItem value="Sick Leave">Sick Leave</SelectItem>
-                      <SelectItem value="Personal">Personal</SelectItem>
-                      <SelectItem value="Maternity">Maternity</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -338,10 +349,12 @@ export function LeaveRequests({ userRole = 'admin' }: LeaveRequestsProps) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="Casual Leave">Casual Leave</SelectItem>
+              <SelectItem value="Medical Leave">Medical Leave</SelectItem>
+              <SelectItem value="Annual Leave">Annual Leave</SelectItem>
+              <SelectItem value="Week Off">Week Off</SelectItem>
               <SelectItem value="Vacation">Vacation</SelectItem>
               <SelectItem value="Sick Leave">Sick Leave</SelectItem>
-              <SelectItem value="Personal">Personal</SelectItem>
-              <SelectItem value="Maternity">Maternity</SelectItem>
             </SelectContent>
           </Select>
 
@@ -400,25 +413,25 @@ export function LeaveRequests({ userRole = 'admin' }: LeaveRequestsProps) {
                     <TableCell>
                       {userRole !== 'employee' && (
                         <div className="flex gap-2">
-                          {request.status === 'Pending' && (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-1 text-green-600 border-green-300 hover:bg-green-50"
-                                onClick={() => handleStatusUpdate(request._id, 'Approved')}
-                              >
-                                <Check className="h-3 w-3" /> Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-1 text-red-600 border-red-300 hover:bg-red-50"
-                                onClick={() => handleStatusUpdate(request._id, 'Rejected')}
-                              >
-                                <X className="h-3 w-3" /> Reject
-                              </Button>
-                            </>
+                          {request.status !== 'Approved' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1 text-green-600 border-green-300 hover:bg-green-50"
+                              onClick={() => handleStatusUpdate(request._id, 'Approved')}
+                            >
+                              <Check className="h-3 w-3" /> Approve
+                            </Button>
+                          )}
+                          {request.status !== 'Rejected' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1 text-red-600 border-red-300 hover:bg-red-50"
+                              onClick={() => handleStatusUpdate(request._id, 'Rejected')}
+                            >
+                              <X className="h-3 w-3" /> Reject
+                            </Button>
                           )}
                         </div>
                       )}

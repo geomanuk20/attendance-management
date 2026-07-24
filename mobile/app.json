@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "Attendance Management",
+    "slug": "attendance-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.company.attendancemanagement"
+    },
+    "android": {
+      "package": "com.company.attendancemanagement"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "eba8b77e-faef-4b68-b036-f8e9415f0bfc"
+      }
+    }
+  }
+}

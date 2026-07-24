@@ -22,7 +22,7 @@ import payrollRoutes from './routes/payrollRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 
-app.use(cors());
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 app.use('/api/employees', employeeRoutes);
@@ -49,8 +49,12 @@ import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT} (accessible on local network at http://192.168.1.5:${PORT})`);
+});
+
+server.on('error', (err) => {
+    console.error(`Server Error on port ${PORT}:`, err.message);
 });
