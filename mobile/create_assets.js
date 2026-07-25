@@ -1,17 +1,20 @@
 const fs = require('fs');
 const path = require('path');
 
+const sourcePath = '/Users/geomanuk/.gemini/antigravity-ide/brain/5b34d69a-d858-436b-b21c-b3c9ce4201b6/app_icon_padded_void_1784976157674.png';
 const assetsDir = path.join(__dirname, 'assets');
+
+if (!fs.existsSync(sourcePath)) {
+  console.error(`Source image not found at: ${sourcePath}`);
+  process.exit(1);
+}
+
 if (!fs.existsSync(assetsDir)) {
   fs.mkdirSync(assetsDir, { recursive: true });
 }
 
-// 1x1 solid PNG buffer
-const base64Png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
-const buffer = Buffer.from(base64Png, 'base64');
-
 ['icon.png', 'splash.png', 'adaptive-icon.png', 'favicon.png'].forEach(file => {
-  fs.writeFileSync(path.join(assetsDir, file), buffer);
+  fs.copyFileSync(sourcePath, path.join(assetsDir, file));
 });
 
-console.log('Expo assets generated successfully in mobile/assets');
+console.log('App icons and assets successfully updated using the VOID logo!');
