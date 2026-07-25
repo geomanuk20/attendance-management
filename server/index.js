@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 import connectDB from './config/db.js';
@@ -32,11 +33,12 @@ app.use('/api/payroll', payrollRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/auth', authRoutes);
 
-if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../build')));
+const buildPath = path.join(__dirname, '../build');
+if (fs.existsSync(buildPath)) {
+    app.use(express.static(buildPath));
 
     app.get(/^(?!\/api).*/, (req, res) =>
-        res.sendFile(path.resolve(__dirname, '../', 'build', 'index.html'))
+        res.sendFile(path.resolve(buildPath, 'index.html'))
     );
 } else {
     app.get('/', (req, res) => {
@@ -51,8 +53,8 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5001;
 
-const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT} (accessible on local network at http://192.168.1.5:${PORT})`);
+const server = app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
 
 server.on('error', (err) => {
