@@ -11,6 +11,8 @@ import {
   ScrollView,
   Modal,
   Switch,
+  Platform,
+  StatusBar as NativeStatusBar,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -1406,6 +1408,7 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: Platform.OS === 'android' ? NativeStatusBar.currentHeight : 0,
   },
   authContainer: {
     flex: 1,
