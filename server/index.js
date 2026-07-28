@@ -22,6 +22,8 @@ import leaveRequestRoutes from './routes/leaveRequestRoutes.js';
 import payrollRoutes from './routes/payrollRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import appUpdateRoutes from './routes/appUpdateRoutes.js';
+import companySettingsRoutes from './routes/companySettingsRoutes.js';
 
 app.use(cors({ origin: '*' }));
 app.use(express.json());
@@ -32,6 +34,8 @@ app.use('/api/leaverequests', leaveRequestRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/app-update', appUpdateRoutes);
+app.use('/api/company-settings', companySettingsRoutes);
 
 const buildPath = path.join(__dirname, '../build');
 if (fs.existsSync(buildPath)) {

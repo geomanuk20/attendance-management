@@ -407,8 +407,8 @@ export function LeaveRequests({ userRole = 'admin' }: LeaveRequestsProps) {
                     <TableCell>
                       <span className={getTypeColor(request.leaveType)}>{request.leaveType}</span>
                     </TableCell>
-                    <TableCell>{new Date(request.startDate).toLocaleDateString()}</TableCell>
-                    <TableCell>{new Date(request.endDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(request.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</TableCell>
+                    <TableCell>{new Date(request.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</TableCell>
                     <TableCell>{getStatusBadge(request.status)}</TableCell>
                     <TableCell>
                       {userRole !== 'employee' && (

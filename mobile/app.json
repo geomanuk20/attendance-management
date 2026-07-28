@@ -5,12 +5,27 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.company.attendancemanagement"
+      "bundleIdentifier": "com.company.attendancemanagement",
+      "icon": "./assets/icon.png"
     },
     "android": {
-      "package": "com.company.attendancemanagement"
+      "package": "com.company.attendancemanagement",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#000000"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "extra": {
       "eas": {

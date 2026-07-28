@@ -215,3 +215,50 @@ export const createPayroll = async (payrollData: any) => {
     }
     return response.json();
 };
+
+// App Update API
+export const getAppUpdateSettings = async () => {
+    const response = await fetch(`${API_URL}/app-update`, {
+        headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+        throw new Error('Failed to fetch app update settings');
+    }
+    return response.json();
+};
+
+export const saveAppUpdateSettings = async (settingsData: any) => {
+    const response = await fetch(`${API_URL}/app-update`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(settingsData),
+    });
+    if (!response.ok) {
+        throw new Error('Failed to save app update settings');
+    }
+    return response.json();
+};
+
+// Company Settings API
+export const getCompanySettings = async () => {
+    const response = await fetch(`${API_URL}/company-settings`, {
+        headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+        throw new Error('Failed to fetch company settings');
+    }
+    return response.json();
+};
+
+export const saveCompanySettings = async (settingsData: any) => {
+    const response = await fetch(`${API_URL}/company-settings`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(settingsData),
+    });
+    if (!response.ok) {
+        throw new Error('Failed to save company settings');
+    }
+    return response.json();
+};
+

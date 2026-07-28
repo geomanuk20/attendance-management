@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { getAppUpdateSettings, saveAppUpdateSettings, getCompanySettings, saveCompanySettings } from '../services/api';
 import { Switch } from './ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
@@ -23,7 +24,9 @@ import {
   Trash2,
   Key,
   Mail,
-  Smartphone
+  Smartphone,
+  MapPin,
+  ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -42,6 +45,118 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
   const [autoLogout, setAutoLogout] = useState(true);
   const [twoFactorAuth, setTwoFactorAuth] = useState(false);
 
+  const [appVersion, setAppVersion] = useState('1.0.2');
+  const [updateStatus, setUpdateStatus] = useState<'ON' | 'OFF'>('OFF');
+  const [updateMsg, setUpdateMsg] = useState('A new version is available. Please update for the best experience.');
+  const [updateUrl, setUpdateUrl] = useState('');
+  const [cancelButton, setCancelButton] = useState<'ON' | 'OFF'>('ON');
+  const [appSettingsSaving, setAppSettingsSaving] = useState(false);
+
+  // Company Settings state
+  const [companyName, setCompanyName] = useState('Whiteswan TV News');
+  const [companyEmail, setCompanyEmail] = useState('');
+  const [companyPhone, setCompanyPhone] = useState('');
+  const [website, setWebsite] = useState('');
+  const [address, setAddress] = useState('1/3, Malamel Center, Club Junction, Edappally.P.O, Ernakulam, Kerala- 682024');
+  const [officeLatitude, setOfficeLatitude] = useState('10.0279421');
+  const [officeLongitude, setOfficeLongitude] = useState('76.3166192');
+  const [allowedRadiusMeters, setAllowedRadiusMeters] = useState('100');
+  const [workStartTime, setWorkStartTime] = useState('09:00');
+  const [workEndTime, setWorkEndTime] = useState('17:00');
+  const [annualVacationDays, setAnnualVacationDays] = useState('25');
+  const [sickLeaveDays, setSickLeaveDays] = useState('10');
+  const [personalDays, setPersonalDays] = useState('5');
+  const [companySaving, setCompanySaving] = useState(false);
+  const [activeSettingsTab, setActiveSettingsTab] = useState('general');
+
+  const handleGlobalSave = async () => {
+    if (activeSettingsTab === 'company') {
+      try {
+        setCompanySaving(true);
+        await saveCompanySettings({
+          companyName, companyEmail, companyPhone, website, address,
+          officeLatitude: Number(officeLatitude),
+          officeLongitude: Number(officeLongitude),
+          allowedRadiusMeters: Number(allowedRadiusMeters),
+          workStartTime, workEndTime,
+          annualVacationDays: Number(annualVacationDays),
+          sickLeaveDays: Number(sickLeaveDays),
+          personalDays: Number(personalDays),
+        });
+        toast.success('Company settings saved successfully');
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to save company settings');
+      } finally {
+        setCompanySaving(false);
+      }
+    } else if (activeSettingsTab === 'appUpdate') {
+      await handleSaveAppSettings();
+    } else {
+      toast.success('Settings saved successfully');
+    }
+  };
+
+  const [updateChecking, setUpdateChecking] = useState(false);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const data = await getAppUpdateSettings();
+        setAppVersion(data.appVersion || '1.0.0');
+        setUpdateStatus(data.updateStatus || 'OFF');
+        setUpdateMsg(data.updateMsg || '');
+        setUpdateUrl(data.updateUrl || '');
+        setCancelButton(data.cancelButton || 'ON');
+      } catch (error) {
+        console.error('Failed to load app update settings:', error);
+      }
+    };
+    fetchSettings();
+
+    // Load company settings
+    const fetchCompanySettings = async () => {
+      try {
+        const data = await getCompanySettings();
+        if (data) {
+          setCompanyName(data.companyName || 'Whiteswan TV News');
+          setCompanyEmail(data.companyEmail || '');
+          setCompanyPhone(data.companyPhone || '');
+          setWebsite(data.website || '');
+          setAddress(data.address || '1/3, Malamel Center, Club Junction, Edappally.P.O, Ernakulam, Kerala- 682024');
+          setOfficeLatitude(data.officeLatitude !== undefined ? String(data.officeLatitude) : '10.0279421');
+          setOfficeLongitude(data.officeLongitude !== undefined ? String(data.officeLongitude) : '76.3166192');
+          setAllowedRadiusMeters(data.allowedRadiusMeters !== undefined ? String(data.allowedRadiusMeters) : '100');
+          setWorkStartTime(data.workStartTime || '09:00');
+          setWorkEndTime(data.workEndTime || '17:00');
+          setAnnualVacationDays(String(data.annualVacationDays ?? 25));
+          setSickLeaveDays(String(data.sickLeaveDays ?? 10));
+          setPersonalDays(String(data.personalDays ?? 5));
+        }
+      } catch (error) {
+        console.error('Failed to load company settings:', error);
+      }
+    };
+    fetchCompanySettings();
+  }, [userRole]);
+
+  const handleSaveAppSettings = async () => {
+    try {
+      setAppSettingsSaving(true);
+      await saveAppUpdateSettings({
+        appVersion,
+        updateStatus,
+        updateMsg,
+        updateUrl,
+        cancelButton
+      });
+      toast.success("App Update settings saved successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save App Update settings");
+    } finally {
+      setAppSettingsSaving(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -56,23 +171,28 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
               Export Settings
             </Button>
           )}
-          <Button className="gap-2" onClick={() => toast.success("Settings saved successfully")}>
+          <Button
+            className="gap-2"
+            onClick={handleGlobalSave}
+            disabled={companySaving || appSettingsSaving}
+          >
             <Save className="h-4 w-4" />
-            Save Changes
+            {companySaving || appSettingsSaving ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
       </div>
 
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className={`grid w-full ${userRole === 'superadmin' ? 'grid-cols-6' : 'grid-cols-3'}`}>
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
+      <Tabs defaultValue="general" className="w-full" onValueChange={setActiveSettingsTab}>
+        <TabsList className="flex w-full flex-wrap h-auto gap-1 p-1">
+          <TabsTrigger value="general" className="flex-1 min-w-fit">General</TabsTrigger>
+          <TabsTrigger value="notifications" className="flex-1 min-w-fit">Notifications</TabsTrigger>
+          <TabsTrigger value="security" className="flex-1 min-w-fit">Security</TabsTrigger>
+          <TabsTrigger value="appUpdate" className="flex-1 min-w-fit">📲 App Update</TabsTrigger>
           {userRole === 'superadmin' && (
             <>
-              <TabsTrigger value="company">Company</TabsTrigger>
-              <TabsTrigger value="integrations">Integrations</TabsTrigger>
-              <TabsTrigger value="backup">Backup</TabsTrigger>
+              <TabsTrigger value="company" className="flex-1 min-w-fit">Company</TabsTrigger>
+              <TabsTrigger value="integrations" className="flex-1 min-w-fit">Integrations</TabsTrigger>
+              <TabsTrigger value="backup" className="flex-1 min-w-fit">Backup</TabsTrigger>
             </>
           )}
         </TabsList>
@@ -163,6 +283,25 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
                   checked={darkMode}
                   onCheckedChange={(val) => onDarkModeChange?.(val)}
                 />
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h4 className="font-medium text-sm">App Version & Updates</h4>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold">Portal Version</p>
+                    <p className="text-xs text-muted-foreground">v1.0.0 (Latest)</p>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => toast.success("You are running the latest version of the Attendance portal (v1.0.0).")}
+                  >
+                    Check for Updates
+                  </Button>
+                </div>
               </div>
             </div>
           </Card>
@@ -325,26 +464,136 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="companyName">Company Name</Label>
-                      <Input id="companyName" defaultValue="MTOR" />
+                      <Input id="companyName" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="MTOR" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="companyEmail">Company Email</Label>
-                      <Input id="companyEmail" type="email" defaultValue="contact@mtor.com" />
+                      <Input id="companyEmail" type="email" value={companyEmail} onChange={e => setCompanyEmail(e.target.value)} placeholder="contact@company.com" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="companyPhone">Company Phone</Label>
-                      <Input id="companyPhone" defaultValue="+1 (555) 123-4567" />
+                      <Input id="companyPhone" value={companyPhone} onChange={e => setCompanyPhone(e.target.value)} placeholder="+1 (555) 123-4567" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="website">Website</Label>
-                      <Input id="website" defaultValue="https://www.mtor.com" />
+                      <Input id="website" value={website} onChange={e => setWebsite(e.target.value)} placeholder="https://www.company.com" />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="address">Company Address</Label>
-                    <Input id="address" defaultValue="123 Business St, San Francisco, CA 94105" />
+                    <Input id="address" value={address} onChange={e => setAddress(e.target.value)} placeholder="1/3, Malamel Center, Club Junction, Edappally.P.O, Ernakulam, Kerala- 682024" />
+                  </div>
+
+                  <Separator />
+
+                  {/* Office Map Location & Geofence Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="flex items-center gap-2 font-semibold text-base">
+                        <MapPin className="h-4 w-4 text-indigo-600" />
+                        Office Map Location & 200m Geofence
+                      </Label>
+                      <a
+                        href={`https://www.google.com/maps?q=${officeLatitude},${officeLongitude}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Open Pin in Google Maps
+                      </a>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="officeLat">Latitude (° N)</Label>
+                        <Input
+                          id="officeLat"
+                          type="number"
+                          step="any"
+                          value={officeLatitude}
+                          onChange={e => setOfficeLatitude(e.target.value)}
+                          placeholder="10.0279421"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="officeLng">Longitude (° E)</Label>
+                        <Input
+                          id="officeLng"
+                          type="number"
+                          step="any"
+                          value={officeLongitude}
+                          onChange={e => setOfficeLongitude(e.target.value)}
+                          placeholder="76.3166192"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="geofenceRadius">Geofence Radius (Meters)</Label>
+                        <Input
+                          id="geofenceRadius"
+                          type="number"
+                          value={allowedRadiusMeters}
+                          onChange={e => setAllowedRadiusMeters(e.target.value)}
+                          placeholder="100"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Interactive Map with 100m Circular Geofence Zone Overlay */}
+                    <div className="border rounded-lg overflow-hidden h-64 w-full relative bg-slate-900 shadow-md">
+                      <div className="absolute top-2 left-2 z-10 bg-slate-900/90 text-white backdrop-blur border border-indigo-500/30 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 shadow">
+                        <span className="h-2 w-2 rounded-full bg-indigo-500 animate-ping"></span>
+                        ⭕ Verified {allowedRadiusMeters || 100}m Geofence Radius Zone
+                      </div>
+                      <iframe
+                        title="Office Location Map with 100m Geofence Zone"
+                        width="100%"
+                        height="100%"
+                        style={{ border: 0 }}
+                        srcDoc={`
+                          <!DOCTYPE html>
+                          <html>
+                          <head>
+                            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                            <style>
+                              html, body, #map { width:100%; height:100%; margin:0; padding:0; background:#0f172a; font-family:sans-serif; }
+                              .leaflet-popup-content-wrapper { background:#0f172a; color:#f8fafc; border:1px solid #475569; border-radius:8px; }
+                              .leaflet-popup-tip { background:#0f172a; }
+                            </style>
+                          </head>
+                          <body>
+                            <div id="map"></div>
+                            <script>
+                              var lat = ${officeLatitude || 10.0279421};
+                              var lng = ${officeLongitude || 76.3166192};
+                              var rad = ${allowedRadiusMeters || 100};
+
+                              var map = L.map('map', { zoomControl: true }).setView([lat, lng], 16);
+                              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                maxZoom: 19
+                              }).addTo(map);
+
+                              // 200m Geofence Circle Overlay
+                              L.circle([lat, lng], {
+                                color: '#4f46e5',
+                                weight: 3,
+                                fillColor: '#6366f1',
+                                fillOpacity: 0.35,
+                                radius: rad
+                              }).addTo(map);
+
+                              // Office Pin Marker
+                              var marker = L.marker([lat, lng]).addTo(map);
+                              marker.bindPopup('<div style="text-align:center;padding:4px;"><b>Whiteswan TV News</b><br><span style="color:#818cf8;font-weight:bold;">⭕ ' + rad + 'm Active Geofence Zone</span></div>').openPopup();
+                            </script>
+                          </body>
+                          </html>
+                        `}
+                      ></iframe>
+                    </div>
                   </div>
                   <Separator />
                   <div className="space-y-4">
@@ -352,11 +601,11 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="workStart">Work Start Time</Label>
-                        <Input id="workStart" type="time" defaultValue="09:00" />
+                        <Input id="workStart" type="time" value={workStartTime} onChange={e => setWorkStartTime(e.target.value)} />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="workEnd">Work End Time</Label>
-                        <Input id="workEnd" type="time" defaultValue="17:00" />
+                        <Input id="workEnd" type="time" value={workEndTime} onChange={e => setWorkEndTime(e.target.value)} />
                       </div>
                     </div>
                   </div>
@@ -365,17 +614,46 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
                     <div className="grid grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="vacationDays">Annual Vacation Days</Label>
-                        <Input id="vacationDays" type="number" defaultValue="25" />
+                        <Input id="vacationDays" type="number" value={annualVacationDays} onChange={e => setAnnualVacationDays(e.target.value)} min="0" />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="sickDays">Sick Leave Days</Label>
-                        <Input id="sickDays" type="number" defaultValue="10" />
+                        <Input id="sickDays" type="number" value={sickLeaveDays} onChange={e => setSickLeaveDays(e.target.value)} min="0" />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="personalDays">Personal Days</Label>
-                        <Input id="personalDays" type="number" defaultValue="5" />
+                        <Input id="personalDays" type="number" value={personalDays} onChange={e => setPersonalDays(e.target.value)} min="0" />
                       </div>
                     </div>
+                  </div>
+                  <div className="pt-2">
+                    <Button
+                      className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+                      disabled={companySaving}
+                      onClick={async () => {
+                        try {
+                          setCompanySaving(true);
+                          await saveCompanySettings({
+                            companyName, companyEmail, companyPhone, website, address,
+                            officeLatitude: Number(officeLatitude),
+                            officeLongitude: Number(officeLongitude),
+                            allowedRadiusMeters: Number(allowedRadiusMeters),
+                            workStartTime, workEndTime,
+                            annualVacationDays: Number(annualVacationDays),
+                            sickLeaveDays: Number(sickLeaveDays),
+                            personalDays: Number(personalDays),
+                          });
+                          toast.success('Company settings saved successfully');
+                        } catch (err: any) {
+                          toast.error(err.message || 'Failed to save company settings');
+                        } finally {
+                          setCompanySaving(false);
+                        }
+                      }}
+                    >
+                      <Save className="h-4 w-4" />
+                      {companySaving ? 'Saving...' : 'Save Company Settings'}
+                    </Button>
                   </div>
                 </div>
               </Card>
@@ -515,6 +793,136 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
                     </div>
                   </div>
                 </div>
+              </Card>
+            </TabsContent>
+
+            {/* App Update Settings */}
+            <TabsContent value="appUpdate" className="space-y-6">
+              <Card className="p-6">
+                {userRole === 'superadmin' ? (
+                  // Superadmin: full editable form
+                  <div className="space-y-6 max-w-4xl">
+                    <h3 className="mb-2 text-sm font-semibold tracking-wider uppercase text-muted-foreground">APP UPDATE SETTINGS</h3>
+                    <div className="grid grid-cols-3 items-center gap-4">
+                      <Label htmlFor="appVersion" className="text-sm font-medium text-muted-foreground">App Version</Label>
+                      <div className="col-span-2">
+                        <Input id="appVersion" value={appVersion} onChange={(e) => setAppVersion(e.target.value)} className="bg-zinc-950 border-zinc-800" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 items-center gap-4">
+                      <Label htmlFor="updateStatus" className="text-sm font-medium text-muted-foreground">Update Status</Label>
+                      <div className="col-span-2">
+                        <Select value={updateStatus} onValueChange={(val: 'ON' | 'OFF') => setUpdateStatus(val)}>
+                          <SelectTrigger id="updateStatus" className="bg-zinc-950 border-zinc-800"><SelectValue placeholder="Select status" /></SelectTrigger>
+                          <SelectContent className="bg-zinc-950 border-zinc-800">
+                            <SelectItem value="ON">ON</SelectItem>
+                            <SelectItem value="OFF">OFF</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 items-center gap-4">
+                      <Label htmlFor="updateMsg" className="text-sm font-medium text-muted-foreground">Update Msg</Label>
+                      <div className="col-span-2">
+                        <Input id="updateMsg" value={updateMsg} onChange={(e) => setUpdateMsg(e.target.value)} className="bg-zinc-950 border-zinc-800" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 items-center gap-4">
+                      <Label htmlFor="updateUrl" className="text-sm font-medium text-muted-foreground">Update URL</Label>
+                      <div className="col-span-2">
+                        <Input id="updateUrl" value={updateUrl} onChange={(e) => setUpdateUrl(e.target.value)} className="bg-zinc-950 border-zinc-800" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 items-center gap-4">
+                      <Label htmlFor="cancelButton" className="text-sm font-medium text-muted-foreground">Cancel Button</Label>
+                      <div className="col-span-2">
+                        <Select value={cancelButton} onValueChange={(val: 'ON' | 'OFF') => setCancelButton(val)}>
+                          <SelectTrigger id="cancelButton" className="bg-zinc-950 border-zinc-800"><SelectValue placeholder="Select cancel option" /></SelectTrigger>
+                          <SelectContent className="bg-zinc-950 border-zinc-800">
+                            <SelectItem value="ON">ON</SelectItem>
+                            <SelectItem value="OFF">OFF</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="pt-2">
+                      <Button className="bg-[#84cc16] text-black hover:bg-[#a3e635] font-semibold px-6 py-2.5 rounded-md" onClick={handleSaveAppSettings} disabled={appSettingsSaving}>
+                        {appSettingsSaving ? 'Saving Settings...' : 'Save Settings'}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  // Employee / HR / Admin: read-only view
+                  <div className="space-y-6 max-w-lg">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Smartphone className="h-6 w-6 text-indigo-500" />
+                      <h3 className="text-base font-semibold">App Version &amp; Updates</h3>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-lg border p-4">
+                      <div>
+                        <p className="text-sm font-medium">Current APK Version</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Latest available release</p>
+                      </div>
+                      <Badge variant="secondary" className="text-base font-bold px-3 py-1">v{appVersion}</Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-lg border p-4">
+                      <div>
+                        <p className="text-sm font-medium">Update Status</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {updateStatus === 'ON' ? 'An update is available for download' : 'You are on the latest version'}
+                        </p>
+                      </div>
+                      <Badge className={updateStatus === 'ON' ? 'bg-green-500 text-white' : 'bg-zinc-500 text-white'}>
+                        {updateStatus === 'ON' ? '🔔 Update Available' : '✅ Up to Date'}
+                      </Badge>
+                    </div>
+
+                    {updateStatus === 'ON' && updateMsg && (
+                      <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/10 p-4">
+                        <p className="text-sm font-medium text-indigo-400 mb-1">📣 Release Note</p>
+                        <p className="text-sm text-muted-foreground">{updateMsg}</p>
+                      </div>
+                    )}
+
+                    {updateStatus === 'ON' && updateUrl && (
+                      <Button
+                        className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+                        onClick={() => window.open(updateUrl, '_blank')}
+                      >
+                        <Download className="h-4 w-4" />
+                        Download Latest APK
+                      </Button>
+                    )}
+
+                    {updateStatus !== 'ON' && (
+                      <Button
+                        variant="outline"
+                        className="w-full gap-2"
+                        disabled={updateChecking}
+                        onClick={async () => {
+                          setUpdateChecking(true);
+                          try {
+                            const data = await getAppUpdateSettings();
+                            setAppVersion(data.appVersion || appVersion);
+                            setUpdateStatus(data.updateStatus || 'OFF');
+                            setUpdateMsg(data.updateMsg || '');
+                            setUpdateUrl(data.updateUrl || '');
+                            toast.success('Version info refreshed');
+                          } catch {
+                            toast.error('Could not reach update server');
+                          } finally {
+                            setUpdateChecking(false);
+                          }
+                        }}
+                      >
+                        <Download className="h-4 w-4" />
+                        {updateChecking ? 'Checking...' : 'Check for Update'}
+                      </Button>
+                    )}
+                  </div>
+                )}
               </Card>
             </TabsContent>
           </>

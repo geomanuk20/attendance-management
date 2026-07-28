@@ -79,12 +79,16 @@ router.post('/login', asyncHandler(async (req, res) => {
     const employee = await Employee.findOne({ email: new RegExp(`^${normalizedEmail}$`, 'i') });
 
     if (employee && (await employee.matchPassword(password))) {
+        const empCode = employee.employeeCode || (employee._id ? `EMP-${employee._id.toString().substring(0, 6).toUpperCase()}` : 'EMP-101');
         res.json({
             _id: employee._id,
             name: employee.name,
             email: employee.email,
             role: employee.role,
             position: employee.position,
+            department: employee.department,
+            employeeCode: empCode,
+            salary: employee.salary,
             hireDate: employee.hireDate || employee.createdAt,
             darkMode: employee.darkMode,
             token: generateToken(employee._id),

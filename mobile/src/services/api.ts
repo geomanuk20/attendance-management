@@ -1,14 +1,26 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-// Mac's Local Wi-Fi IP for physical Android phone connection
 const LOCAL_MAC_IP = '192.168.1.5';
 
-export const API_URL = Platform.select({
-  android: `http://${LOCAL_MAC_IP}:5001/api`,
-  ios: `http://${LOCAL_MAC_IP}:5001/api`,
-  default: `http://${LOCAL_MAC_IP}:5001/api`,
-});
+export const BASE_URL_CANDIDATES = __DEV__
+  ? Platform.select({
+      android: [
+        'http://10.0.2.2:5001/api',       // Android Emulator host loopback
+        `http://${LOCAL_MAC_IP}:5001/api`, // Local Wi-Fi network IP
+        'http://127.0.0.1:5001/api',      // ADB reverse proxy
+      ],
+      ios: [
+        'http://localhost:5001/api',
+        `http://${LOCAL_MAC_IP}:5001/api`,
+      ],
+      default: [
+        'http://localhost:5001/api',
+      ],
+    }) || ['http://localhost:5001/api']
+  : ['https://attendance.louisbella.store/api'];
+
+export const API_URL = BASE_URL_CANDIDATES[0];
 
 const getHeaders = async () => {
   const token = await AsyncStorage.getItem('token');
@@ -18,9 +30,24 @@ const getHeaders = async () => {
   };
 };
 
+export const fetchWithFallback = async (endpoint: string, options: RequestInit = {}) => {
+  let lastError: any = null;
+  for (const baseUrl of BASE_URL_CANDIDATES) {
+    try {
+      const url = `${baseUrl}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+      const response = await fetch(url, options);
+      return response;
+    } catch (err: any) {
+      lastError = err;
+      // Continue to next candidate URL
+    }
+  }
+  throw lastError || new Error('Network request failed');
+};
+
 export const loginUser = async (email: string, password: string) => {
   try {
-    const response = await fetch(`${API_URL}/auth/login`, {
+    const response = await fetchWithFallback('/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -50,10 +77,10 @@ export const loginUser = async (email: string, password: string) => {
 export const getAttendance = async (employeeId?: string) => {
   try {
     const headers = await getHeaders();
-    let url = `${API_URL}/attendance`;
-    if (employeeId) url += `?employeeId=${employeeId}`;
+    let endpoint = '/attendance';
+    if (employeeId) endpoint += `?employeeId=${employeeId}`;
 
-    const response = await fetch(url, { headers });
+    const response = await fetchWithFallback(endpoint, { headers });
     if (!response.ok) throw new Error('Failed to fetch attendance');
     return await response.json();
   } catch (err: any) {
@@ -67,7 +94,7 @@ export const getAttendance = async (employeeId?: string) => {
 export const clockIn = async (employeeId: string) => {
   try {
     const headers = await getHeaders();
-    const response = await fetch(`${API_URL}/attendance/clockin`, {
+    const response = await fetchWithFallback('/attendance/clockin', {
       method: 'POST',
       headers,
       body: JSON.stringify({ employeeId }),
@@ -86,7 +113,7 @@ export const clockIn = async (employeeId: string) => {
 export const clockOut = async (employeeId: string) => {
   try {
     const headers = await getHeaders();
-    const response = await fetch(`${API_URL}/attendance/clockout`, {
+    const response = await fetchWithFallback('/attendance/clockout', {
       method: 'POST',
       headers,
       body: JSON.stringify({ employeeId }),
@@ -106,7 +133,7 @@ export const clockOut = async (employeeId: string) => {
 export const getEmployees = async () => {
   try {
     const headers = await getHeaders();
-    const response = await fetch(`${API_URL}/employees`, { headers });
+    const response = await fetchWithFallback('/employees', { headers });
     if (!response.ok) throw new Error('Failed to fetch employees');
     return await response.json();
   } catch (err: any) {
@@ -121,9 +148,9 @@ export const getEmployees = async () => {
 export const getLeaveRequests = async (employeeId?: string) => {
   try {
     const headers = await getHeaders();
-    let url = `${API_URL}/leaverequests`;
-    if (employeeId) url += `?employeeId=${employeeId}`;
-    const response = await fetch(url, { headers });
+    let endpoint = '/leaverequests';
+    if (employeeId) endpoint += `?employeeId=${employeeId}`;
+    const response = await fetchWithFallback(endpoint, { headers });
     if (!response.ok) throw new Error('Failed to fetch leave requests');
     return await response.json();
   } catch (err: any) {
@@ -137,7 +164,7 @@ export const getLeaveRequests = async (employeeId?: string) => {
 export const createLeaveRequest = async (leaveData: any) => {
   try {
     const headers = await getHeaders();
-    const response = await fetch(`${API_URL}/leaverequests`, {
+    const response = await fetchWithFallback('/leaverequests', {
       method: 'POST',
       headers,
       body: JSON.stringify(leaveData),
@@ -153,16 +180,54 @@ export const createLeaveRequest = async (leaveData: any) => {
   }
 };
 
+export const updateLeaveRequest = async (id: string, leaveData: any) => {
+  try {
+    const headers = await getHeaders();
+    const response = await fetchWithFallback(`/leaverequests/${id}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(leaveData),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data?.message || 'Failed to update leave request');
+    return data;
+  } catch (err: any) {
+    if (err.message === 'Network request failed') {
+      throw new Error(`Cannot connect to backend server. Please run 'npm run dev' in terminal.`);
+    }
+    throw err;
+  }
+};
+
 // Payroll / Salary
 export const getPayroll = async () => {
   try {
     const headers = await getHeaders();
-    const response = await fetch(`${API_URL}/payroll`, { headers });
+    const response = await fetchWithFallback('/payroll', { headers });
     if (!response.ok) throw new Error('Failed to fetch payroll');
     return await response.json();
   } catch (err: any) {
     if (err.message === 'Network request failed') {
       throw new Error(`Cannot connect to backend server on port 5001.`);
+    }
+    throw err;
+  }
+};
+
+export const createPayroll = async (payrollData: any) => {
+  try {
+    const headers = await getHeaders();
+    const response = await fetchWithFallback('/payroll', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payrollData),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data?.message || 'Failed to process payroll');
+    return data;
+  } catch (err: any) {
+    if (err.message === 'Network request failed') {
+      throw new Error(`Cannot connect to backend server. Please run 'npm run dev' in terminal.`);
     }
     throw err;
   }

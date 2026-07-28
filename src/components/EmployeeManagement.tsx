@@ -59,6 +59,7 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
     position: '',
     department: '',
     role: 'employee', // Added role field
+    employeeCode: '', // Employee ID
     salary: '', // Monthly Gross
     ctc: '', // Annual CTC
     basicSalary: '', // Annual Basic
@@ -175,6 +176,7 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
       position: '',
       department: '',
       role: 'employee',
+      employeeCode: '',
       salary: '',
       ctc: '',
       basicSalary: '',
@@ -203,6 +205,7 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
         position: formData.position,
         department: formData.department.charAt(0).toUpperCase() + formData.department.slice(1),
         role: formData.role,
+        employeeCode: formData.employeeCode,
         salary: Number(formData.salary) || 0,
         ctc: Number(formData.ctc) || 0,
         basicSalary: Number(formData.basicSalary) || 0,
@@ -243,6 +246,7 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
       position: employee.position,
       department: employee.department,
       role: employee.role || 'employee',
+      employeeCode: employee.employeeCode || (employee._id ? `EMP-${employee._id.substring(0, 6).toUpperCase()}` : 'EMP-101'),
       salary: employee.salary ? employee.salary.toString() : '',
       ctc: employee.ctc ? employee.ctc.toString() : '',
       basicSalary: employee.basicSalary ? employee.basicSalary.toString() : '',
@@ -263,34 +267,41 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
 
   const handleUpdateEmployee = async () => {
     if (!selectedEmployee) return;
+    const empId = selectedEmployee._id || selectedEmployee.id;
+
+    if (!empId) {
+      toast.error('Cannot update: Employee ID is missing');
+      return;
+    }
 
     try {
       const updatedData = {
-        name: `${formData.firstName} ${formData.lastName}`,
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
         email: formData.email,
         phone: formData.phone,
         position: formData.position,
         department: formData.department,
-        salary: Number(formData.salary),
-        ctc: Number(formData.ctc),
-        basicSalary: Number(formData.basicSalary),
-        hra: Number(formData.hra),
-        otherAllowances: Number(formData.otherAllowances),
-        hireDate: formData.hireDate,
+        employeeCode: formData.employeeCode || `EMP-${String(empId).substring(0, 6).toUpperCase()}`,
+        salary: Number(formData.salary) || 0,
+        ctc: Number(formData.ctc) || 0,
+        basicSalary: Number(formData.basicSalary) || 0,
+        hra: Number(formData.hra) || 0,
+        otherAllowances: Number(formData.otherAllowances) || 0,
+        hireDate: formData.hireDate || selectedEmployee.hireDate,
         address: formData.address,
         emergencyContact: formData.emergencyContact,
         status: formData.status
       };
 
-      await updateEmployee(selectedEmployee._id, updatedData);
+      await updateEmployee(empId, updatedData);
       toast.success('Employee updated successfully');
       setIsEditDialogOpen(false);
       setSelectedEmployee(null);
       resetForm();
       fetchEmployees();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating employee:', error);
-      toast.error('Failed to update employee');
+      toast.error(error?.message || 'Failed to update employee');
     }
   };
 
@@ -443,6 +454,18 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="employeeCode" className="text-indigo-600 font-semibold flex items-center gap-1">
+                    🆔 Employee ID / Code
+                  </Label>
+                  <Input
+                    id="employeeCode"
+                    placeholder="e.g. EMP-101 or WS-2026 (Optional)"
+                    value={formData.employeeCode}
+                    onChange={handleInputChange}
+                    className="bg-indigo-50/50 border-indigo-200 font-mono font-bold"
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -683,7 +706,12 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{employee.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{employee.name}</p>
+                          <span className="bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 text-[10px] font-bold font-mono px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
+                            {employee.employeeCode || (employee._id ? `EMP-${employee._id.substring(0, 6).toUpperCase()}` : 'EMP-101')}
+                          </span>
+                        </div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1">
                           <Mail className="h-3 w-3" />
                           {employee.email}
@@ -761,6 +789,19 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
               </div>
             </TabsContent>
             <TabsContent value="employment" className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-employeeCode" className="text-indigo-600 font-semibold flex items-center gap-1">
+                  🆔 Employee ID / Code
+                </Label>
+                <Input
+                  id="employeeCode"
+                  placeholder="e.g. EMP-101 or WS-2026"
+                  value={formData.employeeCode}
+                  onChange={handleInputChange}
+                  className="bg-indigo-50/50 border-indigo-200 font-mono font-bold"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-position">Position</Label>

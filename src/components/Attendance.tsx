@@ -125,14 +125,59 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
     }
   }, [userRole]);
 
+  const OFFICE_LAT = 10.0279421;
+  const OFFICE_LNG = 76.3166192;
+  const ALLOWED_RADIUS_KM = 0.1; // 100 Meters Radius
+
+  const getDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const verifyLocation = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        toast.error('Geolocation is not supported by your browser');
+        resolve(false);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const dist = getDistanceKm(pos.coords.latitude, pos.coords.longitude, OFFICE_LAT, OFFICE_LNG);
+          if (dist > ALLOWED_RADIUS_KM) {
+            const distDisplay = dist > 1 ? `${dist.toFixed(1)}km` : `${Math.round(dist * 1000)}m`;
+            toast.error(`Outside 100m office zone (${distDisplay} away). Clock In/Out is restricted.`);
+            resolve(false);
+          } else {
+            resolve(true);
+          }
+        },
+        () => {
+          toast.error('Location permission required to verify 100m office zone.');
+          resolve(false);
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    });
+  };
+
   const handleClockIn = async () => {
     if (!user?.id) {
       toast.error('Session invalid. Please logout and login again.');
       return;
     }
+    const isAllowed = await verifyLocation();
+    if (!isAllowed) return;
+
     try {
-      await clockIn(user.id);
-      toast.success('Clocked in successfully');
+      const res = await clockIn(user.id);
+      toast.success(`Clocked in successfully at ${res.clockIn || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (within 200m zone)`);
       fetchTodayStatus(user.id);
     } catch (error: any) {
       toast.error(error.message || 'Failed to clock in');
@@ -144,9 +189,16 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
       toast.error('Session invalid. Please logout and login again.');
       return;
     }
+    const isAllowed = await verifyLocation();
+    if (!isAllowed) return;
+
     try {
-      await clockOut(user.id);
-      toast.success('Clocked out successfully');
+      const res = await clockOut(user.id);
+      const totalHours = res.workHours || 0;
+      const h = Math.floor(totalHours);
+      const m = Math.round((totalHours - h) * 60);
+      const duration = h > 0 ? `${h}h ${m}m` : `${m}m`;
+      toast.success(`Clocked out successfully at ${res.clockOut || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (within 200m zone). Today's working hours: ${duration}`);
       fetchTodayStatus(user.id);
     } catch (error: any) {
       toast.error(error.message || 'Failed to clock out');
