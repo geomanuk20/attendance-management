@@ -1013,21 +1013,56 @@ export default function App() {
       let statusDotColor = 'transparent';
 
       if (attendanceRec) {
-        let isHalf = attendanceRec.status === 'Half Day';
-        if (!isHalf && attendanceRec.clockIn && attendanceRec.clockOut) {
-          const inTime = new Date(attendanceRec.clockIn).getTime();
-          const outTime = new Date(attendanceRec.clockOut).getTime();
-          const hrs = (outTime - inTime) / (1000 * 60 * 60);
-          if (hrs > 0 && hrs < 4.5) {
-            isHalf = true;
-          }
-        }
-        if (isHalf) {
+        const recSt = String(attendanceRec.status || '').toLowerCase();
+        if (recSt === 'absent') {
+          status = 'absent';
+          statusDotColor = '#ef4444';
+        } else if (recSt === 'leave' || recSt === 'vacation') {
+          status = 'leave';
+          statusDotColor = '#f97316';
+        } else if (recSt === 'week off' || recSt === 'weekend off' || recSt === 'weekoff') {
+          status = 'weekend';
+          statusDotColor = '#94a3b8';
+        } else if (recSt === 'half-day' || recSt === 'half day' || recSt === 'halfday') {
           status = 'halfday';
-          statusDotColor = '#eab308'; // Amber Gold for Half Day
-        } else {
-          status = 'present';
-          statusDotColor = '#22c55e'; // Green for Present
+          statusDotColor = '#eab308';
+        } else if (recSt === 'present' || recSt === 'attendance' || attendanceRec.clockIn) {
+          let isHalf = recSt === 'half-day' || recSt === 'half day' || recSt === 'halfday';
+          if (!isHalf && attendanceRec.clockIn && attendanceRec.clockOut) {
+            let hrs = Number(attendanceRec.workHours) || 0;
+            if (!hrs) {
+              const parseMins = (tStr: string) => {
+                if (!tStr || tStr === '-') return null;
+                const parts = String(tStr).trim().split(' ');
+                if (parts.length < 2) return null;
+                const timeParts = parts[0].split(':').map(Number);
+                let h = timeParts[0];
+                const m = timeParts[1] || 0;
+                const period = parts[1].toUpperCase();
+                if (period === 'PM' && h !== 12) h += 12;
+                if (period === 'AM' && h === 12) h = 0;
+                return h * 60 + m;
+              };
+              const inM = parseMins(attendanceRec.clockIn);
+              const outM = parseMins(attendanceRec.clockOut);
+              if (inM !== null && outM !== null && outM > inM) {
+                hrs = (outM - inM) / 60;
+              }
+            }
+            if (hrs > 0 && hrs < 5) {
+              isHalf = true;
+            }
+          }
+          if (isHalf) {
+            status = 'halfday';
+            statusDotColor = '#eab308';
+          } else {
+            status = 'present';
+            statusDotColor = '#22c55e';
+          }
+        } else if (dateStr < todayStr && isAfterJoinDate) {
+          status = 'absent';
+          statusDotColor = '#ef4444';
         }
       } else if (leaveRec) {
         if (leaveRec.leaveType === 'Week Off' || (leaveRec.leaveType && leaveRec.leaveType.toLowerCase().includes('week'))) {

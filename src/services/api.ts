@@ -139,6 +139,19 @@ export const clockOut = async (employeeId: string) => {
     return response.json();
 };
 
+export const updateAttendanceRecord = async (id: string, recordData: any) => {
+    const response = await fetch(`${API_URL}/attendance/${id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(recordData),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to update attendance record');
+    }
+    return response.json();
+};
+
 // Leave Request API
 export const getLeaveRequests = async (employeeId?: string) => {
     let url = `${API_URL}/leaverequests`;

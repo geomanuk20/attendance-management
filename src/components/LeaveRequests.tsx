@@ -190,7 +190,7 @@ export function LeaveRequests({ userRole = 'admin' }: LeaveRequestsProps) {
                       <SelectItem value="Medical Leave">Medical Leave</SelectItem>
                       <SelectItem value="Annual Leave">Annual Leave</SelectItem>
                       <SelectItem value="Week Off">Week Off</SelectItem>
-                      <SelectItem value="Vacation">Vacation</SelectItem>
+                      <SelectItem value="Leave">Leave</SelectItem>
                       <SelectItem value="Sick Leave">Sick Leave</SelectItem>
                     </SelectContent>
                   </Select>
@@ -353,7 +353,7 @@ export function LeaveRequests({ userRole = 'admin' }: LeaveRequestsProps) {
               <SelectItem value="Medical Leave">Medical Leave</SelectItem>
               <SelectItem value="Annual Leave">Annual Leave</SelectItem>
               <SelectItem value="Week Off">Week Off</SelectItem>
-              <SelectItem value="Vacation">Vacation</SelectItem>
+              <SelectItem value="Leave">Leave</SelectItem>
               <SelectItem value="Sick Leave">Sick Leave</SelectItem>
             </SelectContent>
           </Select>

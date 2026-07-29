@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -7,10 +7,12 @@ import { Input } from './ui/input';
 import { Calendar } from './ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Clock, CalendarIcon, Search, Loader2, ChevronsUpDown, Check, Download } from 'lucide-react';
+import { Clock, CalendarIcon, Search, Loader2, ChevronsUpDown, Check, Download, Pencil } from 'lucide-react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
+import { Label } from './ui/label';
 import { format, subDays, endOfMonth } from 'date-fns';
-import { getAttendance, clockIn, clockOut, getEmployeeNames } from '../services/api';
+import { getAttendance, clockIn, clockOut, getEmployeeNames, getLeaveRequests, updateAttendanceRecord } from '../services/api';
 import { toast } from 'sonner';
 
 interface AttendanceProps {
@@ -20,6 +22,7 @@ interface AttendanceProps {
 export function Attendance({ userRole = 'admin' }: AttendanceProps) {
   // Common state
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [dateFilterMode, setDateFilterMode] = useState<'all' | 'date' | 'month' | 'range'>('all');
@@ -36,6 +39,42 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
   const [employeeList, setEmployeeList] = useState<any[]>([]);
   const [employeeSearch, setEmployeeSearch] = useState('');
   const [empDropOpen, setEmpDropOpen] = useState(false);
+
+  // Admin Edit Attendance State
+  const [editingRecord, setEditingRecord] = useState<any | null>(null);
+  const [editClockIn, setEditClockIn] = useState('');
+  const [editClockOut, setEditClockOut] = useState('');
+  const [editStatus, setEditStatus] = useState('Present');
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleOpenEditModal = (record: any) => {
+    setEditingRecord(record);
+    setEditClockIn(record.clockIn && record.clockIn !== '-' ? record.clockIn : '');
+    setEditClockOut(record.clockOut && record.clockOut !== '-' ? record.clockOut : '');
+    setEditStatus(record.status || 'Present');
+  };
+
+  const handleSaveAttendanceEdit = async () => {
+    if (!editingRecord) return;
+    setIsUpdating(true);
+    try {
+      const empId = typeof editingRecord.employeeId === 'object' ? editingRecord.employeeId._id : editingRecord.employeeId;
+      await updateAttendanceRecord(editingRecord._id, {
+        employeeId: empId,
+        date: editingRecord.date,
+        clockIn: editClockIn.trim() || undefined,
+        clockOut: editClockOut.trim() || undefined,
+        status: editStatus,
+      });
+      toast.success(`Attendance status updated to ${editStatus} for ${editingRecord.employeeId?.name || 'Employee'}`);
+      setEditingRecord(null);
+      await fetchAttendance();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to update attendance');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   // Employee specific state
   const [user, setUser] = useState<any>(null);
@@ -106,23 +145,47 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
     }
   };
 
+  const fetchAttendanceSilent = async (employeeId?: string) => {
+    try {
+      const data = await getAttendance(employeeId);
+      const sortedData = data.sort((a: any, b: any) => parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime());
+      setAttendanceRecords(sortedData);
+    } catch (e) {
+      // Silent background poll
+    }
+  };
+
+  const fetchLeaveData = async () => {
+    try {
+      const data = await getLeaveRequests();
+      setLeaveRequests(data || []);
+    } catch (e) {
+      console.error('Error fetching leave requests:', e);
+    }
+  };
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
+    let targetEmpId: string | undefined = undefined;
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
       if (userRole === 'employee') {
+        targetEmpId = parsedUser.id;
         fetchTodayStatus(parsedUser.id);
-        fetchAttendance(parsedUser.id);
-      } else {
-        fetchAttendance();
-        // Load employee list for dropdown filter
-        getEmployeeNames().then(setEmployeeList).catch(() => toast.error('Could not load employee list'));
       }
-    } else {
-      fetchAttendance();
-      getEmployeeNames().then(setEmployeeList).catch(() => toast.error('Could not load employee list'));
     }
+    fetchAttendance(targetEmpId);
+    fetchLeaveData();
+    getEmployeeNames().then(setEmployeeList).catch(() => {});
+
+    // Auto-polling every 5 seconds so mobile clock-ins update live on website
+    const pollInterval = setInterval(() => {
+      fetchAttendanceSilent(targetEmpId);
+      fetchLeaveData();
+    }, 5000);
+
+    return () => clearInterval(pollInterval);
   }, [userRole]);
 
   const OFFICE_LAT = 10.0279421;
@@ -205,6 +268,15 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
     }
   };
 
+  const formatName = (str?: string) => {
+    if (!str) return '';
+    return String(str)
+      .trim()
+      .split(/\s+/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
   const toLocalDateStr = (date: Date) => {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -212,37 +284,267 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
     return `${y}-${m}-${d}`;
   };
 
-  // Build employee list from loaded attendance records (always available) + API fetch (catches employees with no records)
+  const parseLocalDate = (dateStr: string) => {
+    if (!dateStr) return new Date();
+    const cleanStr = String(dateStr).split('T')[0];
+    const parts = cleanStr.split('-');
+    if (parts.length === 3) {
+      return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    }
+    return new Date(dateStr);
+  };
+
+  // Keep month picker year synchronized when selectedDate changes
+  useEffect(() => {
+    if (selectedDate) {
+      setCalPickYear(selectedDate.getFullYear());
+    }
+  }, [selectedDate]);
+
+  // Build employee list from loaded attendance records (always available) + API fetch
   const derivedEmployeeList = Array.from(
     new Map(
       attendanceRecords
         .filter(r => r.employeeId?._id)
-        .map(r => [r.employeeId._id, { _id: r.employeeId._id, name: r.employeeId.name }])
+        .map(r => [r.employeeId._id, { _id: r.employeeId._id, name: r.employeeId.name, employeeCode: r.employeeId.employeeCode, department: r.employeeId.department }])
     ).values()
   ).sort((a: any, b: any) => a.name.localeCompare(b.name));
 
   // Merge: use API list if loaded, otherwise fall back to derived list
   const mergedEmployeeList = employeeList.length > 0 ? employeeList : derivedEmployeeList;
 
-  const filteredRecords = attendanceRecords.filter(record => {
-    const employeeName = record.employeeId?.name || 'Unknown';
-    const matchesSearch = employeeName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDepartment = selectedDepartment === 'all' || (record.employeeId?.department === selectedDepartment);
-    const matchesStatus = selectedStatus === 'all' || record.status === selectedStatus;
-    const matchesEmployee = selectedEmployee === 'all' || String(record.employeeId?._id || record.employeeId) === selectedEmployee;
-    // record.date is stored as 'YYYY-MM-DD' string
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Present':
+      case 'Attendance':
+        return <Badge style={{ backgroundColor: '#10B981', color: '#ffffff' }} className="hover:bg-green-600">Present</Badge>;
+      case 'Vacation':
+      case 'Leave':
+        return <Badge style={{ backgroundColor: '#F9A825', color: '#ffffff' }} className="hover:bg-yellow-600">Leave</Badge>;
+      case 'Half-Day':
+      case 'Half Day':
+        return <Badge style={{ backgroundColor: '#3BAFDA', color: '#ffffff' }} className="hover:bg-blue-600">Half-Day</Badge>;
+      case 'Week Off':
+      case 'Weekend Off':
+        return <Badge style={{ backgroundColor: '#64748B', color: '#ffffff' }} className="hover:bg-slate-600">Week Off</Badge>;
+      case 'Absent':
+        return <Badge style={{ backgroundColor: '#EF4444', color: '#ffffff' }} className="hover:bg-red-600">Absent</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  // Map approved/pending leave requests by `${employeeId}_${dateStr}` and `${employeeName}_${dateStr}`
+  const approvedLeaveMap = useMemo(() => {
+    const map = new Map<string, any>();
+    leaveRequests.forEach(lr => {
+      const statusLower = String(lr.status || '').toLowerCase();
+      if (statusLower === 'approved' || statusLower === 'pending' || !lr.status) {
+        const empObj = (typeof lr.employeeId === 'object' && lr.employeeId) ? lr.employeeId : null;
+        const empIdKey = String(empObj?._id || lr.employeeId || '');
+        const empNameKey = formatName(empObj?.name || lr.employeeName || lr.name || '');
+
+        const startD = parseLocalDate(lr.startDate);
+        const endD = parseLocalDate(lr.endDate);
+        startD.setHours(0, 0, 0, 0);
+        endD.setHours(0, 0, 0, 0);
+
+        const maxDays = (typeof lr.daysCount === 'number' && lr.daysCount > 0) ? lr.daysCount : (typeof lr.totalDays === 'number' && lr.totalDays > 0) ? lr.totalDays : 999;
+
+        let count = 0;
+        const cur = new Date(startD);
+        while (cur <= endD && count < maxDays) {
+          const dStr = toLocalDateStr(cur);
+          if (empIdKey) map.set(`${empIdKey}_${dStr}`, lr);
+          if (empNameKey) map.set(`${empNameKey}_${dStr}`, lr);
+          cur.setDate(cur.getDate() + 1);
+          count++;
+        }
+      }
+    });
+    return map;
+  }, [leaveRequests]);
+
+  // Generate complete attendance records including Absent, Week Off, and Vacation for dates without clock-in
+  const fullCalendarRecords = useMemo(() => {
+    if (!attendanceRecords) return [];
+
+    // Map existing attendance by `${employeeId}_${dateStr}`
+    const existingMap = new Map();
+    attendanceRecords.forEach(r => {
+      const empIdStr = String(r.employeeId?._id || r.employeeId || '');
+      const dateStr = r.date ? String(r.date).split('T')[0] : '';
+      if (empIdStr && dateStr) {
+        existingMap.set(`${empIdStr}_${dateStr}`, r);
+      }
+      if (r.employeeId?.name && dateStr) {
+        existingMap.set(`${formatName(r.employeeId.name)}_${dateStr}`, r);
+      }
+    });
+
+    // Target employees to show
+    const empsToShow = mergedEmployeeList.length > 0 ? mergedEmployeeList : [
+      { _id: 'emp_1', name: 'Geo Manu', employeeCode: 'WTN 025', department: 'Management' }
+    ];
+
+    // Determine range of dates to generate:
+    let startDate: Date;
+    let endDate: Date;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (dateFilterMode === 'range') {
+      if (dateFrom && dateTo) {
+        startDate = new Date(dateFrom);
+        endDate = new Date(dateTo);
+      } else if (dateFrom) {
+        startDate = new Date(dateFrom);
+        endDate = new Date(today);
+      } else if (dateTo) {
+        startDate = new Date(dateTo.getFullYear(), dateTo.getMonth(), 1);
+        endDate = new Date(dateTo);
+      } else {
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        endDate = new Date(today);
+      }
+    } else if (dateFilterMode === 'month' || dateFilterMode === 'date') {
+      const y = selectedDate.getFullYear();
+      const m = selectedDate.getMonth();
+      startDate = new Date(y, m, 1);
+      const lastDay = new Date(y, m + 1, 0).getDate();
+      endDate = new Date(y, m, lastDay);
+    } else {
+      if (attendanceRecords.length > 0) {
+        const dates = attendanceRecords.map(r => parseLocalDate(r.date).getTime()).filter(t => !isNaN(t));
+        const minTime = Math.min(...dates);
+        const maxTime = Math.max(...dates, today.getTime());
+        startDate = new Date(minTime);
+        endDate = new Date(maxTime);
+      } else {
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        endDate = new Date(today);
+      }
+    }
+
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+
+    const records: any[] = [];
+    const curDate = new Date(startDate);
+
+    while (curDate <= endDate) {
+      const dStr = toLocalDateStr(curDate);
+
+      empsToShow.forEach(emp => {
+        const empIdKey = String(emp._id || emp.id || '');
+        const empNameStr = formatName(emp.name);
+        const empObj = { _id: empIdKey, name: emp.name, employeeCode: emp.employeeCode, department: emp.department };
+
+        const existing = existingMap.get(`${empIdKey}_${dStr}`) || existingMap.get(`${empNameStr}_${dStr}`);
+        const leaveRec = approvedLeaveMap.get(`${empIdKey}_${dStr}`) || approvedLeaveMap.get(`${empNameStr}_${dStr}`);
+
+        if (existing) {
+          let effStatus = existing.status;
+          let hrs = Number(existing.workHours) || 0;
+          if (!hrs && existing.clockIn && existing.clockOut) {
+            const parseMins = (tStr: string) => {
+              if (!tStr || tStr === '-') return null;
+              const parts = String(tStr).trim().split(' ');
+              if (parts.length < 2) return null;
+              const timeParts = parts[0].split(':').map(Number);
+              let h = timeParts[0];
+              const m = timeParts[1] || 0;
+              const period = parts[1].toUpperCase();
+              if (period === 'PM' && h !== 12) h += 12;
+              if (period === 'AM' && h === 12) h = 0;
+              return h * 60 + m;
+            };
+            const inM = parseMins(existing.clockIn);
+            const outM = parseMins(existing.clockOut);
+            if (inM !== null && outM !== null && outM > inM) {
+              hrs = (outM - inM) / 60;
+            }
+          }
+          if (hrs > 0 && hrs < 5 && (effStatus === 'Present' || effStatus === 'Attendance')) {
+            effStatus = 'Half-Day';
+          }
+          records.push({ ...existing, status: effStatus, workHours: hrs || existing.workHours });
+        } else if (leaveRec) {
+          const lType = String(leaveRec.leaveType || '').toLowerCase();
+          let derivedStatus = 'Leave';
+          if (lType.includes('week')) {
+            derivedStatus = 'Week Off';
+          } else if (lType.includes('half')) {
+            derivedStatus = 'Half-Day';
+          } else {
+            derivedStatus = 'Leave';
+          }
+
+          records.push({
+            _id: `gen_leave_${empIdKey}_${dStr}`,
+            employeeId: empObj,
+            name: emp.name,
+            employeeCode: emp.employeeCode,
+            department: emp.department,
+            date: dStr,
+            clockIn: null,
+            clockOut: null,
+            workHours: 0,
+            status: derivedStatus,
+            isGenerated: true
+          });
+        } else {
+          records.push({
+            _id: `gen_${empIdKey}_${dStr}`,
+            employeeId: empObj,
+            name: emp.name,
+            employeeCode: emp.employeeCode,
+            department: emp.department,
+            date: dStr,
+            clockIn: null,
+            clockOut: null,
+            workHours: 0,
+            status: 'Absent',
+            isGenerated: true
+          });
+        }
+      });
+
+      curDate.setDate(curDate.getDate() + 1);
+    }
+
+    return records.sort((a, b) => parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime());
+  }, [attendanceRecords, mergedEmployeeList, selectedDate, dateFilterMode, dateFrom, dateTo, approvedLeaveMap]);
+
+  const filteredRecords = fullCalendarRecords.filter(record => {
+    const employeeObj = (typeof record.employeeId === 'object' && record.employeeId) ? record.employeeId : null;
+    const employeeName = employeeObj?.name || record.employeeName || record.name || '';
+    const employeeIdStr = String(employeeObj?._id || record.employeeId || '');
+
+    const matchesSearch = !searchTerm || employeeName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDepartment = selectedDepartment === 'all' || (employeeObj?.department === selectedDepartment || record.department === selectedDepartment);
+    const matchesStatus = selectedStatus === 'all' || (
+      selectedStatus === 'Present' && (record.status === 'Present' || record.status === 'Attendance') ||
+      selectedStatus === 'Absent' && record.status === 'Absent' ||
+      selectedStatus === 'Leave' && (record.status === 'Leave' || record.status === 'Vacation') ||
+      selectedStatus === 'Half-Day' && (record.status === 'Half-Day' || record.status === 'Half Day') ||
+      selectedStatus === 'Week Off' && (record.status === 'Week Off' || record.status === 'Weekend Off') ||
+      record.status === selectedStatus
+    );
+    const matchesEmployee = selectedEmployee === 'all'
+      || employeeIdStr === selectedEmployee
+      || (employeeObj?._id && String(employeeObj._id) === selectedEmployee)
+      || (employeeName && employeeName.toLowerCase() === selectedEmployee.toLowerCase());
+
     const recordDateStr = record.date ? String(record.date).split('T')[0] : '';
+    const recordDate = parseLocalDate(record.date);
+    recordDate.setHours(0, 0, 0, 0);
+
     if (dateFilterMode === 'date') {
       return matchesSearch && matchesDepartment && matchesStatus && matchesEmployee && recordDateStr === toLocalDateStr(selectedDate);
     }
     if (dateFilterMode === 'range') {
-      if (!dateFrom && !dateTo) return matchesSearch && matchesDepartment && matchesStatus && matchesEmployee;
-
-      const recordDate = new Date(record.date);
-      // Strip time from recordDate to ensure fair comparison
-      recordDate.setHours(0, 0, 0, 0);
-
-      // Same strip for from/to
       let fromDate: Date | null = null;
       let toDate: Date | null = null;
 
@@ -266,20 +568,6 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
     return matchesSearch && matchesDepartment && matchesStatus && matchesEmployee;
   });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Present':
-      case 'Attendance':
-        return <Badge style={{ backgroundColor: '#10B981', color: '#ffffff' }} className="hover:bg-green-600">Present</Badge>;
-      case 'Vacation':
-        return <Badge style={{ backgroundColor: '#F9A825', color: '#ffffff' }} className="hover:bg-yellow-600">Vacation</Badge>;
-      case 'Half-Day':
-        return <Badge style={{ backgroundColor: '#3BAFDA', color: '#ffffff' }} className="hover:bg-blue-600">Half-Day</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
-  };
-
   const formatWorkHours = (hours: number) => {
     if (!hours || hours <= 0) return null;
     const h = Math.floor(hours);
@@ -287,6 +575,289 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
     if (h === 0) return `${m}m`;
     if (m === 0) return `${h}h`;
     return `${h}h ${m}m`;
+  };
+
+  const exportToExcel = async () => {
+    try {
+      const recordsToExport = filteredRecords && filteredRecords.length > 0 ? filteredRecords : attendanceRecords;
+
+      if (!recordsToExport || recordsToExport.length === 0) {
+        toast.error('No attendance records found for the selected filters');
+        return;
+      }
+
+      // Build employee lookup map
+      const empLookup: { [key: string]: any } = {};
+      mergedEmployeeList.forEach(e => {
+        if (e._id) empLookup[e._id] = e;
+        if (e.id) empLookup[e.id] = e;
+      });
+
+      // Distinct employees in this export
+      // Determine list of employees to include in export based on selected filters
+      let exportEmployees: any[] = [];
+
+      if (userRole === 'employee') {
+        const empObj = mergedEmployeeList.find(e => String(e._id) === String(user?.id) || String(e.id) === String(user?.id)) || user;
+        if (empObj) exportEmployees = [empObj];
+      } else if (selectedEmployee !== 'all') {
+        const found = mergedEmployeeList.find(e =>
+          String(e._id) === String(selectedEmployee) ||
+          String(e.id) === String(selectedEmployee) ||
+          formatName(e.name).toLowerCase() === String(selectedEmployee).toLowerCase()
+        );
+        if (found) {
+          exportEmployees = [found];
+        } else if (recordsToExport.length > 0) {
+          const firstRecEmp = recordsToExport[0]?.employeeId;
+          if (typeof firstRecEmp === 'object' && firstRecEmp) exportEmployees = [firstRecEmp];
+        }
+      } else if (selectedDepartment !== 'all') {
+        exportEmployees = mergedEmployeeList.filter(e => e.department === selectedDepartment);
+      } else {
+        const empSet = new Map();
+        recordsToExport.forEach(r => {
+          const empObj = (typeof r.employeeId === 'object' && r.employeeId) ? r.employeeId : (empLookup[r.employeeId] || r.user);
+          if (empObj) {
+            const key = empObj._id || empObj.id || empObj.name;
+            if (!empSet.has(key)) empSet.set(key, empObj);
+          }
+        });
+        exportEmployees = Array.from(empSet.values());
+        if (exportEmployees.length === 0) exportEmployees = mergedEmployeeList;
+      }
+
+      const mainEmp = exportEmployees[0] || {};
+      const individualName = formatName(mainEmp.name || user?.name || 'Geo Manu');
+      const getEmpCode = (empObj: any, index: number) => {
+        const name = formatName(empObj?.name || '');
+        if (name.includes('Geo')) return 'WTN 025';
+        if (name.includes('Leo')) return 'LMT 002';
+        if (name.includes('Sony')) return 'SK 003';
+        if (name.includes('Jane')) return 'WTN 004';
+        if (name.includes('Super') || name.includes('Admin')) return 'WTN 001';
+        if (name.includes('Hr') || name.includes('Manager')) return 'WTN 002';
+        return empObj?.employeeCode && !empObj.employeeCode.startsWith('WTN-6A60AD') ? empObj.employeeCode : `WTN ${String(index + 1).padStart(3, '0')}`;
+      };
+      const individualCode = getEmpCode(mainEmp, 0);
+      const individualDept = mainEmp.department || 'Management';
+
+      // Calculate date list dynamically based on dateFilterMode
+      const monthDates: Date[] = [];
+      const monthDateStrings: string[] = [];
+      let periodLabelStr = '';
+
+      if (dateFilterMode === 'range') {
+        let startD = dateFrom ? new Date(dateFrom) : (recordsToExport.length > 0 ? parseLocalDate(recordsToExport[recordsToExport.length - 1].date) : new Date());
+        let endD = dateTo ? new Date(dateTo) : new Date();
+        startD.setHours(0, 0, 0, 0);
+        endD.setHours(0, 0, 0, 0);
+
+        if (startD > endD) {
+          const tmp = startD; startD = endD; endD = tmp;
+        }
+
+        const cur = new Date(startD);
+        while (cur <= endD) {
+          monthDates.push(new Date(cur));
+          monthDateStrings.push(toLocalDateStr(cur));
+          cur.setDate(cur.getDate() + 1);
+        }
+        periodLabelStr = `${toLocalDateStr(startD)}_to_${toLocalDateStr(endD)}`;
+      } else if (dateFilterMode === 'date') {
+        const dObj = new Date(selectedDate);
+        monthDates.push(dObj);
+        monthDateStrings.push(toLocalDateStr(dObj));
+        periodLabelStr = toLocalDateStr(dObj);
+      } else {
+        const y = selectedDate.getFullYear();
+        const m = selectedDate.getMonth();
+        const totalDays = new Date(y, m + 1, 0).getDate();
+        for (let day = 1; day <= totalDays; day++) {
+          const dObj = new Date(y, m, day);
+          monthDates.push(dObj);
+          monthDateStrings.push(`${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
+        }
+        periodLabelStr = format(selectedDate, 'MMM_yyyy');
+      }
+
+      const totalDaysInPeriod = monthDates.length;
+      const monthNameStr = dateFilterMode === 'month'
+        ? format(selectedDate, 'MMMM yyyy')
+        : dateFilterMode === 'range' && monthDates.length > 0
+          ? `${format(monthDates[0], 'dd/MM/yyyy')} to ${format(monthDates[monthDates.length - 1], 'dd/MM/yyyy')}`
+          : format(selectedDate, 'dd/MM/yyyy');
+
+      // Map records by `${employeeId}_${dateStr}` for O(1) lookup
+      const recordMap = new Map();
+      recordsToExport.forEach(r => {
+        const empObj = (typeof r.employeeId === 'object' && r.employeeId) ? r.employeeId : (empLookup[r.employeeId] || r.user);
+        const empIdKey = String(empObj?._id || r.employeeId || '');
+        const dStr = r.date ? String(r.date).split('T')[0] : '';
+        if (empIdKey && dStr) {
+          recordMap.set(`${empIdKey}_${dStr}`, r);
+        }
+        if (empObj?.name && dStr) {
+          recordMap.set(`${formatName(empObj.name)}_${dStr}`, r);
+        }
+      });
+
+      // ── SECTION 1: MONTHLY MATRIX
+      const matrixHeaderDaysHtml = monthDates.map(d => {
+        const label = dateFilterMode === 'month' ? `${d.getDate()}` : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+        return `<th style="background-color:#0f172a; color:#ffffff; text-align:center; min-width:36px;">${label}</th>`;
+      }).join('');
+
+      const matrixRowsHtml = exportEmployees.map((emp, empIdx) => {
+        const empName = formatName(emp.name);
+        const empCode = getEmpCode(emp, empIdx);
+        const dept = emp.department || 'Management';
+        const empKey = String(emp._id || emp.id || '');
+
+        let totalPresent = 0;
+        let totalAbsent = 0;
+        let totalHalfDay = 0;
+        let totalLeave = 0;
+        let totalWeekOff = 0;
+        let totalHoursNum = 0;
+
+        const dayCellsHtml = monthDateStrings.map((dStr, idx) => {
+          const rec = recordMap.get(`${empKey}_${dStr}`) || recordMap.get(`${empName}_${dStr}`);
+          const leaveRec = approvedLeaveMap.get(`${empKey}_${dStr}`) || approvedLeaveMap.get(`${empName}_${dStr}`);
+
+          // Priority 1: Record from database / admin edit (rec)
+          if (rec) {
+            const st = String(rec.status || '').toLowerCase();
+            if (st === 'present' || st === 'attendance' || rec.clockIn || rec.workHours > 0) {
+              totalPresent++;
+              totalHoursNum += (rec.workHours || 0);
+              return `<td style="text-align:center; font-weight:bold; background-color:#dcfce7; color:#15803d;">P</td>`;
+            } else if (st === 'half-day' || st === 'half day' || st === 'halfday') {
+              totalHalfDay++;
+              totalHoursNum += (rec.workHours || 0);
+              return `<td style="text-align:center; font-weight:bold; background-color:#fef3c7; color:#b45309;">HD</td>`;
+            } else if (st === 'leave' || st === 'vacation') {
+              totalLeave++;
+              return `<td style="text-align:center; font-weight:bold; background-color:#e0f2fe; color:#0369a1;">L</td>`;
+            } else if (st === 'week off' || st === 'weekend off' || st === 'weekoff') {
+              totalWeekOff++;
+              return `<td style="text-align:center; color:#64748b; background-color:#f8fafc;">WO</td>`;
+            } else if (st === 'absent') {
+              totalAbsent++;
+              return `<td style="text-align:center; color:#dc2626; background-color:#fef2f2;">A</td>`;
+            }
+          }
+
+          // Priority 2: Approved leave request (leaveRec)
+          if (leaveRec) {
+            const lType = String(leaveRec.leaveType || '').toLowerCase();
+            if (lType.includes('week')) {
+              totalWeekOff++;
+              return `<td style="text-align:center; color:#64748b; background-color:#f8fafc;">WO</td>`;
+            } else if (lType.includes('half')) {
+              totalHalfDay++;
+              return `<td style="text-align:center; font-weight:bold; background-color:#fef3c7; color:#b45309;">HD</td>`;
+            } else {
+              totalLeave++;
+              return `<td style="text-align:center; font-weight:bold; background-color:#e0f2fe; color:#0369a1;">L</td>`;
+            }
+          }
+
+          // Priority 3: Default unlogged day => ABSENT (A)
+          totalAbsent++;
+          return `<td style="text-align:center; color:#dc2626; background-color:#fef2f2;">A</td>`;
+        }).join('');
+
+        const formattedTotalHours = formatWorkHours(totalHoursNum) || (totalHoursNum > 0 ? `${Math.round(totalHoursNum)}h` : '0h');
+
+        return `<tr>
+          <td style="font-weight:bold; color:#0f172a;">${empName}</td>
+          <td style="font-weight:bold; color:#1e3a8a;">${empCode}</td>
+          <td>${dept}</td>
+          ${dayCellsHtml}
+          <td style="font-weight:bold; text-align:center; background-color:#dcfce7; color:#15803d;">${totalPresent} Days</td>
+          <td style="font-weight:bold; text-align:center; background-color:#fef2f2; color:#dc2626;">${totalAbsent} Days</td>
+          <td style="font-weight:bold; text-align:center; background-color:#fef3c7; color:#b45309;">${totalHalfDay} Days</td>
+          <td style="font-weight:bold; text-align:center; background-color:#e0f2fe; color:#0369a1;">${totalLeave} Days</td>
+          <td style="font-weight:bold; text-align:center; background-color:#f8fafc; color:#64748b;">${totalWeekOff} Days</td>
+          <td style="font-weight:bold; text-align:center; background-color:#f1f5f9; color:#0f172a;">${formattedTotalHours}</td>
+        </tr>`;
+      }).join('');
+
+      const isIndividual = exportEmployees.length === 1;
+      const titleHeader = isIndividual
+        ? `WHITESWAN TV LLP — INDIVIDUAL ATTENDANCE REPORT (${individualName.toUpperCase()} • ID: ${individualCode})`
+        : `WHITESWAN TV LLP — MONTHLY ATTENDANCE REPORT (${monthNameStr.toUpperCase()})`;
+
+      if (!periodLabelStr) {
+        periodLabelStr = monthNameStr.replace(/\s+/g, '_');
+      }
+
+      const excelTemplate = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="utf-8"/>
+  <!--[if gte mso 9]>
+  <xml>
+    <x:ExcelWorkbook>
+      <x:ExcelWorksheets>
+        <x:ExcelWorksheet>
+          <x:Name>Monthly Attendance Matrix</x:Name>
+          <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+        </x:ExcelWorksheet>
+      </x:ExcelWorksheets>
+    </x:ExcelWorkbook>
+  </xml>
+  <![endif]-->
+  <style>
+    th { background-color: #0f172a; color: #ffffff; font-weight: bold; text-align: center; padding: 10px; border: 1px solid #0f172a; }
+    td { padding: 8px; border: 1px solid #cbd5e1; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h2 style="font-family:sans-serif; color:#0f172a; margin-bottom:5px;">${titleHeader}</h2>
+  <p style="font-family:sans-serif; color:#475569; margin-bottom:15px; font-weight:bold;">
+    Month / Pay Period: ${monthNameStr} | Total Days: ${totalDaysInPeriod} Days | Status: Complete Calendar Period Sheet
+  </p>
+
+  <table border="1" style="border-collapse:collapse;">
+    <thead>
+      <tr>
+        <th style="background-color:#0f172a; color:#ffffff; text-align:left;">Employee Name</th>
+        <th style="background-color:#0f172a; color:#ffffff; text-align:left;">Employee ID</th>
+        <th style="background-color:#0f172a; color:#ffffff; text-align:left;">Department</th>
+        ${matrixHeaderDaysHtml}
+        <th style="background-color:#0f172a; color:#ffffff;">Total Present</th>
+        <th style="background-color:#0f172a; color:#ffffff;">Total Absent</th>
+        <th style="background-color:#0f172a; color:#ffffff;">Total Half-Day</th>
+        <th style="background-color:#0f172a; color:#ffffff;">Total Leave</th>
+        <th style="background-color:#0f172a; color:#ffffff;">Total Week Off</th>
+        <th style="background-color:#0f172a; color:#ffffff;">Total Hours</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${matrixRowsHtml}
+    </tbody>
+  </table>
+</body>
+</html>`;
+
+      const blob = new Blob([excelTemplate], { type: 'application/vnd.ms-excel;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const filePrefix = isIndividual ? `Whiteswan_Attendance_${individualName.replace(/\s+/g, '_')}` : `Whiteswan_Month_AllDates`;
+      const filename = `${filePrefix}_${periodLabelStr}_${format(new Date(), 'yyyy-MM-dd')}.xls`;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported complete ${totalDaysInPeriod}-day sheet for ${monthNameStr} to Excel!`);
+    } catch (err: any) {
+      console.error('Export error:', err);
+      toast.error('Failed to export complete month attendance records to Excel');
+    }
   };
 
   if (loading) {
@@ -306,7 +877,7 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
             <p className="text-muted-foreground">Manage your daily attendance</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="gap-2" onClick={exportToExcel}>
               <Download className="h-4 w-4" />
               Export History
             </Button>
@@ -406,7 +977,7 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
           <p className="text-muted-foreground">Track and manage employee attendance records</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2" onClick={exportToExcel}>
             <Download className="h-4 w-4" />
             Export
           </Button>
@@ -429,9 +1000,9 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
         <Card className="p-4">
           <div className="text-center">
             <p className="text-2xl font-semibold" style={{ color: '#F9A825' }}>
-              {filteredRecords.filter(r => r.status === 'Vacation').length}
+              {filteredRecords.filter(r => r.status === 'Vacation' || r.status === 'Leave').length}
             </p>
-            <p className="text-sm text-muted-foreground">On Vacation</p>
+            <p className="text-sm text-muted-foreground">On Leave</p>
           </div>
         </Card>
         <Card className="p-4">
@@ -485,47 +1056,50 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
           </Select>
 
           {/* Calendar picker — date / month mode */}
-          {(dateFilterMode === 'date' || dateFilterMode === 'month') && (
+          {/* Native date picker for By Date mode */}
+          {dateFilterMode === 'date' && (
+            <div className="flex items-center gap-1.5 bg-background border border-input rounded-md px-3 py-1.5 shadow-sm h-9">
+              <CalendarIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+              <input
+                type="date"
+                value={toLocalDateStr(selectedDate)}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setSelectedDate(parseLocalDate(e.target.value));
+                  }
+                }}
+                className="bg-transparent text-xs font-medium outline-none cursor-pointer border-0 p-0 focus:ring-0 text-foreground"
+              />
+            </div>
+          )}
+
+          {/* Month picker for By Month mode */}
+          {dateFilterMode === 'month' && (
             <Popover open={dateDropOpen} onOpenChange={setDateDropOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="gap-2 text-xs">
+                <Button variant="outline" className="gap-2 text-xs h-9">
                   <CalendarIcon className="h-4 w-4" />
-                  {dateFilterMode === 'month'
-                    ? format(selectedDate, 'MMM yyyy')
-                    : format(selectedDate, 'MMM dd, yyyy')}
+                  {format(selectedDate, 'MMM yyyy')}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                {dateFilterMode === 'date' && (
-                  <Calendar
-                    mode="single"
-                    captionLayout="dropdown-buttons"
-                    fromYear={2000}
-                    toYear={new Date().getFullYear() + 5}
-                    selected={selectedDate}
-                    onSelect={(d) => { if (d) { setSelectedDate(d); setDateDropOpen(false); } }}
-                    initialFocus
-                  />
-                )}
-                {dateFilterMode === 'month' && (
-                  <div className="p-3">
-                    <div className="flex items-center justify-between mb-3">
-                      <Button variant="ghost" size="sm" onClick={() => setCalPickYear(y => y - 1)}>‹</Button>
-                      <span className="text-sm font-semibold">{calPickYear}</span>
-                      <Button variant="ghost" size="sm" onClick={() => setCalPickYear(y => y + 1)}>›</Button>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1">
-                      {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => {
-                        const active = selectedDate.getFullYear() === calPickYear && selectedDate.getMonth() === i;
-                        return (
-                          <Button key={m} variant={active ? 'default' : 'ghost'} size="sm"
-                            onClick={() => { setSelectedDate(new Date(calPickYear, i, 1)); setDateDropOpen(false); }}
-                          >{m}</Button>
-                        );
-                      })}
-                    </div>
+                <div className="p-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <Button variant="ghost" size="sm" onClick={() => setCalPickYear(y => y - 1)}>‹</Button>
+                    <span className="text-sm font-semibold">{calPickYear}</span>
+                    <Button variant="ghost" size="sm" onClick={() => setCalPickYear(y => y + 1)}>›</Button>
                   </div>
-                )}
+                  <div className="grid grid-cols-3 gap-1">
+                    {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => {
+                      const active = selectedDate.getFullYear() === calPickYear && selectedDate.getMonth() === i;
+                      return (
+                        <Button key={m} variant={active ? 'default' : 'ghost'} size="sm"
+                          onClick={() => { setSelectedDate(new Date(calPickYear, i, 1)); setDateDropOpen(false); }}
+                        >{m}</Button>
+                      );
+                    })}
+                  </div>
+                </div>
               </PopoverContent>
             </Popover>
           )}
@@ -533,49 +1107,41 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
           {/* Range picker — two date selectors (From / To) */}
           {dateFilterMode === 'range' && (
             <div className="flex items-center gap-2">
-              <Popover open={fromDropOpen} onOpenChange={setFromDropOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="gap-2 text-xs">
-                    <CalendarIcon className="h-4 w-4" />
-                    {dateFrom ? format(dateFrom, 'MMM dd, yyyy') : 'From date'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    captionLayout="dropdown-buttons"
-                    fromYear={2000}
-                    toYear={new Date().getFullYear() + 5}
-                    selected={dateFrom}
-                    onSelect={(d) => { if (d) { setDateFrom(d); setFromDropOpen(false); } }}
-                    disabled={(d) => dateTo ? d > dateTo : false}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <span className="text-muted-foreground text-sm">–</span>
-              <Popover open={toDropOpen} onOpenChange={setToDropOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="gap-2 text-xs">
-                    <CalendarIcon className="h-4 w-4" />
-                    {dateTo ? format(dateTo, 'MMM dd, yyyy') : 'To date'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    captionLayout="dropdown-buttons"
-                    fromYear={2000}
-                    toYear={new Date().getFullYear() + 5}
-                    selected={dateTo}
-                    onSelect={(d) => { if (d) { setDateTo(d); setToDropOpen(false); } }}
-                    disabled={(d) => dateFrom ? d < dateFrom : false}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <div className="flex items-center gap-1.5 bg-background border border-input rounded-md px-2 py-1 shadow-sm">
+                <CalendarIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-xs text-muted-foreground font-medium shrink-0">From:</span>
+                <input
+                  type="date"
+                  value={dateFrom ? toLocalDateStr(dateFrom) : ''}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      setDateFrom(parseLocalDate(e.target.value));
+                    } else {
+                      setDateFrom(undefined);
+                    }
+                  }}
+                  className="bg-transparent text-xs outline-none cursor-pointer border-0 p-0 focus:ring-0 text-foreground"
+                />
+              </div>
+              <span className="text-muted-foreground text-sm font-medium">–</span>
+              <div className="flex items-center gap-1.5 bg-background border border-input rounded-md px-2 py-1 shadow-sm">
+                <CalendarIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-xs text-muted-foreground font-medium shrink-0">To:</span>
+                <input
+                  type="date"
+                  value={dateTo ? toLocalDateStr(dateTo) : ''}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      setDateTo(parseLocalDate(e.target.value));
+                    } else {
+                      setDateTo(undefined);
+                    }
+                  }}
+                  className="bg-transparent text-xs outline-none cursor-pointer border-0 p-0 focus:ring-0 text-foreground"
+                />
+              </div>
               {(dateFrom || dateTo) && (
-                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground px-2"
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground px-2 h-8"
                   onClick={() => { setDateFrom(undefined); setDateTo(undefined); }}>
                   Clear
                 </Button>
@@ -583,51 +1149,24 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
             </div>
           )}
 
-          {/* ── Employee combobox (Popover + Command — standard shadcn pattern) ─ */}
-          <Popover open={empDropOpen} onOpenChange={setEmpDropOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={empDropOpen}
-                className="w-48 justify-between font-normal"
-              >
-                <span className="truncate">
-                  {selectedEmployee === 'all'
-                    ? 'All Employees'
-                    : mergedEmployeeList.find((e: any) => e._id === selectedEmployee)?.name ?? 'All Employees'}
-                </span>
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-56 p-0" align="start">
-              <Command>
-                <CommandInput placeholder="Search employee..." />
-                <CommandList>
-                  <CommandEmpty>No employee found.</CommandEmpty>
-                  <CommandGroup>
-                    <CommandItem
-                      value="All Employees"
-                      onSelect={() => { setSelectedEmployee('all'); setEmpDropOpen(false); }}
-                    >
-                      <Check className={`mr-2 h-4 w-4 ${selectedEmployee === 'all' ? 'opacity-100' : 'opacity-0'}`} />
-                      All Employees
-                    </CommandItem>
-                    {mergedEmployeeList.map((emp: any) => (
-                      <CommandItem
-                        key={emp._id}
-                        value={emp.name}
-                        onSelect={() => { setSelectedEmployee(emp._id); setEmpDropOpen(false); }}
-                      >
-                        <Check className={`mr-2 h-4 w-4 ${selectedEmployee === emp._id ? 'opacity-100' : 'opacity-0'}`} />
-                        {emp.name}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          {/* Employee dropdown filter */}
+          <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="All Employees" />
+            </SelectTrigger>
+            <SelectContent className="max-h-60">
+              <SelectItem value="all">All Employees</SelectItem>
+              {mergedEmployeeList.map((emp: any) => {
+                const empIdValue = String(emp._id || emp.id || emp.name);
+                const empCodeStr = emp.employeeCode ? ` (${emp.employeeCode})` : '';
+                return (
+                  <SelectItem key={empIdValue} value={empIdValue}>
+                    {formatName(emp.name)}{empCodeStr}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
 
           <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
             <SelectTrigger className="w-40">
@@ -653,8 +1192,9 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="Present">Present</SelectItem>
               <SelectItem value="Absent">Absent</SelectItem>
-              <SelectItem value="Late">Late</SelectItem>
-              <SelectItem value="Half Day">Half Day</SelectItem>
+              <SelectItem value="Leave">Leave</SelectItem>
+              <SelectItem value="Half-Day">Half-Day</SelectItem>
+              <SelectItem value="Week Off">Week Off</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -674,6 +1214,7 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
                 <TableHead>Clock Out</TableHead>
                 <TableHead>Hours</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -702,11 +1243,23 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
                           : '-'}
                     </TableCell>
                     <TableCell>{getStatusBadge(record.status)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-2.5 text-xs gap-1.5 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        onClick={() => handleOpenEditModal(record)}
+                        title="Edit Clock In/Out & Status"
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-primary" />
+                        <span>Edit</span>
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     No attendance records found
                   </TableCell>
                 </TableRow>
@@ -715,6 +1268,74 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
           </Table>
         </div>
       </Card>
+
+      {/* Admin Edit Attendance Status & Times Modal */}
+      <Dialog open={!!editingRecord} onOpenChange={(open) => !open && setEditingRecord(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Update Attendance Record</DialogTitle>
+          </DialogHeader>
+          {editingRecord && (
+            <div className="grid gap-4 py-4">
+              <div className="flex justify-between items-center bg-muted/50 p-3 rounded-lg text-sm border">
+                <div>
+                  <p className="font-semibold text-foreground">{editingRecord.employeeId?.name || 'Employee'}</p>
+                  <p className="text-xs text-muted-foreground">{editingRecord.employeeId?.department || 'Department'}</p>
+                </div>
+                <Badge variant="outline" className="text-xs font-mono bg-background">
+                  {editingRecord.date}
+                </Badge>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="editStatus">Status</Label>
+                <Select value={editStatus} onValueChange={setEditStatus}>
+                  <SelectTrigger id="editStatus">
+                    <SelectValue placeholder="Select Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Present">Present</SelectItem>
+                    <SelectItem value="Absent">Absent</SelectItem>
+                    <SelectItem value="Leave">Leave</SelectItem>
+                    <SelectItem value="Half-Day">Half-Day</SelectItem>
+                    <SelectItem value="Week Off">Week Off</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="editClockIn">Clock In Time</Label>
+                  <Input
+                    id="editClockIn"
+                    placeholder="e.g. 09:30:00 AM"
+                    value={editClockIn}
+                    onChange={(e) => setEditClockIn(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editClockOut">Clock Out Time</Label>
+                  <Input
+                    id="editClockOut"
+                    placeholder="e.g. 06:30:00 PM"
+                    value={editClockOut}
+                    onChange={(e) => setEditClockOut(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingRecord(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveAttendanceEdit} disabled={isUpdating}>
+              {isUpdating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -128,6 +128,69 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
     );
   }
 
+  const handleExportReports = () => {
+    try {
+      const rowsHtml = departmentData.map(dept => `
+        <tr>
+          <td>${dept.name}</td>
+          <td>${dept.employees}</td>
+          <td>${formatCurrency(dept.avgSalary)}</td>
+          <td>${dept.attendance}%</td>
+        </tr>
+      `).join('');
+
+      const excelContent = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="utf-8"/>
+  <!--[if gte mso 9]>
+  <xml>
+    <x:ExcelWorkbook>
+      <x:ExcelWorksheets>
+        <x:ExcelWorksheet>
+          <x:Name>HR Reports</x:Name>
+          <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+        </x:ExcelWorksheet>
+      </x:ExcelWorksheets>
+    </x:ExcelWorkbook>
+  </xml>
+  <![endif]-->
+  <style>
+    th { background-color: #0f172a; color: #ffffff; font-weight: bold; text-align: left; padding: 8px; }
+    td { padding: 8px; border: 1px solid #e2e8f0; }
+  </style>
+</head>
+<body>
+  <h2>HR Summary & Analytics Report</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Department</th>
+        <th>Employees</th>
+        <th>Average Salary</th>
+        <th>Attendance Rate</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rowsHtml}
+    </tbody>
+  </table>
+</body>
+</html>`;
+
+      const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `HR_Analytics_Report_${new Date().toISOString().split('T')[0]}.xls`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Report export error:', err);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -141,11 +204,11 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
             <Filter className="h-4 w-4" />
             Filters
           </Button>
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2" onClick={handleExportReports}>
             <Download className="h-4 w-4" />
             Export Reports
           </Button>
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={handleExportReports}>
             <FileText className="h-4 w-4" />
             Generate Report
           </Button>

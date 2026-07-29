@@ -22,7 +22,7 @@ const getPayroll = asyncHandler(async (req, res) => {
 // @route   POST /api/payroll
 // @access  Public
 const createPayroll = asyncHandler(async (req, res) => {
-    const { employeeId, month, baseSalary, overtime, bonus, deductions, netSalary, status, basicSalary, hra, otherAllowances } = req.body;
+    const { employeeId, month, baseSalary, overtime, bonus, deductions, advance, netSalary, status, basicSalary, hra, otherAllowances } = req.body;
 
     // Check if payroll already exists for this employee and month
     const existingPayroll = await Payroll.findOne({ employeeId, month });
@@ -35,6 +35,7 @@ const createPayroll = asyncHandler(async (req, res) => {
         existingPayroll.overtime = overtime;
         existingPayroll.bonus = bonus;
         existingPayroll.deductions = deductions;
+        existingPayroll.advance = advance || 0;
         existingPayroll.netSalary = netSalary;
         existingPayroll.status = status;
         if (status === 'Paid') {
@@ -54,6 +55,7 @@ const createPayroll = asyncHandler(async (req, res) => {
             overtime,
             bonus,
             deductions,
+            advance: advance || 0,
             netSalary,
             status,
             paymentDate: status === 'Paid' ? Date.now() : undefined,

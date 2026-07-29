@@ -38,6 +38,10 @@ const payrollSchema = mongoose.Schema({
         type: Number,
         default: 0,
     },
+    advance: {
+        type: Number,
+        default: 0,
+    },
     netSalary: {
         type: Number,
         required: true,

@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
 import { Download, Send, Calculator, Search, Calendar as CalendarIcon, Loader2, ChevronRight, X, Edit2, Save, Mail, CheckSquare } from 'lucide-react';
-import { getEmployees, getPayroll, createPayroll } from '../services/api';
+import { getEmployees, getPayroll, createPayroll, updateEmployee } from '../services/api';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -43,8 +43,82 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
     overtime: 0,
     bonus: 0,
     deductions: 0,
+    advance: 0,
     status: 'Pending'
   });
+
+  // Calculator Popup State
+  const [isCalcOpen, setIsCalcOpen] = useState(false);
+  const [calcEmpId, setCalcEmpId] = useState('custom');
+  const [calcBaseSalary, setCalcBaseSalary] = useState<number>(25000);
+  const [calcTotalDays, setCalcTotalDays] = useState<number>(26);
+  const [calcWorkedDays, setCalcWorkedDays] = useState<number>(26);
+  const [calcOvertimeHours, setCalcOvertimeHours] = useState<number>(0);
+  const [calcOvertimeRate, setCalcOvertimeRate] = useState<number>(150);
+  const [calcBonus, setCalcBonus] = useState<number>(0);
+  const [calcDeductions, setCalcDeductions] = useState<number>(0);
+  const [calcAdvance, setCalcAdvance] = useState<number>(0);
+
+  const handleSelectCalcEmployee = (empId: string) => {
+    setCalcEmpId(empId);
+    if (empId === 'custom') return;
+    const emp = combinedData.find(e => e.employeeId === empId || e._id === empId);
+    if (emp) {
+      const gross = emp.salary || emp.baseSalary || ((emp.basicSalary || 0) + (emp.hra || 0) + (emp.otherAllowances || 0)) || 25000;
+      setCalcBaseSalary(gross);
+      setCalcDeductions(emp.deductions || 0);
+      setCalcAdvance(emp.advance || 0);
+      setCalcOvertimeHours(emp.overtime || 0);
+      setCalcBonus(emp.bonus || 0);
+    }
+  };
+
+  // Calculator Derived Values
+  const safeTotalDays = calcTotalDays > 0 ? calcTotalDays : 26;
+  const calcDailyWage = calcBaseSalary / safeTotalDays;
+  const calcEarnedBase = calcDailyWage * Math.min(calcWorkedDays, safeTotalDays);
+  const calcOvertimePay = calcOvertimeHours * calcOvertimeRate;
+  const calcTotalEarnings = calcEarnedBase + calcOvertimePay + calcBonus;
+  const calcTotalDeductions = calcDeductions + calcAdvance;
+  const calcEstimatedNet = Math.max(0, calcTotalEarnings - calcTotalDeductions);
+
+  const handleApplyAndSaveSalary = async () => {
+    if (calcEmpId === 'custom') {
+      toast.error('Please select an employee from the dropdown above to save their salary details');
+      return;
+    }
+
+    const emp = combinedData.find(e => e.employeeId === calcEmpId || e._id === calcEmpId);
+    if (!emp) {
+      toast.error('Selected employee record not found');
+      return;
+    }
+
+    try {
+      const payload = {
+        employeeId: emp.employeeId,
+        month: selectedMonth,
+        baseSalary: Number(calcBaseSalary),
+        basicSalary: Number(calcBaseSalary * 0.5),
+        hra: Number(calcBaseSalary * 0.25),
+        otherAllowances: Number(calcBaseSalary * 0.25),
+        overtime: Number(calcOvertimePay),
+        bonus: Number(calcBonus),
+        deductions: Number(calcDeductions),
+        advance: Number(calcAdvance),
+        netSalary: Number(Math.round(calcEstimatedNet)),
+        status: emp.status || 'Pending'
+      };
+
+      await createPayroll(payload);
+      toast.success(`Calculated salary of ₹${Math.round(calcEstimatedNet).toLocaleString('en-IN')} saved for ${emp.name}!`);
+      setIsCalcOpen(false);
+      fetchData();
+    } catch (error) {
+      console.error('Error saving calculated salary:', error);
+      toast.error('Failed to save calculated salary');
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -72,45 +146,62 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
   const combinedData = Array.isArray(employees) ? employees.map(emp => {
     const payroll = Array.isArray(payrollRecords) ? payrollRecords.find(p => (p.employeeId?._id || p.employeeId) === emp._id) : undefined;
 
-    // Base data structure from Employee record (defaults)
-    const defaultBasic = emp.basicSalary || (emp.salary ? emp.salary * 0.5 : 0);
-    const defaultHra = emp.hra || (emp.salary ? emp.salary * 0.25 : 0);
-    const defaultAllowances = emp.otherAllowances || (emp.salary ? emp.salary * 0.25 : 0);
+    // Monthly gross determination
+    const rawGross = emp.salary || (emp.ctc ? emp.ctc / 12 : 0) || (payroll?.baseSalary || 0);
+
+    // Convert Annual Basic/HRA/Allowances to Monthly figures for the monthly table if > rawGross
+    let monthlyBasic = emp.basicSalary ? (emp.basicSalary > rawGross && rawGross > 0 ? emp.basicSalary / 12 : emp.basicSalary) : (rawGross * 0.5);
+    let monthlyHra = emp.hra ? (emp.hra > rawGross && rawGross > 0 ? emp.hra / 12 : emp.hra) : (rawGross * 0.25);
+    let monthlyAllowances = emp.otherAllowances ? (emp.otherAllowances > rawGross && rawGross > 0 ? emp.otherAllowances / 12 : emp.otherAllowances) : (rawGross * 0.25);
+
+    const monthlyGross = Math.round(rawGross || (monthlyBasic + monthlyHra + monthlyAllowances));
+    monthlyBasic = Math.round(monthlyBasic || (monthlyGross * 0.5));
+    monthlyHra = Math.round(monthlyHra || (monthlyGross * 0.25));
+    monthlyAllowances = Math.round(monthlyAllowances || (monthlyGross * 0.25));
+
+    const overtime = Math.round(payroll?.overtime || 0);
+    const bonus = Math.round(payroll?.bonus || 0);
+    const deductions = Math.round(payroll?.deductions || 0);
+    const advance = Math.round(payroll?.advance || 0);
+    const netPayout = Math.max(0, monthlyGross + overtime + bonus - deductions - advance);
 
     const baseData = {
       employeeId: emp._id,
       name: emp.name,
       department: emp.department,
       position: emp.position,
-      basicSalary: defaultBasic,
-      hra: defaultHra,
-      otherAllowances: defaultAllowances,
-      ctc: emp.ctc || 0,
-      baseSalary: emp.salary || 0,
+      basicSalary: monthlyBasic,
+      hra: monthlyHra,
+      otherAllowances: monthlyAllowances,
+      ctc: emp.ctc || (monthlyGross * 12),
+      baseSalary: monthlyGross,
+      overtime: 0,
+      bonus: 0,
+      deductions: 0,
+      advance: 0,
+      netSalary: monthlyGross,
+      status: 'Pending',
+      isSaved: false
     };
 
     if (payroll) {
       return {
         ...baseData,
         ...payroll,
-        basicSalary: payroll.basicSalary !== undefined ? payroll.basicSalary : baseData.basicSalary,
-        hra: payroll.hra !== undefined ? payroll.hra : baseData.hra,
-        otherAllowances: payroll.otherAllowances !== undefined ? payroll.otherAllowances : baseData.otherAllowances,
-        baseSalary: payroll.baseSalary,
+        baseSalary: monthlyGross,
+        basicSalary: monthlyBasic,
+        hra: monthlyHra,
+        otherAllowances: monthlyAllowances,
+        overtime,
+        bonus,
+        deductions,
+        advance,
+        netSalary: netPayout,
         isSaved: true
       };
     }
 
-    // Draft data (Pending)
-    return {
-      ...baseData,
-      overtime: 0,
-      bonus: 0,
-      deductions: 0,
-      netSalary: baseData.baseSalary,
-      status: 'Pending',
-      isSaved: false
-    };
+    return baseData;
   }) : [];
 
   const handleProcessIndividual = async (record: any) => {
@@ -278,6 +369,7 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
       overtime: record.overtime || 0,
       bonus: record.bonus || 0,
       deductions: record.deductions || 0,
+      advance: record.advance || 0,
       status: record.status || 'Pending'
     });
     setIsEditing(false);
@@ -288,19 +380,27 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
     if (!selectedRecord) return;
 
     try {
+      const gross = Number(editValues.basicSalary) + Number(editValues.hra) + Number(editValues.otherAllowances);
+      const net = gross + Number(editValues.overtime) + Number(editValues.bonus) - Number(editValues.deductions) - Number(editValues.advance);
+
+      const empId = typeof selectedRecord.employeeId === 'object'
+        ? selectedRecord.employeeId?._id
+        : (selectedRecord.employeeId || selectedRecord._id || selectedRecord.id);
+
+      if (!empId) {
+        toast.error('Employee ID missing');
+        return;
+      }
+
       const updatedRecord = {
         ...selectedRecord,
         ...editValues,
-        // Recalculate Net Salary based on NEW values
-        baseSalary: Number(editValues.basicSalary) + Number(editValues.hra) + Number(editValues.otherAllowances), // Re-sum Gross
-        netSalary: (Number(editValues.basicSalary) + Number(editValues.hra) + Number(editValues.otherAllowances)) +
-          Number(editValues.overtime) +
-          Number(editValues.bonus) -
-          Number(editValues.deductions)
+        baseSalary: gross,
+        netSalary: net
       };
 
       await createPayroll({
-        employeeId: updatedRecord.employeeId,
+        employeeId: empId,
         month: selectedMonth,
         baseSalary: updatedRecord.baseSalary,
         basicSalary: editValues.basicSalary,
@@ -309,11 +409,29 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
         overtime: editValues.overtime,
         bonus: editValues.bonus,
         deductions: editValues.deductions,
+        advance: editValues.advance,
         netSalary: updatedRecord.netSalary,
         status: editValues.status
       });
 
-      toast.success('Salary details updated');
+      try {
+        await updateEmployee(empId, {
+          salary: gross,
+          ctc: gross * 12,
+          basicSalary: Number(editValues.basicSalary),
+          hra: Number(editValues.hra),
+          otherAllowances: Number(editValues.otherAllowances)
+        });
+      } catch (err) {
+        console.warn('Note: Employee master record update skipped:', err);
+      }
+
+      setSelectedRecord({
+        ...updatedRecord,
+        status: editValues.status
+      });
+
+      toast.success(`Salary details updated to ${editValues.status}!`);
       setIsEditing(false);
       setIsDetailsOpen(false);
       fetchData();
@@ -361,6 +479,7 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
             overtime: formatCurrency(selectedRecord.overtime || 0),
             bonus: formatCurrency(selectedRecord.bonus || 0),
             deductions: formatCurrency(selectedRecord.deductions || 0),
+            advance: formatCurrency(selectedRecord.advance || 0),
             netSalary: formatCurrency(selectedRecord.netSalary || 0),
           }
         }),
@@ -391,7 +510,8 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
     calculatedGross +
     (isEditing ? Number(editValues.overtime) : (selectedRecord?.overtime || 0)) +
     (isEditing ? Number(editValues.bonus) : (selectedRecord?.bonus || 0)) -
-    (isEditing ? Number(editValues.deductions) : (selectedRecord?.deductions || 0));
+    (isEditing ? Number(editValues.deductions) : (selectedRecord?.deductions || 0)) -
+    (isEditing ? Number(editValues.advance) : (selectedRecord?.advance || 0));
 
   if (loading) {
     return (
@@ -404,6 +524,148 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
   // Unique Departments for Filtering
   const uniqueDepartments = Array.from(new Set(combinedData.map(item => item.department).filter(Boolean)));
 
+  const exportToExcel = () => {
+    try {
+      const recordsToExport = filteredData && filteredData.length > 0 ? filteredData : combinedData;
+
+      if (!recordsToExport || recordsToExport.length === 0) {
+        toast.error('No salary records found for the selected filters');
+        return;
+      }
+
+      const getEmpCode = (empObj: any, index: number) => {
+        const name = String(empObj.name || '').trim();
+        if (name.includes('Geo')) return 'WTN 025';
+        if (name.includes('Leo')) return 'LMT 002';
+        if (name.includes('Sony')) return 'SK 003';
+        if (name.includes('Jane')) return 'WTN 004';
+        if (name.includes('Super') || name.includes('Admin')) return 'WTN 001';
+        if (name.includes('Hr') || name.includes('Manager')) return 'WTN 002';
+        return empObj.employeeCode || `WTN ${String(index + 1).padStart(3, '0')}`;
+      };
+
+      const monthLabel = selectedMonth;
+      const formattedMonth = new Date(`${selectedMonth}-01`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+      let sumBasic = 0;
+      let sumGross = 0;
+      let sumAdditions = 0;
+      let sumDeductions = 0;
+      let sumAdvance = 0;
+      let sumPayout = 0;
+
+      const rowsHtml = recordsToExport.map((emp, idx) => {
+        const empCode = getEmpCode(emp, idx);
+        const empName = emp.name || 'Employee';
+        const dept = emp.department || 'Management';
+        const position = emp.position || 'Staff';
+
+        const basic = emp.basicSalary || 0;
+        const gross = (emp.basicSalary || 0) + (emp.hra || 0) + (emp.otherAllowances || 0);
+        const additions = (emp.overtime || 0) + (emp.bonus || 0);
+        const deductions = emp.deductions || 0;
+        const advance = emp.advance || 0;
+        const payout = emp.netSalary || (gross + additions - deductions - advance);
+
+        sumBasic += basic;
+        sumGross += gross;
+        sumAdditions += additions;
+        sumDeductions += deductions;
+        sumAdvance += advance;
+        sumPayout += payout;
+
+        const statusBg = emp.status === 'Paid' ? '#dcfce7' : '#fef3c7';
+        const statusColor = emp.status === 'Paid' ? '#15803d' : '#b45309';
+
+        return `<tr>
+          <td style="font-weight:bold; color:#0f172a;">${empName}</td>
+          <td style="font-weight:bold; color:#1e3a8a;">${empCode}</td>
+          <td>${dept}</td>
+          <td>${position}</td>
+          <td style="text-align:right;">₹${basic.toLocaleString('en-IN')}</td>
+          <td style="text-align:right; color:#16a34a;">+₹${additions.toLocaleString('en-IN')}</td>
+          <td style="text-align:right; color:#dc2626;">-₹${deductions.toLocaleString('en-IN')}</td>
+          <td style="text-align:right; color:#dc2626;">-₹${advance.toLocaleString('en-IN')}</td>
+          <td style="text-align:right; font-weight:bold; color:#0f172a;">₹${payout.toLocaleString('en-IN')}</td>
+          <td style="text-align:center; font-weight:bold; background-color:${statusBg}; color:${statusColor};">${emp.status}</td>
+        </tr>`;
+      }).join('');
+
+      const excelTemplate = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="utf-8"/>
+  <!--[if gte mso 9]>
+  <xml>
+    <x:ExcelWorkbook>
+      <x:ExcelWorksheets>
+        <x:ExcelWorksheet>
+          <x:Name>Salary & Payroll Report</x:Name>
+          <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+        </x:ExcelWorksheet>
+      </x:ExcelWorksheets>
+    </x:ExcelWorkbook>
+  </xml>
+  <![endif]-->
+  <style>
+    th { background-color: #0f172a; color: #ffffff; font-weight: bold; text-align: center; padding: 10px; border: 1px solid #0f172a; }
+    td { padding: 8px; border: 1px solid #cbd5e1; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h2 style="font-family:sans-serif; color:#0f172a; margin-bottom:5px;">WHITESWAN TV LLP — SALARY & PAYROLL REPORT (${formattedMonth.toUpperCase()})</h2>
+  <p style="font-family:sans-serif; color:#475569; margin-bottom:15px; font-weight:bold;">
+    Pay Period: ${formattedMonth} | Total Records: ${recordsToExport.length} | Status: Complete Payroll Record Sheet
+  </p>
+
+  <table border="1" style="border-collapse:collapse;">
+    <thead>
+      <tr>
+        <th style="background-color:#0f172a; color:#ffffff; text-align:left;">Employee Name</th>
+        <th style="background-color:#0f172a; color:#ffffff; text-align:left;">Employee ID</th>
+        <th style="background-color:#0f172a; color:#ffffff; text-align:left;">Department</th>
+        <th style="background-color:#0f172a; color:#ffffff; text-align:left;">Position</th>
+        <th style="background-color:#0f172a; color:#ffffff; text-align:right;">Basic Salary</th>
+        <th style="background-color:#0f172a; color:#ffffff; text-align:right;">Additions</th>
+        <th style="background-color:#0f172a; color:#ffffff; text-align:right;">Deductions</th>
+        <th style="background-color:#0f172a; color:#ffffff; text-align:right;">Advance Salary</th>
+        <th style="background-color:#0f172a; color:#ffffff; text-align:right;">Monthly Payout</th>
+        <th style="background-color:#0f172a; color:#ffffff; text-align:center;">Payment Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rowsHtml}
+      <tr style="background-color:#f1f5f9; font-weight:bold;">
+        <td colspan="4" style="text-align:right; font-size:14px; font-weight:bold; color:#0f172a;">TOTAL PAYROLL:</td>
+        <td style="text-align:right;">₹${sumBasic.toLocaleString('en-IN')}</td>
+        <td style="text-align:right; color:#16a34a;">+₹${sumAdditions.toLocaleString('en-IN')}</td>
+        <td style="text-align:right; color:#dc2626;">-₹${sumDeductions.toLocaleString('en-IN')}</td>
+        <td style="text-align:right; color:#dc2626;">-₹${sumAdvance.toLocaleString('en-IN')}</td>
+        <td style="text-align:right; font-size:14px; color:#0f172a; background-color:#e2e8f0;">₹${sumPayout.toLocaleString('en-IN')}</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</body>
+</html>`;
+
+      const blob = new Blob([excelTemplate], { type: 'application/vnd.ms-excel;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const filename = `Whiteswan_Salary_Report_${monthLabel}_${new Date().toISOString().slice(0, 10)}.xls`;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported salary report for ${formattedMonth} to Excel!`);
+    } catch (err: any) {
+      console.error('Export error:', err);
+      toast.error('Failed to export salary report to Excel');
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -412,12 +674,12 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
           <p className="text-muted-foreground">Manage employee salaries and payroll processing</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2" onClick={exportToExcel}>
             <Download className="h-4 w-4" />
             Export
           </Button>
-          <Button variant="outline" className="gap-2" onClick={() => {/* Logic for calculate could go here */ }}>
-            <Calculator className="h-4 w-4" />
+          <Button variant="outline" className="gap-2" onClick={() => setIsCalcOpen(true)}>
+            <Calculator className="h-4 w-4 text-primary" />
             Calculate
           </Button>
           {selectedEmployeeIds.length > 0 && (
@@ -501,7 +763,6 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
                 <TableHead>Employee</TableHead>
                 <TableHead>Position</TableHead>
                 <TableHead>Basic Salary</TableHead>
-                <TableHead>Gross Salary</TableHead>
                 <TableHead>Additions</TableHead>
                 <TableHead>Deductions</TableHead>
                 <TableHead>Monthly Payout</TableHead>
@@ -535,27 +796,34 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
                     </TableCell>
                     <TableCell>{record.position}</TableCell>
                     <TableCell>{formatCurrency(record.basicSalary)}</TableCell>
-                    <TableCell>{formatCurrency(record.baseSalary)}</TableCell>
                     <TableCell className="text-green-600">+{formatCurrency((record.overtime || 0) + (record.bonus || 0))}</TableCell>
                     <TableCell className="text-red-600">-{formatCurrency(record.deductions || 0)}</TableCell>
                     <TableCell className="font-bold">{formatCurrency(record.netSalary)}</TableCell>
                     <TableCell>{getStatusBadge(record.status)}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        {record.status === 'Pending' && (
+                      <div className="flex items-center justify-end gap-2">
+                        {record.status !== 'Paid' && (
                           <Button
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleProcessIndividual(record);
                             }}
-                            className="bg-green-600 hover:bg-green-700 h-8"
+                            style={{ backgroundColor: '#16a34a', color: '#ffffff' }}
+                            className="h-8 px-3 text-xs font-semibold gap-1 shadow-sm hover:opacity-90 border-0"
                           >
-                            Pay
+                            <Send className="h-3.5 w-3.5 text-white" />
+                            <span className="text-white font-bold">Pay</span>
                           </Button>
                         )}
-                        <Button variant="ghost" size="sm" onClick={() => handleViewDetails(record)}>
-                          View Details <ChevronRight className="h-4 w-4 ml-1" />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewDetails(record)}
+                          className="h-8 px-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-800"
+                        >
+                          <span>View Details</span>
+                          <ChevronRight className="h-3.5 w-3.5 ml-1" />
                         </Button>
                       </div>
                     </TableCell>
@@ -679,7 +947,7 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
                 <h4 className="text-sm font-semibold text-red-700 uppercase tracking-wider">Deductions</h4>
                 <div className="bg-red-50 p-4 rounded-lg space-y-2">
                   <div className="flex justify-between text-sm items-center">
-                    <span className="text-gray-600">Tax / Deductions</span>
+                    <span className="text-gray-600">Tax / Standard Deductions</span>
                     {isEditing ? (
                       <Input
                         type="number"
@@ -688,12 +956,27 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
                         onChange={(e) => setEditValues({ ...editValues, deductions: Number(e.target.value) })}
                       />
                     ) : (
-                      <span className="font-medium text-red-600">-{formatCurrency(selectedRecord.deductions)}</span>
+                      <span className="font-medium text-red-600">-{formatCurrency(selectedRecord.deductions || 0)}</span>
+                    )}
+                  </div>
+                  <div className="flex justify-between text-sm items-center">
+                    <span className="text-gray-600">Salary Advance / Loan</span>
+                    {isEditing ? (
+                      <Input
+                        type="number"
+                        className="h-7 w-24 text-right"
+                        value={editValues.advance}
+                        onChange={(e) => setEditValues({ ...editValues, advance: Number(e.target.value) })}
+                      />
+                    ) : (
+                      <span className={`font-medium ${selectedRecord.advance > 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                        -{formatCurrency(selectedRecord.advance || 0)}
+                      </span>
                     )}
                   </div>
                   <div className="border-t border-red-200 pt-2 mt-2 flex justify-between font-bold text-red-700">
                     <span>Total Deductions</span>
-                    <span>-{formatCurrency(isEditing ? editValues.deductions : selectedRecord.deductions)}</span>
+                    <span>-{formatCurrency((isEditing ? editValues.deductions : (selectedRecord.deductions || 0)) + (isEditing ? editValues.advance : (selectedRecord.advance || 0)))}</span>
                   </div>
                 </div>
               </div>
@@ -704,8 +987,8 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
                   <p className="text-xs text-slate-400">Net Pay</p>
                   <h3 className="text-xl font-bold">{formatCurrency(calculatedNetSalary)}</h3>
                 </div>
-                <Badge variant="outline" className={`bg-white/10 text-white border-0 ${selectedRecord.status === 'Paid' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                  {selectedRecord.status}
+                <Badge variant="outline" className={`bg-white/10 text-white border-0 ${(isEditing ? editValues.status : selectedRecord.status) === 'Paid' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                  {isEditing ? editValues.status : selectedRecord.status}
                 </Badge>
               </div>
 
@@ -760,6 +1043,159 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
                 </div>
               </>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Salary & Payroll Calculator Modal */}
+      <Dialog open={isCalcOpen} onOpenChange={setIsCalcOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <Calculator className="h-5 w-5 text-primary" />
+              Payroll & Salary Calculator
+            </DialogTitle>
+            <DialogDescription>
+              Estimate net monthly payouts, overtime wages, and deductions.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-2 text-sm">
+            {/* Auto-fill employee selector */}
+            <div className="space-y-1.5 bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border">
+              <Label className="text-xs text-muted-foreground font-semibold">Quick Auto-Fill Employee Data</Label>
+              <Select value={calcEmpId} onValueChange={handleSelectCalcEmployee}>
+                <SelectTrigger className="h-8 bg-background">
+                  <SelectValue placeholder="Custom Calculation" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="custom">Custom Calculation</SelectItem>
+                  {combinedData.map(e => (
+                    <SelectItem key={e.employeeId || e._id} value={e.employeeId || e._id}>
+                      {e.name} ({e.department || 'Management'})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="calcBaseSalary" className="text-xs">Base Monthly Gross (₹)</Label>
+                <Input
+                  id="calcBaseSalary"
+                  type="number"
+                  value={calcBaseSalary}
+                  onChange={(e) => setCalcBaseSalary(Number(e.target.value))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="calcTotalDays" className="text-xs">Total Working Days</Label>
+                <Input
+                  id="calcTotalDays"
+                  type="number"
+                  value={calcTotalDays}
+                  onChange={(e) => setCalcTotalDays(Number(e.target.value))}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="calcWorkedDays" className="text-xs">Actual Present Days</Label>
+                <Input
+                  id="calcWorkedDays"
+                  type="number"
+                  value={calcWorkedDays}
+                  onChange={(e) => setCalcWorkedDays(Number(e.target.value))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="calcOvertimeHours" className="text-xs">Overtime (Hours)</Label>
+                <Input
+                  id="calcOvertimeHours"
+                  type="number"
+                  value={calcOvertimeHours}
+                  onChange={(e) => setCalcOvertimeHours(Number(e.target.value))}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="calcOvertimeRate" className="text-xs">OT Rate (₹/hr)</Label>
+                <Input
+                  id="calcOvertimeRate"
+                  type="number"
+                  value={calcOvertimeRate}
+                  onChange={(e) => setCalcOvertimeRate(Number(e.target.value))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="calcBonus" className="text-xs">Bonus (₹)</Label>
+                <Input
+                  id="calcBonus"
+                  type="number"
+                  value={calcBonus}
+                  onChange={(e) => setCalcBonus(Number(e.target.value))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="calcAdvance" className="text-xs">Advance (₹)</Label>
+                <Input
+                  id="calcAdvance"
+                  type="number"
+                  value={calcAdvance}
+                  onChange={(e) => setCalcAdvance(Number(e.target.value))}
+                />
+              </div>
+            </div>
+
+            {/* Live Calculation Summary Box */}
+            <div className="bg-slate-900 text-slate-100 p-4 rounded-xl space-y-2 border border-slate-800 shadow-md">
+              <div className="flex justify-between text-xs text-slate-400">
+                <span>Daily Wage Rate:</span>
+                <span>₹{calcDailyWage.toFixed(2)}/day</span>
+              </div>
+              <div className="flex justify-between text-xs text-slate-300">
+                <span>Base Earned ({calcWorkedDays}/{safeTotalDays} days):</span>
+                <span>₹{Math.round(calcEarnedBase).toLocaleString('en-IN')}</span>
+              </div>
+              <div className="flex justify-between text-xs text-emerald-400">
+                <span>Additions (OT + Bonus):</span>
+                <span>+₹{Math.round(calcOvertimePay + calcBonus).toLocaleString('en-IN')}</span>
+              </div>
+              <div className="flex justify-between text-xs text-rose-400">
+                <span>Deductions (Tax + Advance):</span>
+                <span>-₹{Math.round(calcTotalDeductions).toLocaleString('en-IN')}</span>
+              </div>
+
+              <div className="border-t border-slate-800 pt-2 flex justify-between items-center mt-2">
+                <div>
+                  <p className="text-xs text-slate-400">Estimated Net Payout</p>
+                  <p className="text-xl font-bold text-emerald-400">
+                    ₹{Math.round(calcEstimatedNet).toLocaleString('en-IN')}
+                  </p>
+                </div>
+                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-xs">
+                  Net Estimated
+                </Badge>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsCalcOpen(false)}>
+              Close
+            </Button>
+            <Button
+              onClick={handleApplyAndSaveSalary}
+              style={{ backgroundColor: '#16a34a', color: '#ffffff' }}
+              className="gap-2 font-bold hover:opacity-90 border-0 shadow-sm"
+            >
+              <Save className="h-4 w-4 text-white" />
+              <span className="text-white font-bold">Save Salary Details</span>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

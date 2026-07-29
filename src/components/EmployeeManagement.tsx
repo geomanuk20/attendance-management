@@ -24,7 +24,9 @@ import {
   Users,
   UserPlus,
   Download,
-  Loader2
+  Loader2,
+  Check,
+  X
 } from 'lucide-react';
 import { getEmployees, createEmployee, updateEmployee, deleteEmployee, getAttendance, getLeaveRequests } from '../services/api';
 
@@ -45,9 +47,32 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
   const [clockedInToday, setClockedInToday] = useState<Set<string>>(new Set());
   const [onLeaveToday, setOnLeaveToday] = useState<Set<string>>(new Set());
 
-  // Unique departments list
-  const defaultDepartments = ['Engineering', 'Design', 'Marketing', 'Sales', 'HR', 'Finance', 'Logistics and Fulfillment'];
-  const uniqueDepartments = Array.from(new Set([...defaultDepartments, ...employees.map(e => e.department)])).filter(Boolean).sort();
+  // Custom department management
+  const [customDepartments, setCustomDepartments] = useState<string[]>([]);
+  const [isAddingDept, setIsAddingDept] = useState(false);
+  const [newDeptInput, setNewDeptInput] = useState('');
+
+  const defaultDepartments = ['Engineering', 'Design', 'Marketing', 'Sales', 'HR', 'Finance', 'Management', 'Logistics and Fulfillment'];
+  const uniqueDepartments = Array.from(new Set([...defaultDepartments, ...customDepartments, ...employees.map(e => e.department)])).filter(Boolean).sort();
+
+  const saveNewDept = () => {
+    const trimmed = newDeptInput.trim();
+    if (!trimmed) {
+      toast.error('Please type a department name');
+      return;
+    }
+    const existingMatch = uniqueDepartments.find(d => d.toLowerCase() === trimmed.toLowerCase());
+    if (existingMatch) {
+      setFormData(prev => ({ ...prev, department: existingMatch }));
+      toast.info(`Department "${existingMatch}" selected`);
+    } else {
+      setCustomDepartments(prev => [...prev, trimmed]);
+      setFormData(prev => ({ ...prev, department: trimmed }));
+      toast.success(`Department "${trimmed}" created & selected!`);
+    }
+    setIsAddingDept(false);
+    setNewDeptInput('');
+  };
 
   // Form State
   const [formData, setFormData] = useState({
@@ -127,36 +152,141 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
     fetchTodayAttendance();
   }, []);
 
-  // Auto-calculate salary details when CTC changes
-  // Logic: 
-  // Basic = 50% of CTC
-  // HRA = 50% of Basic (25% of CTC)
-  // Allowances = Balance (25% of CTC)
-  // Monthly Gross (salary) = CTC / 12
-  const calculateSalaryDetails = (ctcValue: string) => {
-    const ctc = Number(ctcValue);
-    if (!ctc || isNaN(ctc)) return;
-
-    const basic = ctc * 0.5;
-    const hra = basic * 0.5;
-    const allowances = ctc - basic - hra;
-    const monthlyGross = ctc / 12;
-
-    setFormData(prev => ({
-      ...prev,
-      basicSalary: basic.toFixed(2),
-      hra: hra.toFixed(2),
-      otherAllowances: allowances.toFixed(2),
-      salary: monthlyGross.toFixed(2)
-    }));
+  const formatNumStr = (num: number) => {
+    if (isNaN(num) || num <= 0) return '';
+    const rounded = Math.round(num * 100) / 100;
+    return Number.isInteger(rounded) ? String(Math.round(rounded)) : String(rounded);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
 
     if (id === 'ctc') {
-      setFormData(prev => ({ ...prev, [id]: value }));
-      calculateSalaryDetails(value);
+      const num = parseFloat(value);
+      if (!isNaN(num) && num > 0) {
+        // Support both LPA (e.g., 3.36) and full Rupees (e.g., 336000)
+        const ctcAmount = num < 100 ? num * 100000 : num;
+        const monthly = ctcAmount / 12;
+        const basic = ctcAmount * 0.5;
+        const hra = basic * 0.5;
+        const allowances = ctcAmount - basic - hra;
+
+        setFormData(prev => ({
+          ...prev,
+          ctc: value,
+          salary: formatNumStr(monthly),
+          basicSalary: formatNumStr(basic),
+          hra: formatNumStr(hra),
+          otherAllowances: formatNumStr(allowances)
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          ctc: value,
+          salary: '',
+          basicSalary: '',
+          hra: '',
+          otherAllowances: ''
+        }));
+      }
+    } else if (id === 'salary') {
+      const monthly = parseFloat(value);
+      if (!isNaN(monthly) && monthly > 0) {
+        const ctcAmount = monthly * 12;
+        const basic = ctcAmount * 0.5;
+        const hra = basic * 0.5;
+        const allowances = ctcAmount - basic - hra;
+
+        setFormData(prev => ({
+          ...prev,
+          salary: value,
+          ctc: formatNumStr(ctcAmount),
+          basicSalary: formatNumStr(basic),
+          hra: formatNumStr(hra),
+          otherAllowances: formatNumStr(allowances)
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          salary: value,
+          ctc: '',
+          basicSalary: '',
+          hra: '',
+          otherAllowances: ''
+        }));
+      }
+    } else if (id === 'basicSalary') {
+      const basic = parseFloat(value);
+      if (!isNaN(basic) && basic > 0) {
+        const hraVal = formData.hra ? parseFloat(formData.hra) : basic * 0.5;
+        const allowVal = formData.otherAllowances ? parseFloat(formData.otherAllowances) : basic * 0.5;
+        const totalCTC = basic + hraVal + allowVal;
+        const monthly = totalCTC / 12;
+
+        setFormData(prev => ({
+          ...prev,
+          basicSalary: value,
+          hra: formatNumStr(hraVal),
+          otherAllowances: formatNumStr(allowVal),
+          ctc: formatNumStr(totalCTC),
+          salary: formatNumStr(monthly)
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          basicSalary: value,
+          ctc: '',
+          salary: ''
+        }));
+      }
+    } else if (id === 'hra') {
+      const hra = parseFloat(value);
+      if (!isNaN(hra) && hra > 0) {
+        const basicVal = formData.basicSalary ? parseFloat(formData.basicSalary) : hra * 2;
+        const allowVal = formData.otherAllowances ? parseFloat(formData.otherAllowances) : hra;
+        const totalCTC = basicVal + hra + allowVal;
+        const monthly = totalCTC / 12;
+
+        setFormData(prev => ({
+          ...prev,
+          hra: value,
+          basicSalary: formatNumStr(basicVal),
+          otherAllowances: formatNumStr(allowVal),
+          ctc: formatNumStr(totalCTC),
+          salary: formatNumStr(monthly)
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          hra: value,
+          ctc: '',
+          salary: ''
+        }));
+      }
+    } else if (id === 'otherAllowances') {
+      const allowances = parseFloat(value);
+      if (!isNaN(allowances) && allowances > 0) {
+        const basicVal = formData.basicSalary ? parseFloat(formData.basicSalary) : allowances * 2;
+        const hraVal = formData.hra ? parseFloat(formData.hra) : allowances;
+        const totalCTC = basicVal + hraVal + allowances;
+        const monthly = totalCTC / 12;
+
+        setFormData(prev => ({
+          ...prev,
+          otherAllowances: value,
+          basicSalary: formatNumStr(basicVal),
+          hra: formatNumStr(hraVal),
+          ctc: formatNumStr(totalCTC),
+          salary: formatNumStr(monthly)
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          otherAllowances: value,
+          ctc: '',
+          salary: ''
+        }));
+      }
     } else {
       setFormData(prev => ({ ...prev, [id]: value }));
     }
@@ -237,6 +367,13 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
     // Ensure the date is formatted for the input (YYYY-MM-DD)
     const formattedDate = employee.hireDate ? new Date(employee.hireDate).toISOString().split('T')[0] : '';
 
+    const ctcNum = Number(employee.ctc) || (employee.salary ? Number(employee.salary) * 12 : 0);
+    const basicVal = employee.basicSalary ? formatNumStr(Number(employee.basicSalary)) : (ctcNum ? formatNumStr(ctcNum * 0.5) : '');
+    const hraVal = employee.hra ? formatNumStr(Number(employee.hra)) : (ctcNum ? formatNumStr(ctcNum * 0.25) : '');
+    const allowancesVal = employee.otherAllowances ? formatNumStr(Number(employee.otherAllowances)) : (ctcNum ? formatNumStr(ctcNum * 0.25) : '');
+    const salaryVal = employee.salary ? formatNumStr(Number(employee.salary)) : (ctcNum ? formatNumStr(ctcNum / 12) : '');
+    const ctcStr = employee.ctc ? formatNumStr(Number(employee.ctc)) : (ctcNum ? formatNumStr(ctcNum) : '');
+
     setFormData({
       firstName: firstName || '',
       lastName: lastName || '',
@@ -247,11 +384,11 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
       department: employee.department,
       role: employee.role || 'employee',
       employeeCode: employee.employeeCode || (employee._id ? `EMP-${employee._id.substring(0, 6).toUpperCase()}` : 'EMP-101'),
-      salary: employee.salary ? employee.salary.toString() : '',
-      ctc: employee.ctc ? employee.ctc.toString() : '',
-      basicSalary: employee.basicSalary ? employee.basicSalary.toString() : '',
-      hra: employee.hra ? employee.hra.toString() : '',
-      otherAllowances: employee.otherAllowances ? employee.otherAllowances.toString() : '',
+      salary: salaryVal,
+      ctc: ctcStr,
+      basicSalary: basicVal,
+      hra: hraVal,
+      otherAllowances: allowancesVal,
       hireDate: formattedDate,
       address: employee.address || '',
       emergencyContact: employee.emergencyContact || '',
@@ -474,44 +611,82 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="department">Department</Label>
-                    <div className="flex gap-2">
-                      {isCustomDepartment ? (
-                        <Input
-                          id="department"
-                          placeholder="Type new department"
-                          value={formData.department}
-                          onChange={handleInputChange}
-                          className="flex-1"
-                        />
+                    <div className="flex gap-2 items-center">
+                      {isAddingDept ? (
+                        <div className="flex gap-2 items-center flex-1">
+                          <Input
+                            placeholder="Type new department name..."
+                            value={newDeptInput}
+                            onChange={(e) => setNewDeptInput(e.target.value)}
+                            className="flex-1 h-9 text-sm border-primary focus:ring-1 focus:ring-primary"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                saveNewDept();
+                              } else if (e.key === 'Escape') {
+                                setIsAddingDept(false);
+                              }
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="h-9 px-3 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold gap-1 shrink-0"
+                            onClick={saveNewDept}
+                          >
+                            <Check className="h-3.5 w-3.5" />
+                            <span>Add</span>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-9 px-2 text-xs shrink-0 text-muted-foreground hover:text-foreground"
+                            onClick={() => {
+                              setIsAddingDept(false);
+                              setNewDeptInput('');
+                            }}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       ) : (
-                        <Select
-                          onValueChange={(val: string) => handleSelectChange('department', val)}
-                          value={defaultDepartments.includes(formData.department) ? formData.department : ''}
-                        >
-                          <SelectTrigger className="flex-1">
-                            <SelectValue placeholder="Select department" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {uniqueDepartments.map(dept => (
-                              <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <>
+                          <Select
+                            onValueChange={(val: string) => {
+                              if (val === '__ADD_NEW__') {
+                                setIsAddingDept(true);
+                              } else {
+                                handleSelectChange('department', val);
+                              }
+                            }}
+                            value={formData.department}
+                          >
+                            <SelectTrigger className="flex-1 h-9">
+                              <SelectValue placeholder="Select department" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {uniqueDepartments.map(dept => (
+                                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                              ))}
+                              <SelectItem value="__ADD_NEW__" className="text-primary font-semibold text-xs border-t mt-1 pt-1">
+                                + Add New Department...
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setIsAddingDept(true)}
+                            title="Add new department"
+                            className="h-9 w-9 shrink-0 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                          >
+                            <Plus className="h-4 w-4 text-primary" />
+                          </Button>
+                        </>
                       )}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => {
-                          setIsCustomDepartment(!isCustomDepartment);
-                          if (!isCustomDepartment) {
-                            setFormData(prev => ({ ...prev, department: '' })); // Clear if switching to custom
-                          }
-                        }}
-                        title={isCustomDepartment ? "Select from list" : "Create new department"}
-                      >
-                        {isCustomDepartment ? <Search className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                      </Button>
                     </div>
                   </div>
                 </div>
@@ -722,8 +897,8 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                   <TableCell>{employee.position}</TableCell>
                   <TableCell>{employee.department}</TableCell>
                   <TableCell>{formatDate(employee.hireDate)}</TableCell>
-                  <TableCell>{formatCurrency(employee.salary)}</TableCell>
-                  <TableCell>{employee.ctc ? formatCurrency(employee.ctc) : '-'}</TableCell>
+                  <TableCell>{formatCurrency(employee.salary || (employee.ctc ? employee.ctc / 12 : 0))}</TableCell>
+                  <TableCell>{formatCurrency(employee.ctc || (employee.salary ? employee.salary * 12 : 0))}</TableCell>
                   <TableCell>{getAttendanceStatus(employee._id || employee.id)}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
@@ -809,44 +984,82 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-department">Department</Label>
-                  <div className="flex gap-2">
-                    {isCustomDepartment ? (
-                      <Input
-                        id="department"
-                        placeholder="Type new department"
-                        value={formData.department}
-                        onChange={handleInputChange}
-                        className="flex-1"
-                      />
+                  <div className="flex gap-2 items-center">
+                    {isAddingDept ? (
+                      <div className="flex gap-2 items-center flex-1">
+                        <Input
+                          placeholder="Type new department name..."
+                          value={newDeptInput}
+                          onChange={(e) => setNewDeptInput(e.target.value)}
+                          className="flex-1 h-9 text-sm border-primary focus:ring-1 focus:ring-primary"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              saveNewDept();
+                            } else if (e.key === 'Escape') {
+                              setIsAddingDept(false);
+                            }
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-9 px-3 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold gap-1 shrink-0"
+                          onClick={saveNewDept}
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                          <span>Add</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 px-2 text-xs shrink-0 text-muted-foreground hover:text-foreground"
+                          onClick={() => {
+                            setIsAddingDept(false);
+                            setNewDeptInput('');
+                          }}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     ) : (
-                      <Select
-                        onValueChange={(val: string) => handleSelectChange('department', val)}
-                        value={defaultDepartments.includes(formData.department) ? formData.department : ''}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select department" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {uniqueDepartments.map(dept => (
-                            <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <>
+                        <Select
+                          onValueChange={(val: string) => {
+                            if (val === '__ADD_NEW__') {
+                              setIsAddingDept(true);
+                            } else {
+                              handleSelectChange('department', val);
+                            }
+                          }}
+                          value={formData.department}
+                        >
+                          <SelectTrigger className="flex-1 h-9">
+                            <SelectValue placeholder="Select department" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {uniqueDepartments.map(dept => (
+                              <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                            ))}
+                            <SelectItem value="__ADD_NEW__" className="text-primary font-semibold text-xs border-t mt-1 pt-1">
+                              + Add New Department...
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setIsAddingDept(true)}
+                          title="Add new department"
+                          className="h-9 w-9 shrink-0 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        >
+                          <Plus className="h-4 w-4 text-primary" />
+                        </Button>
+                      </>
                     )}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => {
-                        setIsCustomDepartment(!isCustomDepartment);
-                        if (!isCustomDepartment) {
-                          setFormData(prev => ({ ...prev, department: '' })); // Clear if switching to custom
-                        }
-                      }}
-                      title={isCustomDepartment ? "Select from list" : "Create new department"}
-                    >
-                      {isCustomDepartment ? <Search className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                    </Button>
                   </div>
                 </div>
               </div>
@@ -860,22 +1073,23 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                     <Input id="ctc" type="number" value={formData.ctc} onChange={handleInputChange} className="border-blue-200 bg-white" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="edit-salary">Monthly Income (Gross)</Label>
-                    <Input id="salary" type="number" value={formData.salary} onChange={handleInputChange} />
+                    <Label htmlFor="edit-salary" className="text-indigo-600 font-bold">Monthly Gross Salary</Label>
+                    <Input id="salary" type="number" value={formData.salary} onChange={handleInputChange} className="border-indigo-200 bg-white font-semibold" />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-basicSalary" className="text-xs">Annual Basic</Label>
-                    <Input id="basicSalary" type="number" value={formData.basicSalary} onChange={handleInputChange} className="h-8 text-sm" />
+
+                <div className="grid grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <Label htmlFor="edit-basicSalary" className="text-xs">Basic (Annual)</Label>
+                    <Input id="basicSalary" type="number" value={formData.basicSalary} onChange={handleInputChange} className="h-8 text-xs" />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-hra" className="text-xs">Annual HRA</Label>
-                    <Input id="hra" type="number" value={formData.hra} onChange={handleInputChange} className="h-8 text-sm" />
+                  <div>
+                    <Label htmlFor="edit-hra" className="text-xs">HRA (Annual)</Label>
+                    <Input id="hra" type="number" value={formData.hra} onChange={handleInputChange} className="h-8 text-xs" />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-otherAllowances" className="text-xs">Allowances</Label>
-                    <Input id="otherAllowances" type="number" value={formData.otherAllowances} onChange={handleInputChange} className="h-8 text-sm" />
+                  <div>
+                    <Label htmlFor="edit-otherAllowances" className="text-xs">Allowances (Annual)</Label>
+                    <Input id="otherAllowances" type="number" value={formData.otherAllowances} onChange={handleInputChange} className="h-8 text-xs" />
                   </div>
                 </div>
               </div>
