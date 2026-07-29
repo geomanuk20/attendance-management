@@ -73,5 +73,8 @@
             "build": "vite build",
             "server": "nodemon server/index.js",
             "client": "vite"
+      },
+      "overrides": {
+            "esbuild": "^0.25.0"
       }
 }
