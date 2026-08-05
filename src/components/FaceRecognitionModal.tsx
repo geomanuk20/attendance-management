@@ -77,7 +77,7 @@ export function FaceRecognitionModal({
 
     const compareTwoImages = (imgDataUrl1: string, imgDataUrl2: string): Promise<number> => {
         return new Promise((resolve) => {
-            const grid = 32; // 32x32 high-resolution biometric matrix (1024 sampling channels)
+            const grid = 16; // 16x16 fast biometric matrix (256 channels)
             const i1 = new Image();
             const i2 = new Image();
             if (typeof imgDataUrl1 === 'string' && imgDataUrl1.startsWith('http')) i1.crossOrigin = 'Anonymous';
@@ -117,7 +117,6 @@ export function FaceRecognitionModal({
                         sum2 += y2;
                     }
 
-                    // Zero-Mean Brightness Normalization (compensates for room lighting variations)
                     const mean1 = sum1 / numPixels;
                     const mean2 = sum2 / numPixels;
 
@@ -139,9 +138,7 @@ export function FaceRecognitionModal({
                     const denom = Math.sqrt(den1 * den2);
                     const correlation = denom > 0 ? (num / denom) : 0;
 
-                    // Biometric Facial Signature Match Condition:
-                    // Matching enrolled face structural correlation >= 0.35 OR normalized pixel difference <= 75
-                    const isSameFace = correlation >= 0.35 || avgNormDiff <= 75;
+                    const isSameFace = correlation >= 0.30 || avgNormDiff <= 85;
 
                     let finalScore = 0;
                     if (isSameFace) {
@@ -163,7 +160,7 @@ export function FaceRecognitionModal({
         });
     };
 
-    // BIOMETRIC VERIFICATION: Require minimum 50% similarity match for 100% Verified Login
+    // BIOMETRIC VERIFICATION: Fast parallel execution across database profiles
     const verifyFaceMatch = async (): Promise<{ match: boolean; similarity: number; error?: string; matchedUser?: any }> => {
         const videoEl = videoRef.current;
         if (!videoEl || !hasCamera) {
@@ -171,18 +168,17 @@ export function FaceRecognitionModal({
         }
 
         const liveCanvas = document.createElement('canvas');
-        liveCanvas.width = 160;
-        liveCanvas.height = 160;
+        liveCanvas.width = 120;
+        liveCanvas.height = 120;
         const liveCtx = liveCanvas.getContext('2d');
         if (!liveCtx) return { match: false, similarity: 0, error: 'Canvas render unavailable.' };
-        liveCtx.drawImage(videoEl, 0, 0, 160, 160);
-        const liveFrameDataUrl = liveCanvas.toDataURL('image/jpeg', 0.85);
+        liveCtx.drawImage(videoEl, 0, 0, 120, 120);
+        const liveFrameDataUrl = liveCanvas.toDataURL('image/jpeg', 0.80);
 
         const REQUIRED_THRESHOLD = 50;
 
         let targetFace = enrolledFaceImage;
 
-        // If single user enrolledFaceImage is missing, resolve from enrolledEmployees list
         if ((!targetFace || targetFace.length < 20) && enrolledEmployees && enrolledEmployees.length > 0) {
             const matchedEmp = enrolledEmployees.find((e: any) =>
                 (e.name && userName && e.name.toLowerCase().trim() === userName.toLowerCase().trim()) ||
@@ -193,18 +189,24 @@ export function FaceRecognitionModal({
             }
         }
 
-        // Multi-user biometric face detection across all enrolled database employees (for Login or unassigned)
+        // Multi-user parallel face matching
         if ((actionType === 'Login' || !targetFace) && enrolledEmployees && enrolledEmployees.length > 0) {
+            const validEmps = enrolledEmployees.filter((emp: any) => emp.faceImage && typeof emp.faceImage === 'string' && emp.faceImage.length > 20);
+
+            const results = await Promise.all(
+                validEmps.map(async (emp: any) => {
+                    const score = await compareTwoImages(emp.faceImage, liveFrameDataUrl);
+                    return { score, emp };
+                })
+            );
+
             let bestScore = 0;
             let bestMatchEmp: any = null;
 
-            for (const emp of enrolledEmployees) {
-                if (emp.faceImage && typeof emp.faceImage === 'string' && emp.faceImage.length > 20) {
-                    const score = await compareTwoImages(emp.faceImage, liveFrameDataUrl);
-                    if (score > bestScore) {
-                        bestScore = score;
-                        bestMatchEmp = emp;
-                    }
+            for (const r of results) {
+                if (r.score > bestScore) {
+                    bestScore = r.score;
+                    bestMatchEmp = r.emp;
                 }
             }
 
@@ -215,7 +217,6 @@ export function FaceRecognitionModal({
             }
         }
 
-        // Single user verification mode (Clock In / Clock Out)
         if (!targetFace || typeof targetFace !== 'string' || targetFace.trim().length < 20) {
             return { match: false, similarity: 0, error: 'No face photo enrolled on user profile. Clock action rejected.' };
         }
@@ -251,14 +252,9 @@ export function FaceRecognitionModal({
 
         let isCancelled = false;
         const runScanSequence = async () => {
-            setScanProgress(20);
+            setScanProgress(40);
             setStatusMessage('Scanning facial geometry & landmarks...');
-            await new Promise(r => setTimeout(r, 350));
-            if (isCancelled) return;
-
-            setScanProgress(55);
-            setStatusMessage('Comparing live camera face with enrolled database profiles...');
-            await new Promise(r => setTimeout(r, 350));
+            await new Promise(r => setTimeout(r, 20));
             if (isCancelled) return;
 
             setScanProgress(80);
