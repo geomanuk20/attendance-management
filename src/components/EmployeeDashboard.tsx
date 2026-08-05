@@ -7,6 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 
 import { Clock, Calendar, AlertCircle, LogIn, LogOut, Loader2 } from 'lucide-react';
 import { getAttendance, clockIn, clockOut } from '../services/api';
 import { toast } from 'sonner';
+import { FaceRecognitionModal } from './FaceRecognitionModal';
 
 const myAttendanceData = [
   { name: 'Mon', hours: 8.5 },
@@ -32,12 +33,23 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
   const [todayRecord, setTodayRecord] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
 
+  // Face Recognition Modal State
+  const [isFaceModalOpen, setIsFaceModalOpen] = useState(false);
+  const [pendingClockAction, setPendingClockAction] = useState<'Clock In' | 'Clock Out'>('Clock In');
+
+  const toLocalDateStr = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
-      fetchTodayAttendance(parsedUser.id);
+      fetchTodayAttendance(parsedUser.id || parsedUser._id);
     } else {
       setLoading(false);
     }
@@ -46,12 +58,15 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
   const fetchTodayAttendance = async (employeeId: string) => {
     if (!employeeId) return;
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = toLocalDateStr(new Date());
       const data = await getAttendance(employeeId);
       // Filter for today's record
-      const todayRec = data.find((record: any) => record.date.split('T')[0] === today);
+      const todayRec = data.find((record: any) => {
+        const rDate = String(record.date).split('T')[0];
+        return rDate === today;
+      });
 
-      setTodayRecord(todayRec);
+      setTodayRecord(todayRec || null);
 
       if (todayRec) {
         if (todayRec.clockOut) {
@@ -86,65 +101,76 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
 
   const verifyLocation = (): Promise<boolean> => {
     return new Promise((resolve) => {
+      // Localhost / development override for testing
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        resolve(true);
+        return;
+      }
+
       if (!navigator.geolocation) {
         toast.error('Geolocation is not supported by your browser');
         resolve(false);
         return;
       }
+
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const dist = getDistanceKm(pos.coords.latitude, pos.coords.longitude, OFFICE_LAT, OFFICE_LNG);
           if (dist > ALLOWED_RADIUS_KM) {
             const distDisplay = dist > 1 ? `${dist.toFixed(1)}km` : `${Math.round(dist * 1000)}m`;
-            toast.error(`Outside 100m office zone (${distDisplay} away). Clock In/Out is restricted.`);
+            toast.error(`Outside 100m office zone (${distDisplay} away). Clock In/Out is restricted to office location.`);
             resolve(false);
           } else {
             resolve(true);
           }
         },
-        () => {
+        (err) => {
+          console.warn('Geolocation error:', err);
           toast.error('Location permission required to verify 100m office zone.');
           resolve(false);
         },
-        { enableHighAccuracy: true, timeout: 8000 }
+        { enableHighAccuracy: true, timeout: 5000 }
       );
     });
   };
 
-  const handleClockIn = async () => {
-    if (!user?.id) return;
-    const isAllowed = await verifyLocation();
-    if (!isAllowed) return;
-
-    try {
-      setLoading(true);
-      const res = await clockIn(user.id);
-      toast.success(`Clocked in successfully at ${res.clockIn || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (within 200m zone)`);
-      fetchTodayAttendance(user.id);
-    } catch (error: any) {
-      console.error('Clock in error:', error);
-      toast.error(error.message || 'Failed to clock in');
-      setLoading(false);
-    }
+  const handleClockIn = () => {
+    setPendingClockAction('Clock In');
+    setIsFaceModalOpen(true);
   };
 
-  const handleClockOut = async () => {
-    if (!user?.id) return;
-    const isAllowed = await verifyLocation();
-    if (!isAllowed) return;
+  const handleClockOut = () => {
+    setPendingClockAction('Clock Out');
+    setIsFaceModalOpen(true);
+  };
+
+  const executeVerifiedClockAction = async () => {
+    const userId = user?.id || user?._id;
+    if (!userId) return;
 
     try {
       setLoading(true);
-      const res = await clockOut(user.id);
-      const totalHours = res.workHours || 0;
-      const h = Math.floor(totalHours);
-      const m = Math.round((totalHours - h) * 60);
-      const duration = h > 0 ? `${h}h ${m}m` : `${m}m`;
-      toast.success(`Clocked out successfully at ${res.clockOut || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (within 200m zone). Today's working hours: ${duration}`);
-      fetchTodayAttendance(user.id);
+      if (pendingClockAction === 'Clock In') {
+        const res = await clockIn(userId);
+        toast.success(`Face Verified! Clocked in successfully at ${res.clockIn || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
+      } else {
+        const res = await clockOut(userId);
+        const totalHours = res.workHours || 0;
+        const h = Math.floor(totalHours);
+        const m = Math.round((totalHours - h) * 60);
+        const duration = h > 0 ? `${h}h ${m}m` : `${m}m`;
+        toast.success(`Face Verified! Clocked out successfully at ${res.clockOut || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. Today's working hours: ${duration}`);
+      }
+      fetchTodayAttendance(userId);
     } catch (error: any) {
-      console.error('Clock out error:', error);
-      toast.error(error.message || 'Failed to clock out');
+      console.error('Clock action error:', error);
+      if (error?.message && error.message.includes('Already clocked in')) {
+        setStatus('Checked In');
+        fetchTodayAttendance(userId);
+        toast.info('You are already clocked in for today.');
+        return;
+      }
+      toast.error(error.message || `Failed to ${pendingClockAction.toLowerCase()}`);
       setLoading(false);
     }
   };
@@ -262,6 +288,15 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
           </div>
         </Card>
       </div>
+
+      <FaceRecognitionModal
+        isOpen={isFaceModalOpen}
+        onClose={() => setIsFaceModalOpen(false)}
+        onVerified={executeVerifiedClockAction}
+        userName={user?.name || 'Employee'}
+        actionType={pendingClockAction}
+        enrolledFaceImage={user?.faceImage}
+      />
     </div>
   );
 }

@@ -55,12 +55,20 @@ import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5001;
+const startServer = (port) => {
+    const server = app.listen(port, () => {
+        console.log(`🚀 Backend Server running successfully on port ${port}`);
+    });
 
-const server = app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+    server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.log(`Port ${port} is in use, auto-switching to port ${port + 1}...`);
+            startServer(port + 1);
+        } else {
+            console.error(`Server Error on port ${port}:`, err.message);
+        }
+    });
+};
 
-server.on('error', (err) => {
-    console.error(`Server Error on port ${PORT}:`, err.message);
-});
+const initialPort = parseInt(process.env.PORT || '5001', 10);
+startServer(initialPort);

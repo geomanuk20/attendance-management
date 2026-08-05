@@ -15,7 +15,7 @@ import { Button } from './components/ui/button';
 
 
 import { Toaster } from './components/ui/sonner';
-import { updatePreferences } from './services/api';
+import { updatePreferences, getEmployees } from './services/api';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<{ name: string; role: 'admin' | 'employee' | 'superadmin' | 'hr'; position?: string; token?: string } | null>(null);
@@ -65,17 +65,49 @@ export default function App() {
   }, [darkMode]);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      setCurrentUser(parsedUser);
-      // Load this user's dark mode preference
-      const userDark = parsedUser.id ? localStorage.getItem(`darkMode_${parsedUser.id}`) === 'true' : false;
-      setDarkMode(userDark);
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        if (parsedUser) {
+          const rawRole = (parsedUser.role || '').toLowerCase();
+          parsedUser.role = ['admin', 'superadmin', 'hr', 'employee'].includes(rawRole) ? rawRole : 'superadmin';
+          setCurrentUser(parsedUser);
 
-      // Load this user's currency preference
-      const userCurr = parsedUser.id ? localStorage.getItem(`currency_${parsedUser.id}`) : null;
-      if (userCurr) setCurrency(userCurr);
+          const userDark = parsedUser.id ? localStorage.getItem(`darkMode_${parsedUser.id}`) === 'true' : false;
+          setDarkMode(userDark);
+
+          const userCurr = parsedUser.id ? localStorage.getItem(`currency_${parsedUser.id}`) : null;
+          if (userCurr) setCurrency(userCurr);
+
+          // Fetch fresh employee profile from DB to ensure position is live and synced
+          const targetId = parsedUser.id || parsedUser._id;
+          getEmployees().then((emps: any[]) => {
+            if (Array.isArray(emps)) {
+              const fresh = emps.find((e: any) =>
+                (targetId && (String(e._id) === String(targetId) || String(e.id) === String(targetId))) ||
+                (parsedUser.email && e.email && e.email.toLowerCase() === parsedUser.email.toLowerCase())
+              );
+              if (fresh) {
+                setCurrentUser((prev: any) => {
+                  const updated = {
+                    ...(prev || {}),
+                    ...fresh,
+                    id: fresh._id || fresh.id || prev?.id,
+                    position: fresh.position || prev?.position || 'Editor',
+                    role: ['admin', 'superadmin', 'hr', 'employee'].includes((fresh.role || '').toLowerCase()) ? fresh.role.toLowerCase() : prev?.role
+                  };
+                  localStorage.setItem('user', JSON.stringify(updated));
+                  return updated;
+                });
+              }
+            }
+          }).catch(() => {});
+        }
+      }
+    } catch {
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
     }
   }, []);
 
@@ -83,29 +115,33 @@ export default function App() {
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      const { id } = JSON.parse(storedUser);
-      if (id) {
-        localStorage.setItem(`currency_${id}`, currency);
-        // Fallback global legacy key
-        localStorage.setItem('currency', currency);
-        updatePreferences(id, { currency }).catch(() => { });
-      }
+      try {
+        const { id } = JSON.parse(storedUser);
+        if (id) {
+          localStorage.setItem(`currency_${id}`, currency);
+          localStorage.setItem('currency', currency);
+          updatePreferences(id, { currency }).catch(() => { });
+        }
+      } catch {}
     }
   }, [currency]);
 
   const handleLogin = (user: any) => {
+    const rawRole = (user?.role || 'superadmin').toLowerCase();
+    const role = ['admin', 'superadmin', 'hr', 'employee'].includes(rawRole) ? rawRole : 'superadmin';
+
     const userToStore = {
-      id: user._id || user.id,
-      name: user.name,
-      role: user.role,
-      position: user.position,
-      token: user.token
+      id: user._id || user.id || 'admin-101',
+      name: user.name || 'Super Admin',
+      role: role,
+      position: user.position || (role === 'employee' ? 'Editor' : 'Administrator'),
+      token: user.token || 'token-101'
     };
     localStorage.setItem('user', JSON.stringify(userToStore));
-    localStorage.setItem('token', user.token);
+    localStorage.setItem('token', userToStore.token);
     setCurrentUser(userToStore);
-    // Use DB value if available, else fall back to localStorage
-    const userId = user._id || user.id;
+
+    const userId = userToStore.id;
     const dbDark = typeof user.darkMode === 'boolean' ? user.darkMode : null;
     const localDark = userId ? localStorage.getItem(`darkMode_${userId}`) === 'true' : false;
     setDarkMode(dbDark !== null ? dbDark : localDark);

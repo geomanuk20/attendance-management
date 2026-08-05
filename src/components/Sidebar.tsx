@@ -44,12 +44,12 @@ export function Sidebar({ activeSection, onSectionChange, userRole, userName, us
           <div className="h-10 w-16 flex items-center justify-center overflow-hidden">
             <img
               src={logoImage}
-              alt="MTOR Logo"
+              alt="Attendance System Logo"
               className="h-10 w-auto object-contain"
             />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-foreground">MTOR</h1>
+            <h1 className="text-lg font-semibold text-foreground">Attendance System</h1>
             <p className="text-xs text-muted-foreground">{['admin', 'hr', 'superadmin'].includes(userRole) ? 'HR System' : 'Employee Portal'}</p>
           </div>
         </div>

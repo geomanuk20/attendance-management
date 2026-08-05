@@ -26,9 +26,13 @@ import {
   Download,
   Loader2,
   Check,
-  X
+  X,
+  Camera,
+  Upload,
+  ShieldCheck
 } from 'lucide-react';
 import { getEmployees, createEmployee, updateEmployee, deleteEmployee, getAttendance, getLeaveRequests } from '../services/api';
+import { FaceCameraEnrollModal } from './FaceCameraEnrollModal';
 
 interface EmployeeManagementProps {
   currency?: string;
@@ -46,6 +50,8 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
   const [isCustomDepartment, setIsCustomDepartment] = useState(false);
   const [clockedInToday, setClockedInToday] = useState<Set<string>>(new Set());
   const [onLeaveToday, setOnLeaveToday] = useState<Set<string>>(new Set());
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+  const [selectedEmployeeForFace, setSelectedEmployeeForFace] = useState<any | null>(null);
 
   // Custom department management
   const [customDepartments, setCustomDepartments] = useState<string[]>([]);
@@ -93,8 +99,39 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
     hireDate: '',
     address: '',
     emergencyContact: '',
-    status: 'Active'
+    status: 'Active',
+    faceImage: '' // Face ID Photo
   });
+
+  // Check if a face image is a real uploaded photo (not empty or placeholder)
+  const isValidFaceImage = (img: string | undefined | null): boolean => {
+    if (!img || typeof img !== 'string') return false;
+    const clean = img.trim();
+    // Valid: real base64 data URI, http URL, or file URI
+    if (clean.startsWith('http://') || clean.startsWith('https://') || clean.startsWith('file://')) {
+      return clean.length > 10;
+    }
+    if (clean.startsWith('data:image')) {
+      return clean.length > 100;
+    }
+    return false;
+  };
+
+  const handleFaceImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size must be less than 5MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, faceImage: reader.result as string }));
+        toast.success('Face ID photo uploaded!');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const fetchEmployees = async () => {
     try {
@@ -315,36 +352,42 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
       hireDate: '',
       address: '',
       emergencyContact: '',
-      status: 'Active'
+      status: 'Active',
+      faceImage: ''
     });
-    setIsCustomDepartment(false); // Reset custom department toggle
+    setIsCustomDepartment(false);
   };
 
   const handleAddEmployee = async () => {
     try {
-      if (!formData.firstName || !formData.lastName || !formData.email || !formData.hireDate || !formData.department || !formData.position) {
-        toast.error('Please fill in all required fields (Name, Email, Department, Position, Hire Date)');
+      if (!formData.firstName || !formData.lastName || !formData.email) {
+        toast.error('Please fill in required fields (First Name, Last Name, Email)');
         return;
       }
 
+      const hireDateValid = formData.hireDate && !isNaN(new Date(formData.hireDate).getTime())
+        ? formData.hireDate
+        : new Date().toISOString().split('T')[0];
+
       const newEmployee = {
-        name: `${formData.firstName} ${formData.lastName}`,
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
         email: formData.email,
-        password: formData.password || 'welcome123', // Default password if not provided by UI yet, though we will add UI
-        phone: formData.phone,
-        position: formData.position,
-        department: formData.department.charAt(0).toUpperCase() + formData.department.slice(1),
-        role: formData.role,
-        employeeCode: formData.employeeCode,
+        password: formData.password || 'welcome123',
+        phone: formData.phone || '',
+        position: formData.position || 'Software Engineer',
+        department: (formData.department || 'Engineering').charAt(0).toUpperCase() + (formData.department || 'Engineering').slice(1),
+        role: formData.role || 'employee',
+        employeeCode: formData.employeeCode || `WTN ${Math.floor(100 + Math.random() * 900)}`,
         salary: Number(formData.salary) || 0,
         ctc: Number(formData.ctc) || 0,
         basicSalary: Number(formData.basicSalary) || 0,
         hra: Number(formData.hra) || 0,
         otherAllowances: Number(formData.otherAllowances) || 0,
-        hireDate: formData.hireDate,
+        hireDate: hireDateValid,
         status: 'Active',
-        address: formData.address,
-        emergencyContact: formData.emergencyContact
+        address: formData.address || '',
+        emergencyContact: formData.emergencyContact || '',
+        faceImage: formData.faceImage || ''
       };
 
       await createEmployee(newEmployee);
@@ -364,7 +407,6 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
     const firstName = nameParts[0];
     const lastName = nameParts.slice(1).join(' ');
 
-    // Ensure the date is formatted for the input (YYYY-MM-DD)
     const formattedDate = employee.hireDate ? new Date(employee.hireDate).toISOString().split('T')[0] : '';
 
     const ctcNum = Number(employee.ctc) || (employee.salary ? Number(employee.salary) * 12 : 0);
@@ -378,7 +420,7 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
       firstName: firstName || '',
       lastName: lastName || '',
       email: employee.email,
-      password: '', // Password not retrieved for editing usually
+      password: '',
       phone: employee.phone,
       position: employee.position,
       department: employee.department,
@@ -392,10 +434,10 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
       hireDate: formattedDate,
       address: employee.address || '',
       emergencyContact: employee.emergencyContact || '',
-      status: employee.status
+      status: employee.status,
+      faceImage: employee.faceImage || ''
     });
 
-    // Check if department is custom
     const isCustom = !defaultDepartments.includes(employee.department);
     setIsCustomDepartment(isCustom);
 
@@ -415,19 +457,21 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
       const updatedData = {
         name: `${formData.firstName} ${formData.lastName}`.trim(),
         email: formData.email,
-        phone: formData.phone,
+        phone: formData.phone || '',
         position: formData.position,
         department: formData.department,
-        employeeCode: formData.employeeCode || `EMP-${String(empId).substring(0, 6).toUpperCase()}`,
+        role: formData.role || selectedEmployee.role || 'employee',
+        faceImage: formData.faceImage !== undefined ? formData.faceImage : (selectedEmployee.faceImage || ''),
+        employeeCode: formData.employeeCode || selectedEmployee.employeeCode || `EMP-${String(empId).substring(0, 6).toUpperCase()}`,
         salary: Number(formData.salary) || 0,
         ctc: Number(formData.ctc) || 0,
         basicSalary: Number(formData.basicSalary) || 0,
         hra: Number(formData.hra) || 0,
         otherAllowances: Number(formData.otherAllowances) || 0,
         hireDate: formData.hireDate || selectedEmployee.hireDate,
-        address: formData.address,
-        emergencyContact: formData.emergencyContact,
-        status: formData.status
+        address: formData.address || '',
+        emergencyContact: formData.emergencyContact || '',
+        status: formData.status || 'Active'
       };
 
       await updateEmployee(empId, updatedData);
@@ -552,6 +596,51 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
+                {/* Face ID Photo Upload Section */}
+                <div className="p-4 bg-slate-950/40 dark:bg-slate-900/60 rounded-xl border border-emerald-500/30 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-emerald-400/60 bg-slate-800 flex items-center justify-center shadow-inner">
+                      {formData.faceImage ? (
+                        <img src={formData.faceImage} alt="Face ID Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <Camera className="h-6 w-6 text-slate-400" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5 font-semibold text-xs text-emerald-400">
+                        <ShieldCheck className="h-4 w-4" />
+                        Biometric Face ID Photo
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {formData.faceImage ? '✓ Face Photo Attached & Ready (Face ID Active)' : 'Upload photo for face recognition attendance'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => setIsCameraModalOpen(true)}
+                      className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold gap-1.5"
+                    >
+                      <Camera className="h-3.5 w-3.5" />
+                      {formData.faceImage ? 'Recapture Face' : 'Capture Face Photo'}
+                    </Button>
+                    {formData.faceImage && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-xs text-rose-400 hover:text-rose-300"
+                        onClick={() => setFormData(prev => ({ ...prev, faceImage: '' }))}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
@@ -866,6 +955,7 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                 <TableHead>Hire Date</TableHead>
                 <TableHead>Monthly Income</TableHead>
                 <TableHead>CTC (Annual)</TableHead>
+                <TableHead>Face ID</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -875,14 +965,23 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                 <TableRow key={employee.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarFallback>
-                          {employee.name.split(' ').map((n: string) => n[0]).join('')}
-                        </AvatarFallback>
+                      <Avatar className="h-10 w-10 border border-slate-200 dark:border-slate-800 relative overflow-hidden">
+                        {employee.faceImage ? (
+                          <img src={employee.faceImage} alt={employee.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <AvatarFallback className="bg-slate-800 text-slate-200 font-bold">
+                            {employee.name.split(' ').map((n: string) => n[0]).join('')}
+                          </AvatarFallback>
+                        )}
                       </Avatar>
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{employee.name}</p>
+                          {isValidFaceImage(employee.faceImage) && (
+                            <span title="Biometric Face ID Enrolled">
+                              <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                            </span>
+                          )}
                           <span className="bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 text-[10px] font-bold font-mono px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
                             {employee.employeeCode || (employee._id ? `EMP-${employee._id.substring(0, 6).toUpperCase()}` : 'EMP-101')}
                           </span>
@@ -899,6 +998,35 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                   <TableCell>{formatDate(employee.hireDate)}</TableCell>
                   <TableCell>{formatCurrency(employee.salary || (employee.ctc ? employee.ctc / 12 : 0))}</TableCell>
                   <TableCell>{formatCurrency(employee.ctc || (employee.salary ? employee.salary * 12 : 0))}</TableCell>
+                  <TableCell>
+                    {isValidFaceImage(employee.faceImage) ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedEmployeeForFace(employee);
+                          setIsCameraModalOpen(true);
+                        }}
+                        title="Click to update Face ID photo"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 dark:bg-emerald-950 dark:hover:bg-emerald-900 dark:text-emerald-300 dark:border-emerald-700 transition-colors cursor-pointer"
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+                        Enrolled
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedEmployeeForFace(employee);
+                          setIsCameraModalOpen(true);
+                        }}
+                        title="Click to open camera and enroll Face ID"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-950 dark:hover:bg-amber-900 dark:text-amber-300 dark:border-amber-700 transition-colors cursor-pointer shadow-xs"
+                      >
+                        <Camera className="h-3.5 w-3.5 text-amber-600" />
+                        Enroll Face
+                      </button>
+                    )}
+                  </TableCell>
                   <TableCell>{getAttendanceStatus(employee._id || employee.id)}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
@@ -944,7 +1072,55 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
               <TabsTrigger value="contact">Contact</TabsTrigger>
             </TabsList>
             <TabsContent value="personal" className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+                {/* Face ID Photo Upload Section */}
+                <div className="p-4 bg-slate-950/40 dark:bg-slate-900/60 rounded-xl border border-emerald-500/30 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-emerald-400/60 bg-slate-800 flex items-center justify-center shadow-inner">
+                      {formData.faceImage ? (
+                        <img src={formData.faceImage} alt="Face ID Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <Camera className="h-6 w-6 text-slate-400" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5 font-semibold text-xs text-emerald-400">
+                        <ShieldCheck className="h-4 w-4" />
+                        Biometric Face ID Photo
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {formData.faceImage ? '✓ Face Photo Enrolled & Saved (Face ID Active)' : 'Upload photo for face recognition attendance'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <label className="cursor-pointer">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg shadow-sm transition-colors">
+                        <Upload className="h-3.5 w-3.5" />
+                        {formData.faceImage ? 'Change Photo' : 'Upload Photo'}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={handleFaceImageUpload}
+                      />
+                    </label>
+                    {formData.faceImage && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-xs text-rose-400 hover:text-rose-300"
+                        onClick={() => setFormData(prev => ({ ...prev, faceImage: '' }))}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-firstName">First Name</Label>
                   <Input id="firstName" value={formData.firstName} onChange={handleInputChange} />
@@ -1133,6 +1309,32 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
           </div>
         </DialogContent>
       </Dialog>
+      {/* Face Camera Capture Modal */}
+      <FaceCameraEnrollModal
+        isOpen={isCameraModalOpen}
+        onClose={() => {
+          setIsCameraModalOpen(false);
+          setSelectedEmployeeForFace(null);
+        }}
+        onCapture={async (dataUrl) => {
+          if (selectedEmployeeForFace) {
+            const empId = selectedEmployeeForFace._id || selectedEmployeeForFace.id;
+            try {
+              await updateEmployee(empId, { faceImage: dataUrl });
+              toast.success(`✅ Face ID captured & saved for ${selectedEmployeeForFace.name}!`);
+              fetchEmployees();
+            } catch (err: any) {
+              toast.error(err.message || 'Failed to update face photo');
+            } finally {
+              setSelectedEmployeeForFace(null);
+            }
+          } else {
+            setFormData(prev => ({ ...prev, faceImage: dataUrl }));
+            toast.success('Face photo captured from camera!');
+          }
+        }}
+        userName={selectedEmployeeForFace ? selectedEmployeeForFace.name : (formData.firstName ? `${formData.firstName} ${formData.lastName}` : 'Employee')}
+      />
     </div>
   );
 }

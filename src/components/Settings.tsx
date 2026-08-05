@@ -44,6 +44,7 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
   const [pushNotifications, setPushNotifications] = useState(false);
   const [autoLogout, setAutoLogout] = useState(true);
   const [twoFactorAuth, setTwoFactorAuth] = useState(false);
+  const [timeFormat, setTimeFormat] = useState(() => localStorage.getItem('timeFormat') || '12h');
 
   const [appVersion, setAppVersion] = useState('1.0.2');
   const [updateStatus, setUpdateStatus] = useState<'ON' | 'OFF'>('OFF');
@@ -251,8 +252,24 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="timeFormat">Time Format</Label>
+                  <Select value={timeFormat} onValueChange={(val) => {
+                    setTimeFormat(val);
+                    localStorage.setItem('timeFormat', val);
+                    toast.success(`Time format set to ${val === '24h' ? '24-Hour (18:35)' : '12-Hour AM/PM (06:35 PM)'}`);
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select time format" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="12h">12-Hour AM/PM (e.g. 06:35 PM)</SelectItem>
+                      <SelectItem value="24h">24-Hour (e.g. 18:35)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 {userRole === 'superadmin' && (
-                  <div className="space-y-2">
+                  <div className="space-y-2 col-span-2 sm:col-span-1">
                     <Label htmlFor="currency">Currency</Label>
                     <Select value={currency} onValueChange={(val) => {
                       localStorage.setItem('currency', val);
@@ -283,25 +300,6 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
                   checked={darkMode}
                   onCheckedChange={(val) => onDarkModeChange?.(val)}
                 />
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h4 className="font-medium text-sm">App Version & Updates</h4>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold">Portal Version</p>
-                    <p className="text-xs text-muted-foreground">v1.0.0 (Latest)</p>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => toast.success("You are running the latest version of the Attendance portal (v1.0.0).")}
-                  >
-                    Check for Updates
-                  </Button>
-                </div>
               </div>
             </div>
           </Card>
@@ -450,7 +448,150 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
           </Card>
         </TabsContent>
 
-        {/* Admin Only Tabs */}
+        {/* App Update Settings (Accessible to all users) */}
+        <TabsContent value="appUpdate" className="space-y-6">
+          <Card className="p-6">
+            {userRole === 'superadmin' ? (
+              // Superadmin: full editable form
+              <div className="space-y-6 max-w-4xl">
+                <h3 className="mb-2 text-sm font-semibold tracking-wider uppercase text-muted-foreground">APP UPDATE SETTINGS</h3>
+                <div className="grid grid-cols-3 items-center gap-4">
+                  <Label htmlFor="appVersion" className="text-sm font-medium text-muted-foreground">App Version</Label>
+                  <div className="col-span-2">
+                    <Input id="appVersion" value={appVersion} onChange={(e) => setAppVersion(e.target.value)} className="bg-zinc-950 border-zinc-800" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 items-center gap-4">
+                  <Label htmlFor="updateStatus" className="text-sm font-medium text-muted-foreground">Update Status</Label>
+                  <div className="col-span-2">
+                    <Select value={updateStatus} onValueChange={(val: 'ON' | 'OFF') => setUpdateStatus(val)}>
+                      <SelectTrigger id="updateStatus" className="bg-zinc-950 border-zinc-800"><SelectValue placeholder="Select status" /></SelectTrigger>
+                      <SelectContent className="bg-zinc-950 border-zinc-800">
+                        <SelectItem value="ON">ON</SelectItem>
+                        <SelectItem value="OFF">OFF</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 items-center gap-4">
+                  <Label htmlFor="updateMsg" className="text-sm font-medium text-muted-foreground">Update Msg</Label>
+                  <div className="col-span-2">
+                    <Input id="updateMsg" value={updateMsg} onChange={(e) => setUpdateMsg(e.target.value)} className="bg-zinc-950 border-zinc-800" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 items-center gap-4">
+                  <Label htmlFor="updateUrl" className="text-sm font-medium text-muted-foreground">Update URL</Label>
+                  <div className="col-span-2">
+                    <Input id="updateUrl" value={updateUrl} onChange={(e) => setUpdateUrl(e.target.value)} className="bg-zinc-950 border-zinc-800" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 items-center gap-4">
+                  <Label htmlFor="cancelButton" className="text-sm font-medium text-muted-foreground">Cancel Button</Label>
+                  <div className="col-span-2">
+                    <Select value={cancelButton} onValueChange={(val: 'ON' | 'OFF') => setCancelButton(val)}>
+                      <SelectTrigger id="cancelButton" className="bg-zinc-950 border-zinc-800"><SelectValue placeholder="Select cancel option" /></SelectTrigger>
+                      <SelectContent className="bg-zinc-950 border-zinc-800">
+                        <SelectItem value="ON">ON</SelectItem>
+                        <SelectItem value="OFF">OFF</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="pt-2">
+                  <Button className="bg-[#84cc16] text-black hover:bg-[#a3e635] font-semibold px-6 py-2.5 rounded-md" onClick={handleSaveAppSettings} disabled={appSettingsSaving}>
+                    {appSettingsSaving ? 'Saving Settings...' : 'Save Settings'}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              // Employee / HR / Admin: read-only view with live update status & download button
+              <div className="space-y-6 max-w-lg">
+                <div className="flex items-center gap-3 mb-2">
+                  <Smartphone className="h-6 w-6 text-indigo-500" />
+                  <h3 className="text-base font-semibold">App Version &amp; Updates</h3>
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg border p-4">
+                  <div>
+                    <p className="text-sm font-medium">Current APK Version</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Latest available release</p>
+                  </div>
+                  <span
+                    className="text-sm font-bold px-3 py-1 border rounded-md"
+                    style={{ backgroundColor: '#1e293b', color: '#ffffff' }}
+                  >
+                    v{appVersion}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg border p-4">
+                  <div>
+                    <p className="text-sm font-medium">Update Status</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {updateStatus === 'ON' ? 'An update is available for download' : 'You are on the latest version'}
+                    </p>
+                  </div>
+                  <div
+                    className="inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs font-bold shrink-0 whitespace-nowrap shadow-xs"
+                    style={{
+                      backgroundColor: updateStatus === 'ON' ? '#fef3c7' : '#f1f5f9',
+                      color: updateStatus === 'ON' ? '#92400e' : '#0f172a',
+                      border: `1px solid ${updateStatus === 'ON' ? '#fde68a' : '#cbd5e1'}`,
+                      minWidth: '100px'
+                    }}
+                  >
+                    <span>{updateStatus === 'ON' ? 'Update Available' : 'Up to Date'}</span>
+                  </div>
+                </div>
+
+                {updateStatus === 'ON' && updateMsg && (
+                  <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/10 p-4">
+                    <p className="text-sm font-medium text-indigo-400 mb-1">📣 Release Note</p>
+                    <p className="text-sm text-muted-foreground">{updateMsg}</p>
+                  </div>
+                )}
+
+                {updateStatus === 'ON' && updateUrl && (
+                  <Button
+                    className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+                    onClick={() => window.open(updateUrl, '_blank')}
+                  >
+                    <Download className="h-4 w-4" />
+                    Download Latest APK
+                  </Button>
+                )}
+
+                {updateStatus !== 'ON' && (
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2"
+                    disabled={updateChecking}
+                    onClick={async () => {
+                      setUpdateChecking(true);
+                      try {
+                        const data = await getAppUpdateSettings();
+                        setAppVersion(data.appVersion || appVersion);
+                        setUpdateStatus(data.updateStatus || 'OFF');
+                        setUpdateMsg(data.updateMsg || '');
+                        setUpdateUrl(data.updateUrl || '');
+                        toast.success(`Checked! Portal version v${data.appVersion || appVersion} is up to date.`);
+                      } catch {
+                        toast.error('Could not reach update server');
+                      } finally {
+                        setUpdateChecking(false);
+                      }
+                    }}
+                  >
+                    <Download className="h-4 w-4" />
+                    {updateChecking ? 'Checking...' : 'Check for Update'}
+                  </Button>
+                )}
+              </div>
+            )}
+          </Card>
+        </TabsContent>
+
+        {/* Superadmin Only Tabs */}
         {userRole === 'superadmin' && (
           <>
             {/* Company Settings */}
@@ -464,7 +605,7 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="companyName">Company Name</Label>
-                      <Input id="companyName" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="MTOR" />
+                      <Input id="companyName" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Attendance System" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="companyEmail">Company Email</Label>
@@ -793,136 +934,6 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
                     </div>
                   </div>
                 </div>
-              </Card>
-            </TabsContent>
-
-            {/* App Update Settings */}
-            <TabsContent value="appUpdate" className="space-y-6">
-              <Card className="p-6">
-                {userRole === 'superadmin' ? (
-                  // Superadmin: full editable form
-                  <div className="space-y-6 max-w-4xl">
-                    <h3 className="mb-2 text-sm font-semibold tracking-wider uppercase text-muted-foreground">APP UPDATE SETTINGS</h3>
-                    <div className="grid grid-cols-3 items-center gap-4">
-                      <Label htmlFor="appVersion" className="text-sm font-medium text-muted-foreground">App Version</Label>
-                      <div className="col-span-2">
-                        <Input id="appVersion" value={appVersion} onChange={(e) => setAppVersion(e.target.value)} className="bg-zinc-950 border-zinc-800" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 items-center gap-4">
-                      <Label htmlFor="updateStatus" className="text-sm font-medium text-muted-foreground">Update Status</Label>
-                      <div className="col-span-2">
-                        <Select value={updateStatus} onValueChange={(val: 'ON' | 'OFF') => setUpdateStatus(val)}>
-                          <SelectTrigger id="updateStatus" className="bg-zinc-950 border-zinc-800"><SelectValue placeholder="Select status" /></SelectTrigger>
-                          <SelectContent className="bg-zinc-950 border-zinc-800">
-                            <SelectItem value="ON">ON</SelectItem>
-                            <SelectItem value="OFF">OFF</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 items-center gap-4">
-                      <Label htmlFor="updateMsg" className="text-sm font-medium text-muted-foreground">Update Msg</Label>
-                      <div className="col-span-2">
-                        <Input id="updateMsg" value={updateMsg} onChange={(e) => setUpdateMsg(e.target.value)} className="bg-zinc-950 border-zinc-800" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 items-center gap-4">
-                      <Label htmlFor="updateUrl" className="text-sm font-medium text-muted-foreground">Update URL</Label>
-                      <div className="col-span-2">
-                        <Input id="updateUrl" value={updateUrl} onChange={(e) => setUpdateUrl(e.target.value)} className="bg-zinc-950 border-zinc-800" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 items-center gap-4">
-                      <Label htmlFor="cancelButton" className="text-sm font-medium text-muted-foreground">Cancel Button</Label>
-                      <div className="col-span-2">
-                        <Select value={cancelButton} onValueChange={(val: 'ON' | 'OFF') => setCancelButton(val)}>
-                          <SelectTrigger id="cancelButton" className="bg-zinc-950 border-zinc-800"><SelectValue placeholder="Select cancel option" /></SelectTrigger>
-                          <SelectContent className="bg-zinc-950 border-zinc-800">
-                            <SelectItem value="ON">ON</SelectItem>
-                            <SelectItem value="OFF">OFF</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="pt-2">
-                      <Button className="bg-[#84cc16] text-black hover:bg-[#a3e635] font-semibold px-6 py-2.5 rounded-md" onClick={handleSaveAppSettings} disabled={appSettingsSaving}>
-                        {appSettingsSaving ? 'Saving Settings...' : 'Save Settings'}
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  // Employee / HR / Admin: read-only view
-                  <div className="space-y-6 max-w-lg">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Smartphone className="h-6 w-6 text-indigo-500" />
-                      <h3 className="text-base font-semibold">App Version &amp; Updates</h3>
-                    </div>
-
-                    <div className="flex items-center justify-between rounded-lg border p-4">
-                      <div>
-                        <p className="text-sm font-medium">Current APK Version</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">Latest available release</p>
-                      </div>
-                      <Badge variant="secondary" className="text-base font-bold px-3 py-1">v{appVersion}</Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between rounded-lg border p-4">
-                      <div>
-                        <p className="text-sm font-medium">Update Status</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {updateStatus === 'ON' ? 'An update is available for download' : 'You are on the latest version'}
-                        </p>
-                      </div>
-                      <Badge className={updateStatus === 'ON' ? 'bg-green-500 text-white' : 'bg-zinc-500 text-white'}>
-                        {updateStatus === 'ON' ? '🔔 Update Available' : '✅ Up to Date'}
-                      </Badge>
-                    </div>
-
-                    {updateStatus === 'ON' && updateMsg && (
-                      <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/10 p-4">
-                        <p className="text-sm font-medium text-indigo-400 mb-1">📣 Release Note</p>
-                        <p className="text-sm text-muted-foreground">{updateMsg}</p>
-                      </div>
-                    )}
-
-                    {updateStatus === 'ON' && updateUrl && (
-                      <Button
-                        className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
-                        onClick={() => window.open(updateUrl, '_blank')}
-                      >
-                        <Download className="h-4 w-4" />
-                        Download Latest APK
-                      </Button>
-                    )}
-
-                    {updateStatus !== 'ON' && (
-                      <Button
-                        variant="outline"
-                        className="w-full gap-2"
-                        disabled={updateChecking}
-                        onClick={async () => {
-                          setUpdateChecking(true);
-                          try {
-                            const data = await getAppUpdateSettings();
-                            setAppVersion(data.appVersion || appVersion);
-                            setUpdateStatus(data.updateStatus || 'OFF');
-                            setUpdateMsg(data.updateMsg || '');
-                            setUpdateUrl(data.updateUrl || '');
-                            toast.success('Version info refreshed');
-                          } catch {
-                            toast.error('Could not reach update server');
-                          } finally {
-                            setUpdateChecking(false);
-                          }
-                        }}
-                      >
-                        <Download className="h-4 w-4" />
-                        {updateChecking ? 'Checking...' : 'Check for Update'}
-                      </Button>
-                    )}
-                  </div>
-                )}
               </Card>
             </TabsContent>
           </>

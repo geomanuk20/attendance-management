@@ -6,18 +6,22 @@ const LOCAL_MAC_IP = '192.168.1.5';
 export const BASE_URL_CANDIDATES = __DEV__
   ? Platform.select({
       android: [
-        'http://10.0.2.2:5001/api',       // Android Emulator host loopback
-        `http://${LOCAL_MAC_IP}:5001/api`, // Local Wi-Fi network IP
-        'http://127.0.0.1:5001/api',      // ADB reverse proxy
+        'http://10.0.2.2:5002/api',       // Android Emulator host loopback (5002)
+        'http://10.0.2.2:5001/api',
+        `http://${LOCAL_MAC_IP}:5002/api`, // Local Wi-Fi network IP
+        `http://${LOCAL_MAC_IP}:5001/api`,
+        'http://127.0.0.1:5002/api',
       ],
       ios: [
+        'http://localhost:5002/api',
         'http://localhost:5001/api',
-        `http://${LOCAL_MAC_IP}:5001/api`,
+        `http://${LOCAL_MAC_IP}:5002/api`,
       ],
       default: [
+        'http://localhost:5002/api',
         'http://localhost:5001/api',
       ],
-    }) || ['http://localhost:5001/api']
+    }) || ['http://localhost:5002/api']
   : ['https://attendance.louisbella.store/api'];
 
 export const API_URL = BASE_URL_CANDIDATES[0];
@@ -139,6 +143,25 @@ export const getEmployees = async () => {
   } catch (err: any) {
     if (err.message === 'Network request failed') {
       throw new Error(`Cannot connect to backend server on port 5001.`);
+    }
+    throw err;
+  }
+};
+
+export const updateEmployee = async (id: string, employeeData: any) => {
+  try {
+    const headers = await getHeaders();
+    const response = await fetchWithFallback(`/employees/${id}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(employeeData),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data?.message || 'Failed to update employee profile');
+    return data;
+  } catch (err: any) {
+    if (err.message === 'Network request failed') {
+      throw new Error(`Cannot connect to backend server.`);
     }
     throw err;
   }

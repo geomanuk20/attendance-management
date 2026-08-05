@@ -72,7 +72,9 @@
             "mobile:dev": "concurrently \"nodemon server/index.js\" \"cd mobile && npx expo start\"",
             "build": "vite build",
             "server": "nodemon server/index.js",
-            "client": "vite"
+            "client": "vite",
+            "mobile:apk": "cd mobile/android && ./gradlew assembleDebug",
+            "mobile:eas-apk": "cd mobile && npx eas-cli build -p android --profile preview"
       },
       "overrides": {
             "esbuild": "^0.25.0"

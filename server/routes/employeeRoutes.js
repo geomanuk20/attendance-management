@@ -17,7 +17,7 @@ const getEmployees = asyncHandler(async (req, res) => {
 // @route   POST /api/employees
 // @access  Public
 const createEmployee = asyncHandler(async (req, res) => {
-    const { name, email, password, phone, department, position, role, employeeCode, salary, hireDate, address, emergencyContact, ctc, basicSalary, hra, otherAllowances } = req.body;
+    const { name, email, password, phone, department, position, role, employeeCode, salary, hireDate, address, emergencyContact, ctc, basicSalary, hra, otherAllowances, faceImage } = req.body;
 
     const employeeExists = await Employee.findOne({ email });
 
@@ -27,23 +27,26 @@ const createEmployee = asyncHandler(async (req, res) => {
     }
 
     try {
+        const parsedHireDate = hireDate && !isNaN(new Date(hireDate).getTime()) ? new Date(hireDate) : new Date();
+
         const employee = await Employee.create({
             name,
             email,
-            password,
-            phone,
-            department,
-            position,
-            role,
-            employeeCode: employeeCode || '',
-            salary,
-            hireDate: new Date(hireDate), // Ensure valid date
-            address,
-            emergencyContact,
-            ctc,
-            basicSalary,
-            hra,
-            otherAllowances
+            password: password || 'welcome123',
+            phone: phone || '',
+            department: department || 'Management',
+            position: position || 'Employee',
+            role: role || 'employee',
+            employeeCode: employeeCode || `WTN ${Math.floor(100 + Math.random() * 900)}`,
+            salary: salary || 0,
+            hireDate: parsedHireDate,
+            address: address || '',
+            emergencyContact: emergencyContact || '',
+            ctc: ctc || 0,
+            basicSalary: basicSalary || 0,
+            hra: hra || 0,
+            otherAllowances: otherAllowances || 0,
+            faceImage: faceImage || ''
         });
 
         res.status(201).json(employee);
@@ -60,35 +63,46 @@ const createEmployee = asyncHandler(async (req, res) => {
 const updateEmployee = asyncHandler(async (req, res) => {
     const employee = await Employee.findById(req.params.id);
 
-    if (employee) {
-        employee.name = req.body.name || employee.name;
-        employee.email = req.body.email || employee.email;
-        employee.phone = req.body.phone || employee.phone;
-        employee.department = req.body.department || employee.department;
-        employee.position = req.body.position || employee.position;
-        employee.role = req.body.role || employee.role;
-        employee.employeeCode = req.body.employeeCode !== undefined ? req.body.employeeCode : employee.employeeCode;
-        employee.salary = req.body.salary !== undefined ? req.body.salary : employee.salary;
-        employee.status = req.body.status || employee.status;
+    if (!employee) {
+        res.status(404);
+        throw new Error('Employee not found');
+    }
+
+    const isSelf = req.user && req.user._id.toString() === req.params.id;
+    const isAdminOrHr = !req.user || (req.user && (req.user.role === 'admin' || req.user.role === 'superadmin' || req.user.role === 'hr'));
+
+    // Save face biometric photo if provided
+    if (req.body.faceImage !== undefined) {
+        employee.faceImage = req.body.faceImage;
+    }
+    if (req.body.phone !== undefined) employee.phone = req.body.phone;
+    if (req.body.address !== undefined) employee.address = req.body.address;
+    if (req.body.emergencyContact !== undefined) employee.emergencyContact = req.body.emergencyContact;
+
+    // Update all employee details if Admin/HR or unauthenticated request
+    if (isAdminOrHr) {
+        if (req.body.name) employee.name = req.body.name;
+        if (req.body.email) employee.email = req.body.email;
+        if (req.body.department) employee.department = req.body.department;
+        if (req.body.position) employee.position = req.body.position;
+        if (req.body.role) employee.role = req.body.role;
+        if (req.body.employeeCode !== undefined) employee.employeeCode = req.body.employeeCode;
+        if (req.body.salary !== undefined) employee.salary = req.body.salary;
+        if (req.body.status) employee.status = req.body.status;
         if (req.body.hireDate) {
             const parsedDate = new Date(req.body.hireDate);
             if (!isNaN(parsedDate.getTime())) {
                 employee.hireDate = parsedDate;
             }
         }
-        employee.address = req.body.address !== undefined ? req.body.address : employee.address;
-        employee.emergencyContact = req.body.emergencyContact !== undefined ? req.body.emergencyContact : employee.emergencyContact;
-        employee.ctc = req.body.ctc !== undefined ? req.body.ctc : employee.ctc;
-        employee.basicSalary = req.body.basicSalary !== undefined ? req.body.basicSalary : employee.basicSalary;
-        employee.hra = req.body.hra !== undefined ? req.body.hra : employee.hra;
-        employee.otherAllowances = req.body.otherAllowances !== undefined ? req.body.otherAllowances : employee.otherAllowances;
-
-        const updatedEmployee = await employee.save();
-        res.json(updatedEmployee);
-    } else {
-        res.status(404);
-        throw new Error('Employee not found');
+        if (req.body.ctc !== undefined) employee.ctc = req.body.ctc;
+        if (req.body.basicSalary !== undefined) employee.basicSalary = req.body.basicSalary;
+        if (req.body.hra !== undefined) employee.hra = req.body.hra;
+        if (req.body.otherAllowances !== undefined) employee.otherAllowances = req.body.otherAllowances;
     }
+
+    const updatedEmployee = await employee.save();
+    res.json(updatedEmployee);
 });
 
 // @desc    Delete an employee
@@ -255,10 +269,10 @@ const downloadSalarySlip = asyncHandler(async (req, res) => {
     res.send(html);
 });
 
-router.route('/').get(protect, getEmployees).post(protect, admin, createEmployee);
+router.route('/').get(getEmployees).post(protect, admin, createEmployee);
 router.route('/download-slip').get(downloadSalarySlip);
 router.route('/names').get(protect, getEmployeeNames);
-router.route('/:id').put(protect, admin, updateEmployee).delete(protect, admin, deleteEmployee);
+router.route('/:id').put(protect, updateEmployee).delete(protect, admin, deleteEmployee);
 router.route('/:id/preferences').patch(updatePreferences);
 
 export default router;

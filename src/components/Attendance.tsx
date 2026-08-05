@@ -7,13 +7,15 @@ import { Input } from './ui/input';
 import { Calendar } from './ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Clock, CalendarIcon, Search, Loader2, ChevronsUpDown, Check, Download, Pencil } from 'lucide-react';
+import { Clock, CalendarIcon, Search, Loader2, ChevronsUpDown, Check, Download, Pencil, ShieldCheck, Camera, Upload, AlertCircle } from 'lucide-react';
+import { getAttendance, clockIn, clockOut, getEmployees, getEmployeeNames, getLeaveRequests, updateAttendanceRecord, updateEmployee } from '../services/api';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Label } from './ui/label';
 import { format, subDays, endOfMonth } from 'date-fns';
-import { getAttendance, clockIn, clockOut, getEmployeeNames, getLeaveRequests, updateAttendanceRecord } from '../services/api';
 import { toast } from 'sonner';
+import { FaceRecognitionModal } from './FaceRecognitionModal';
+import { FaceCameraEnrollModal } from './FaceCameraEnrollModal';
 
 interface AttendanceProps {
   userRole?: 'admin' | 'employee' | 'superadmin' | 'hr';
@@ -81,6 +83,13 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
   const [status, setStatus] = useState<'Checked In' | 'Checked Out' | 'Completed'>('Checked Out');
   const [todayRecord, setTodayRecord] = useState<any>(null);
 
+  // Face Recognition Modal State
+  const [isFaceModalOpen, setIsFaceModalOpen] = useState(false);
+  const [pendingClockAction, setPendingClockAction] = useState<'Clock In' | 'Clock Out'>('Clock In');
+  // Face photo camera capture state
+  const [isCameraEnrollOpen, setIsCameraEnrollOpen] = useState(false);
+  const [isFaceUploading, setIsFaceUploading] = useState(false);
+
   // Stats
   const [stats, setStats] = useState({
     today: 0,
@@ -123,13 +132,16 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
     }
   };
 
-  const fetchTodayStatus = async (employeeId: string) => {
+  const fetchTodayStatus = async (employeeId?: string) => {
     if (!employeeId) return;
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = toLocalDateStr(new Date());
       const data = await getAttendance(employeeId);
-      const todayRec = data.find((record: any) => record.date.split('T')[0] === today);
-      setTodayRecord(todayRec);
+      const todayRec = data.find((record: any) => {
+        const rDate = String(record.date).split('T')[0];
+        return rDate === today;
+      });
+      setTodayRecord(todayRec || null);
 
       if (todayRec) {
         if (todayRec.clockOut) {
@@ -164,25 +176,58 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
     }
   };
 
+  const fetchFreshUserProfile = async (empId?: string, email?: string) => {
+    try {
+      const allEmps = await getEmployees();
+      if (Array.isArray(allEmps) && allEmps.length > 0) {
+        const fresh = allEmps.find((e: any) =>
+          (empId && (String(e._id) === String(empId) || String(e.id) === String(empId))) ||
+          (email && e.email && e.email.toLowerCase() === email.toLowerCase())
+        );
+        if (fresh) {
+          setUser((prev: any) => {
+            const updated = {
+              ...(prev || {}),
+              ...fresh,
+              id: fresh._id || fresh.id || prev?.id,
+              _id: fresh._id || fresh.id || prev?._id,
+              faceImage: fresh.faceImage !== undefined ? fresh.faceImage : (prev?.faceImage || '')
+            };
+            localStorage.setItem('user', JSON.stringify(updated));
+            return updated;
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Error fetching fresh user profile:', e);
+    }
+  };
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     let targetEmpId: string | undefined = undefined;
+    let userEmail: string | undefined = undefined;
+    const isAdmin = userRole === 'admin' || userRole === 'hr' || userRole === 'superadmin';
+
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
-      if (userRole === 'employee') {
-        targetEmpId = parsedUser.id;
-        fetchTodayStatus(parsedUser.id);
-      }
+      targetEmpId = parsedUser.id || parsedUser._id;
+      userEmail = parsedUser.email;
+      fetchTodayStatus(targetEmpId);
     }
-    fetchAttendance(targetEmpId);
+
+    const empIdToFetch = isAdmin ? undefined : targetEmpId;
+    fetchAttendance(empIdToFetch);
     fetchLeaveData();
+    fetchFreshUserProfile(targetEmpId, userEmail);
     getEmployeeNames().then(setEmployeeList).catch(() => {});
 
-    // Auto-polling every 5 seconds so mobile clock-ins update live on website
+    // Auto-polling every 5 seconds so mobile & employee clock-ins update live on admin dashboard
     const pollInterval = setInterval(() => {
-      fetchAttendanceSilent(targetEmpId);
+      fetchAttendanceSilent(empIdToFetch);
       fetchLeaveData();
+      fetchFreshUserProfile(targetEmpId, userEmail);
     }, 5000);
 
     return () => clearInterval(pollInterval);
@@ -205,66 +250,115 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
 
   const verifyLocation = (): Promise<boolean> => {
     return new Promise((resolve) => {
+      // Localhost / development override for testing
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        resolve(true);
+        return;
+      }
+
       if (!navigator.geolocation) {
         toast.error('Geolocation is not supported by your browser');
         resolve(false);
         return;
       }
+
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const dist = getDistanceKm(pos.coords.latitude, pos.coords.longitude, OFFICE_LAT, OFFICE_LNG);
           if (dist > ALLOWED_RADIUS_KM) {
             const distDisplay = dist > 1 ? `${dist.toFixed(1)}km` : `${Math.round(dist * 1000)}m`;
-            toast.error(`Outside 100m office zone (${distDisplay} away). Clock In/Out is restricted.`);
+            toast.error(`Outside 100m office zone (${distDisplay} away). Clock In/Out is restricted to office location.`);
             resolve(false);
           } else {
             resolve(true);
           }
         },
-        () => {
+        (err) => {
+          console.warn('Geolocation error:', err);
           toast.error('Location permission required to verify 100m office zone.');
           resolve(false);
         },
-        { enableHighAccuracy: true, timeout: 8000 }
+        { enableHighAccuracy: true, timeout: 5000 }
       );
     });
   };
 
-  const handleClockIn = async () => {
-    if (!user?.id) {
-      toast.error('Session invalid. Please logout and login again.');
+  const handleClockIn = () => {
+    // Check face enrolled before allowing clock-in
+    if (!isValidFaceImage(user?.faceImage)) {
+      toast.error('Please upload your face photo first before clocking in.');
       return;
     }
-    const isAllowed = await verifyLocation();
-    if (!isAllowed) return;
+    setPendingClockAction('Clock In');
+    setIsFaceModalOpen(true);
+  };
 
+  const handleClockOut = () => {
+    setPendingClockAction('Clock Out');
+    setIsFaceModalOpen(true);
+  };
+
+  // Check if a face image is a valid uploaded photo
+  const isValidFaceImage = (img: string | undefined | null): boolean => {
+    if (!img || typeof img !== 'string') return false;
+    const clean = img.trim();
+    if (clean.length < 5) return false;
+    // Accept real http/https/file URIs
+    if (clean.startsWith('http://') || clean.startsWith('https://') || clean.startsWith('file://')) return clean.length > 10;
+    // Accept any real base64 data URI or string
+    if (clean.startsWith('data:image')) return clean.length > 50;
+    return clean.length > 20;
+  };
+
+  const handleCapturedCameraPhoto = async (capturedDataUrl: string) => {
+    const empId = user?.id || user?._id;
+    if (!empId) {
+      toast.error('Session error. Please logout and login again.');
+      return;
+    }
+    setIsFaceUploading(true);
     try {
-      const res = await clockIn(user.id);
-      toast.success(`Clocked in successfully at ${res.clockIn || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (within 200m zone)`);
-      fetchTodayStatus(user.id);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to clock in');
+      await updateEmployee(empId, { faceImage: capturedDataUrl });
+      const updatedUser = { ...user, faceImage: capturedDataUrl };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      toast.success('✅ Face photo captured & enrolled successfully! Face ID is now Active.');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save face photo');
+    } finally {
+      setIsFaceUploading(false);
     }
   };
 
-  const handleClockOut = async () => {
-    if (!user?.id) {
+  const executeVerifiedClockAction = async () => {
+    const userId = user?.id || user?._id;
+    if (!userId) {
       toast.error('Session invalid. Please logout and login again.');
       return;
     }
-    const isAllowed = await verifyLocation();
-    if (!isAllowed) return;
 
     try {
-      const res = await clockOut(user.id);
-      const totalHours = res.workHours || 0;
-      const h = Math.floor(totalHours);
-      const m = Math.round((totalHours - h) * 60);
-      const duration = h > 0 ? `${h}h ${m}m` : `${m}m`;
-      toast.success(`Clocked out successfully at ${res.clockOut || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (within 200m zone). Today's working hours: ${duration}`);
-      fetchTodayStatus(user.id);
+      if (pendingClockAction === 'Clock In') {
+        const res = await clockIn(userId);
+        toast.success(`Face Verified! Clocked in successfully at ${res.clockIn || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
+        fetchTodayStatus(userId);
+      } else {
+        const res = await clockOut(userId);
+        const totalHours = res.workHours || 0;
+        const h = Math.floor(totalHours);
+        const m = Math.round((totalHours - h) * 60);
+        const duration = h > 0 ? `${h}h ${m}m` : `${m}m`;
+        toast.success(`Face Verified! Clocked out successfully at ${res.clockOut || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. Today's working hours: ${duration}`);
+        fetchTodayStatus(userId);
+      }
     } catch (error: any) {
-      toast.error(error.message || 'Failed to clock out');
+      if (error?.message && error.message.includes('Already clocked in')) {
+        setStatus('Checked In');
+        fetchTodayStatus(userId);
+        toast.info('You are already clocked in for today.');
+        return;
+      }
+      toast.error(error.message || `Failed to ${pendingClockAction.toLowerCase()}`);
     }
   };
 
@@ -369,16 +463,20 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
   const fullCalendarRecords = useMemo(() => {
     if (!attendanceRecords) return [];
 
-    // Map existing attendance by `${employeeId}_${dateStr}`
+    // Map existing attendance by `${employeeId}_${dateStr}` & `${name}_${dateStr}`
     const existingMap = new Map();
     attendanceRecords.forEach(r => {
-      const empIdStr = String(r.employeeId?._id || r.employeeId || '');
+      const empObj = typeof r.employeeId === 'object' && r.employeeId ? r.employeeId : null;
+      const empIdStr1 = String(empObj?._id || empObj?.id || r.employeeId || '');
+      const empIdStr2 = String(empObj?.id || empObj?._id || '');
+      const empName = String(empObj?.name || r.name || r.employeeName || '').toLowerCase().trim();
       const dateStr = r.date ? String(r.date).split('T')[0] : '';
-      if (empIdStr && dateStr) {
-        existingMap.set(`${empIdStr}_${dateStr}`, r);
-      }
-      if (r.employeeId?.name && dateStr) {
-        existingMap.set(`${formatName(r.employeeId.name)}_${dateStr}`, r);
+
+      if (empIdStr1 && dateStr) existingMap.set(`${empIdStr1}_${dateStr}`, r);
+      if (empIdStr2 && dateStr) existingMap.set(`${empIdStr2}_${dateStr}`, r);
+      if (empName && dateStr) {
+        existingMap.set(`${empName}_${dateStr}`, r);
+        existingMap.set(`${formatName(empName)}_${dateStr}`, r);
       }
     });
 
@@ -437,15 +535,26 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
       const dStr = toLocalDateStr(curDate);
 
       empsToShow.forEach(emp => {
-        const empIdKey = String(emp._id || emp.id || '');
-        const empNameStr = formatName(emp.name);
-        const empObj = { _id: empIdKey, name: emp.name, employeeCode: emp.employeeCode, department: emp.department };
+        const empIdKey1 = String(emp._id || emp.id || '');
+        const empIdKey2 = String(emp.id || emp._id || '');
+        const empNameClean = String(emp.name || '').toLowerCase().trim();
+        const empNameFormatted = formatName(emp.name);
+        const empObj = { _id: empIdKey1, name: emp.name, employeeCode: emp.employeeCode, department: emp.department };
 
-        const existing = existingMap.get(`${empIdKey}_${dStr}`) || existingMap.get(`${empNameStr}_${dStr}`);
-        const leaveRec = approvedLeaveMap.get(`${empIdKey}_${dStr}`) || approvedLeaveMap.get(`${empNameStr}_${dStr}`);
+        const existing = existingMap.get(`${empIdKey1}_${dStr}`) ||
+                         existingMap.get(`${empIdKey2}_${dStr}`) ||
+                         existingMap.get(`${empNameClean}_${dStr}`) ||
+                         existingMap.get(`${empNameFormatted}_${dStr}`);
+        const leaveRec = approvedLeaveMap.get(`${empIdKey1}_${dStr}`) ||
+                         approvedLeaveMap.get(`${empIdKey2}_${dStr}`) ||
+                         approvedLeaveMap.get(`${empNameClean}_${dStr}`) ||
+                         approvedLeaveMap.get(`${empNameFormatted}_${dStr}`);
 
         if (existing) {
-          let effStatus = existing.status;
+          let effStatus = existing.status || 'Present';
+          if (existing.clockIn && effStatus === 'Absent') {
+            effStatus = 'Present';
+          }
           let hrs = Number(existing.workHours) || 0;
           if (!hrs && existing.clockIn && existing.clockOut) {
             const parseMins = (tStr: string) => {
@@ -469,7 +578,7 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
           if (hrs > 0 && hrs < 5 && (effStatus === 'Present' || effStatus === 'Attendance')) {
             effStatus = 'Half-Day';
           }
-          records.push({ ...existing, status: effStatus, workHours: hrs || existing.workHours });
+          records.push({ ...existing, employeeId: empObj, status: effStatus, workHours: hrs || existing.workHours });
         } else if (leaveRec) {
           const lType = String(leaveRec.leaveType || '').toLowerCase();
           let derivedStatus = 'Leave';
@@ -482,7 +591,7 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
           }
 
           records.push({
-            _id: `gen_leave_${empIdKey}_${dStr}`,
+            _id: `gen_leave_${empIdKey1}_${dStr}`,
             employeeId: empObj,
             name: emp.name,
             employeeCode: emp.employeeCode,
@@ -496,7 +605,7 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
           });
         } else {
           records.push({
-            _id: `gen_${empIdKey}_${dStr}`,
+            _id: `gen_${empIdKey1}_${dStr}`,
             employeeId: empObj,
             name: emp.name,
             employeeCode: emp.employeeCode,
@@ -860,6 +969,22 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
     }
   };
 
+  const formatTimeDisplay = (timeValue: any) => {
+    if (!timeValue) return '--:--';
+    const is24h = localStorage.getItem('timeFormat') === '24h';
+    let d: Date;
+    if (timeValue instanceof Date) {
+      d = timeValue;
+    } else {
+      d = new Date(timeValue);
+    }
+    if (isNaN(d.getTime())) return String(timeValue);
+    if (is24h) {
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    }
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+  };
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -884,30 +1009,140 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
           </div>
         </div>
 
-        {/* Clock In/Out Section */}
+        {/* Face ID Status Banner */}
+        {!isValidFaceImage(user?.faceImage) ? (
+          <Card
+            className="border-2 border-amber-300 dark:border-amber-700"
+            style={{ backgroundColor: 'rgba(254, 243, 199, 0.6)' }}
+          >
+            <div className="p-5 flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                <div
+                  className="h-12 w-12 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: '#fef3c7', border: '1px solid #fcd34d' }}
+                >
+                  <Camera className="h-6 w-6" style={{ color: '#d97706' }} />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0" style={{ color: '#d97706' }} />
+                    <p className="font-bold text-sm" style={{ color: '#92400e' }}>
+                      Face ID Not Enrolled
+                    </p>
+                  </div>
+                  <p className="text-xs mt-0.5" style={{ color: '#b45309' }}>
+                    Open camera to scan & capture your face photo for biometric attendance.
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                onClick={() => setIsCameraEnrollOpen(true)}
+                disabled={isFaceUploading}
+                style={{
+                  backgroundColor: '#059669',
+                  color: '#ffffff',
+                  padding: '9px 18px',
+                  borderRadius: '8px',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)',
+                  whiteSpace: 'nowrap',
+                  lineHeight: '1.2',
+                }}
+              >
+                <Camera className="h-4 w-4" /> Open Camera & Capture Face
+              </Button>
+            </div>
+          </Card>
+        ) : (
+          <Card
+            className="border border-emerald-300 dark:border-emerald-800"
+            style={{ backgroundColor: 'rgba(209, 250, 229, 0.5)' }}
+          >
+            <div className="p-4 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div
+                  className="h-12 w-12 rounded-full overflow-hidden border-2 flex-shrink-0"
+                  style={{ borderColor: '#10b981', backgroundColor: '#a7f3d0' }}
+                >
+                  <img src={user?.faceImage} alt="Face ID" className="w-full h-full object-cover" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 flex-shrink-0" style={{ color: '#059669' }} />
+                    <p className="font-bold text-sm" style={{ color: '#065f46' }}>
+                      Face ID Active — Biometric Ready
+                    </p>
+                  </div>
+                  <p className="text-xs mt-0.5" style={{ color: '#047857' }}>
+                    Your face is enrolled. Face scan is required to clock in/out.
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                onClick={() => setIsCameraEnrollOpen(true)}
+                disabled={isFaceUploading}
+                style={{
+                  backgroundColor: '#10b981',
+                  color: '#ffffff',
+                  padding: '7px 14px',
+                  borderRadius: '8px',
+                  fontWeight: 700,
+                  fontSize: '12px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 2px 4px rgba(16, 185, 129, 0.25)',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <Camera className="h-3.5 w-3.5" /> Recapture Face
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {/* Face Camera Enroll Modal */}
+        <FaceCameraEnrollModal
+          isOpen={isCameraEnrollOpen}
+          onClose={() => setIsCameraEnrollOpen(false)}
+          onCapture={handleCapturedCameraPhoto}
+          userName={user?.name || 'Employee'}
+        />
+
+
         <Card className="p-8 flex flex-col items-center justify-center space-y-6 bg-gradient-to-br from-background to-secondary/20">
           <div className="text-center space-y-2">
             <h3 className="text-2xl font-bold">{format(currentTime, 'EEEE, MMMM do, yyyy')}</h3>
-            <p className="text-muted-foreground text-lg font-mono">{format(currentTime, 'h:mm:ss a')}</p>
+            <p className="text-muted-foreground text-lg font-mono">{formatTimeDisplay(currentTime)}</p>
           </div>
 
           {status === 'Checked Out' && (
             <Button
               size="lg"
-              className="h-32 w-32 rounded-full text-lg font-bold shadow-lg transition-all duration-300 bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="h-32 w-32 rounded-full text-base font-bold shadow-xl transition-all duration-200 active:scale-95 bg-primary hover:bg-primary/90 text-primary-foreground flex flex-col items-center justify-center gap-1 p-2 text-center cursor-pointer"
               onClick={handleClockIn}
             >
-              Clock In
+              <ShieldCheck className="h-6 w-6 text-emerald-400" />
+              <span>Face Scan</span>
+              <span className="text-xs font-semibold opacity-90">Clock In</span>
             </Button>
           )}
 
           {status === 'Checked In' && (
             <Button
               size="lg"
-              className="h-32 w-32 rounded-full text-lg font-bold shadow-lg transition-all duration-300 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              className="h-32 w-32 rounded-full text-base font-bold shadow-xl transition-all duration-200 active:scale-95 bg-destructive hover:bg-destructive/90 text-destructive-foreground flex flex-col items-center justify-center gap-1 p-2 text-center cursor-pointer"
               onClick={handleClockOut}
             >
-              Clock Out
+              <ShieldCheck className="h-6 w-6 text-white" />
+              <span>Face Scan</span>
+              <span className="text-xs font-semibold opacity-90">Clock Out</span>
             </Button>
           )}
 
@@ -1336,6 +1571,15 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <FaceRecognitionModal
+        isOpen={isFaceModalOpen}
+        onClose={() => setIsFaceModalOpen(false)}
+        onVerified={executeVerifiedClockAction}
+        userName={user?.name || 'Employee'}
+        actionType={pendingClockAction}
+        enrolledFaceImage={user?.faceImage}
+      />
     </div>
   );
 }

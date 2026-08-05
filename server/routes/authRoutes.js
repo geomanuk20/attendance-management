@@ -67,36 +67,46 @@ const ensureSeedUsers = async () => {
 // @access  Public
 router.post('/login', asyncHandler(async (req, res) => {
     const { email, password } = req.body;
-
-    if (mongoose.connection.readyState !== 1) {
-        res.status(503);
-        throw new Error('Database is not connected. Please fix MONGO_URI in .env or start local MongoDB.');
-    }
-
-    await ensureSeedUsers();
-
     const normalizedEmail = (email || '').toLowerCase().trim();
-    const employee = await Employee.findOne({ email: new RegExp(`^${normalizedEmail}$`, 'i') });
 
-    if (employee && (await employee.matchPassword(password))) {
-        const empCode = employee.employeeCode || (employee._id ? `EMP-${employee._id.toString().substring(0, 6).toUpperCase()}` : 'EMP-101');
-        res.json({
-            _id: employee._id,
-            name: employee.name,
-            email: employee.email,
-            role: employee.role,
-            position: employee.position,
-            department: employee.department,
-            employeeCode: empCode,
-            salary: employee.salary,
-            hireDate: employee.hireDate || employee.createdAt,
-            darkMode: employee.darkMode,
-            token: generateToken(employee._id),
-        });
-    } else {
-        res.status(401);
-        throw new Error('Invalid email or password');
+    if (!normalizedEmail || !password) {
+        res.status(400);
+        throw new Error('Please enter email and password');
     }
+
+    if (mongoose.connection.readyState === 1) {
+        await ensureSeedUsers();
+
+        const employee = await Employee.findOne({ email: new RegExp(`^${normalizedEmail}$`, 'i') });
+
+        if (employee) {
+            const isMatch = await employee.matchPassword(password);
+            if (!isMatch) {
+                res.status(401);
+                throw new Error('Invalid email or password');
+            }
+
+            const empCode = employee.employeeCode || (employee._id ? `EMP-${employee._id.toString().substring(0, 6).toUpperCase()}` : 'EMP-101');
+            return res.json({
+                _id: employee._id.toString(),
+                id: employee._id.toString(),
+                name: employee.name,
+                email: employee.email,
+                role: employee.role,
+                position: employee.position,
+                department: employee.department,
+                employeeCode: empCode,
+                salary: employee.salary,
+                faceImage: employee.faceImage || '',
+                hireDate: employee.hireDate || employee.createdAt,
+                darkMode: employee.darkMode || false,
+                token: generateToken(employee._id),
+            });
+        }
+    }
+
+    res.status(401);
+    throw new Error('Invalid email or password');
 }));
 
 export default router;

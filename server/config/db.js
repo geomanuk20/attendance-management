@@ -20,7 +20,7 @@ const connectDB = async () => {
             }
         }
         
-        console.warn('⚠️ Server is running on port 5001, but database features will fail until MONGO_URI in .env is fixed.');
+        console.warn('⚠️ Server is running on port 5002, but database features will fail until MONGO_URI in .env is fixed.');
     }
 };
 

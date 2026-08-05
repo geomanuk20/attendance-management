@@ -464,7 +464,7 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
     if (!selectedRecord) return;
     try {
       setEmailLoading(true);
-      const response = await fetch('http://localhost:5001/api/email/send-payslip', {
+      const response = await fetch('http://localhost:5002/api/email/send-payslip', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -708,13 +708,13 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
             />
           </div>
 
-          <div className="relative">
-            <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <div className="relative flex items-center">
+            <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
             <Input
               type="month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-40 pl-9"
+              className="w-40 pl-10"
             />
           </div>
 

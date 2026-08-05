@@ -14,7 +14,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.company.attendancemanagement",
-      "icon": "./assets/icon.png"
+      "icon": "./assets/icon.png",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Camera is used to capture your face photo for biometric attendance authentication.",
+        "NSPhotoLibraryUsageDescription": "Photo library access is needed to select a face photo for authentication."
+      }
     },
     "android": {
       "package": "com.company.attendancemanagement",
@@ -24,7 +28,10 @@
       },
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
       ]
     },
     "extra": {
