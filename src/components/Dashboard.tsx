@@ -6,6 +6,7 @@ import { Clock, Users, DollarSign, Calendar, TrendingUp, AlertCircle, Loader2 } 
 import { getEmployees, getAttendance, getLeaveRequests } from '../services/api';
 import { toast } from 'sonner';
 import { format, subDays, startOfDay } from 'date-fns';
+import { ModernSpinner } from './ui/ModernSpinner';
 
 interface DashboardProps {
   currency?: string;
@@ -168,11 +169,7 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
   };
 
   if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <ModernSpinner label="Loading Executive Dashboard..." size="lg" />;
   }
 
   return (

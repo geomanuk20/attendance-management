@@ -11,6 +11,7 @@ import { Checkbox } from './ui/checkbox';
 import { Download, Send, Calculator, Search, Calendar as CalendarIcon, Loader2, ChevronRight, X, Edit2, Save, Mail, CheckSquare } from 'lucide-react';
 import { getEmployees, getPayroll, createPayroll, updateEmployee } from '../services/api';
 import { toast } from 'sonner';
+import { ModernSpinner } from './ui/ModernSpinner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -514,11 +515,7 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
     (isEditing ? Number(editValues.advance) : (selectedRecord?.advance || 0));
 
   if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <ModernSpinner label="Calculating Payroll & Slips..." size="lg" />;
   }
 
   // Unique Departments for Filtering

@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Area, AreaChart } from 'recharts';
 import { CalendarIcon, Download, TrendingUp, Users, Clock, DollarSign, FileText, Filter, Loader2 } from 'lucide-react';
 import { getEmployees, getAttendance, getLeaveRequests } from '../services/api';
+import { ModernSpinner } from './ui/ModernSpinner';
 
 interface ReportsProps {
   currency?: string;
@@ -121,11 +122,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
   };
 
   if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <ModernSpinner label="Generating System Analytics..." size="lg" />;
   }
 
   const handleExportReports = () => {

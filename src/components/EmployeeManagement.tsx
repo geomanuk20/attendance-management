@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { getEmployees, createEmployee, updateEmployee, deleteEmployee, getAttendance, getLeaveRequests } from '../services/api';
 import { FaceCameraEnrollModal } from './FaceCameraEnrollModal';
+import { ModernSpinner } from './ui/ModernSpinner';
 
 interface EmployeeManagementProps {
   currency?: string;
@@ -562,11 +563,7 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
   };
 
   if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <ModernSpinner label="Loading Employee Directory..." size="lg" />;
   }
 
   return (

@@ -11,6 +11,7 @@ import { Label } from './ui/label';
 import { Calendar, Search, Plus, Check, X, Clock, Loader2 } from 'lucide-react';
 import { getLeaveRequests, createLeaveRequest, updateLeaveRequest, getEmployees } from '../services/api';
 import { toast } from 'sonner';
+import { ModernSpinner } from './ui/ModernSpinner';
 
 interface LeaveRequestsProps {
   userRole?: string;
@@ -146,11 +147,7 @@ export function LeaveRequests({ userRole = 'admin' }: LeaveRequestsProps) {
   };
 
   if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <ModernSpinner label="Loading Leave Applications..." size="lg" />;
   }
 
   return (

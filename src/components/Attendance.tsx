@@ -16,6 +16,7 @@ import { format, subDays, endOfMonth } from 'date-fns';
 import { toast } from 'sonner';
 import { FaceRecognitionModal } from './FaceRecognitionModal';
 import { FaceCameraEnrollModal } from './FaceCameraEnrollModal';
+import { ModernSpinner } from './ui/ModernSpinner';
 
 interface AttendanceProps {
   userRole?: 'admin' | 'employee' | 'superadmin' | 'hr';
@@ -986,11 +987,7 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
   };
 
   if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <ModernSpinner label="Loading Attendance Records..." size="lg" />;
   }
 
   if (userRole === 'employee') {
