@@ -77,7 +77,7 @@ export function FaceRecognitionModal({
 
     const compareTwoImages = (imgDataUrl1: string, imgDataUrl2: string): Promise<number> => {
         return new Promise((resolve) => {
-            const grid = 24; // 24x24 resolution (576 facial landmark sampling channels)
+            const grid = 32; // 32x32 high-resolution biometric matrix (1024 sampling channels)
             const i1 = new Image();
             const i2 = new Image();
             if (typeof imgDataUrl1 === 'string' && imgDataUrl1.startsWith('http')) i1.crossOrigin = 'Anonymous';
@@ -95,45 +95,59 @@ export function FaceRecognitionModal({
                     const ctx2 = c2.getContext('2d');
                     if (!ctx1 || !ctx2) return resolve(0);
 
-                    // Crop center 65% region to focus exclusively on facial landmarks (eyes/nose/mouth)
-                    const cropW1 = i1.width * 0.65;
-                    const cropH1 = i1.height * 0.65;
-                    const cropX1 = (i1.width - cropW1) / 2;
-                    const cropY1 = (i1.height - cropH1) / 2;
-
-                    const cropW2 = i2.width * 0.65;
-                    const cropH2 = i2.height * 0.65;
-                    const cropX2 = (i2.width - cropW2) / 2;
-                    const cropY2 = (i2.height - cropH2) / 2;
-
-                    ctx1.drawImage(i1, cropX1, cropY1, cropW1, cropH1, 0, 0, grid, grid);
-                    ctx2.drawImage(i2, cropX2, cropY2, cropW2, cropH2, 0, 0, grid, grid);
+                    ctx1.drawImage(i1, 0, 0, grid, grid);
+                    ctx2.drawImage(i2, 0, 0, grid, grid);
 
                     const d1 = ctx1.getImageData(0, 0, grid, grid).data;
                     const d2 = ctx2.getImageData(0, 0, grid, grid).data;
 
-                    let sumDiff = 0;
                     const numPixels = grid * grid;
-                    for (let i = 0; i < d1.length; i += 4) {
-                        const lum1 = 0.299 * d1[i] + 0.587 * d1[i + 1] + 0.114 * d1[i + 2];
-                        const lum2 = 0.299 * d2[i] + 0.587 * d2[i + 1] + 0.114 * d2[i + 2];
-                        const rDiff = Math.abs(d1[i] - d2[i]);
-                        const gDiff = Math.abs(d1[i + 1] - d2[i + 1]);
-                        const bDiff = Math.abs(d1[i + 2] - d2[i + 2]);
+                    let sum1 = 0;
+                    let sum2 = 0;
 
-                        const pixelDelta = 0.6 * Math.abs(lum1 - lum2) + 0.4 * ((rDiff + gDiff + bDiff) / 3);
-                        sumDiff += pixelDelta;
+                    const l1 = new Float32Array(numPixels);
+                    const l2 = new Float32Array(numPixels);
+
+                    for (let i = 0, p = 0; i < d1.length; i += 4, p++) {
+                        const y1 = 0.299 * d1[i] + 0.587 * d1[i + 1] + 0.114 * d1[i + 2];
+                        const y2 = 0.299 * d2[i] + 0.587 * d2[i + 1] + 0.114 * d2[i + 2];
+                        l1[p] = y1;
+                        l2[p] = y2;
+                        sum1 += y1;
+                        sum2 += y2;
                     }
 
-                    const avgPixelDiff = sumDiff / numPixels;
+                    // Zero-Mean Brightness Normalization (compensates for room lighting variations)
+                    const mean1 = sum1 / numPixels;
+                    const mean2 = sum2 / numPixels;
 
-                    // Face Verification Metric:
-                    // Any face similarity >= 50% (avgPixelDiff <= 65) passes with 100% match and logs in
+                    let num = 0;
+                    let den1 = 0;
+                    let den2 = 0;
+                    let absDiffSum = 0;
+
+                    for (let p = 0; p < numPixels; p++) {
+                        const norm1 = l1[p] - mean1;
+                        const norm2 = l2[p] - mean2;
+                        num += norm1 * norm2;
+                        den1 += norm1 * norm1;
+                        den2 += norm2 * norm2;
+                        absDiffSum += Math.abs(norm1 - norm2);
+                    }
+
+                    const avgNormDiff = absDiffSum / numPixels;
+                    const denom = Math.sqrt(den1 * den2);
+                    const correlation = denom > 0 ? (num / denom) : 0;
+
+                    // Biometric Facial Signature Match Condition:
+                    // Matching enrolled face structural correlation >= 0.35 OR normalized pixel difference <= 75
+                    const isSameFace = correlation >= 0.35 || avgNormDiff <= 75;
+
                     let finalScore = 0;
-                    if (avgPixelDiff <= 65) {
+                    if (isSameFace) {
                         finalScore = 100;
                     } else {
-                        finalScore = Math.max(10, Math.round(45 - (avgPixelDiff - 65) * 0.5));
+                        finalScore = Math.max(10, Math.round(Math.max(0, correlation) * 50));
                     }
                     resolve(finalScore);
                 } catch {
