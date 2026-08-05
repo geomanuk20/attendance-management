@@ -1113,10 +1113,10 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
         />
 
 
-        <Card className="p-8 flex flex-col items-center justify-center space-y-6 bg-gradient-to-br from-background to-secondary/20">
+        <Card className="p-8 flex flex-col items-center justify-center space-y-6 bg-card text-card-foreground border border-border shadow-lg">
           <div className="text-center space-y-2">
-            <h3 className="text-2xl font-bold">{format(currentTime, 'EEEE, MMMM do, yyyy')}</h3>
-            <p className="text-muted-foreground text-lg font-mono">{formatTimeDisplay(currentTime)}</p>
+            <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{format(currentTime, 'EEEE, MMMM do, yyyy')}</h3>
+            <p className="text-slate-600 dark:text-slate-400 text-xl font-semibold font-mono tracking-wider">{formatTimeDisplay(currentTime)}</p>
           </div>
 
           {status === 'Checked Out' && (
@@ -1152,18 +1152,21 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
               Done
             </Button>
           )}
-          <div className="flex gap-8 text-center">
-            <div>
-              <p className="text-sm text-muted-foreground">Check In</p>
-              <p className="font-semibold">{todayRecord?.clockIn || '--:--'}</p>
+
+          <div className="grid grid-cols-3 gap-6 sm:gap-12 text-center w-full max-w-md pt-4 border-t border-border/60">
+            <div className="flex flex-col items-center space-y-1">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Check In</span>
+              <span className="text-sm font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{todayRecord?.clockIn || '--:--'}</span>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Check Out</p>
-              <p className="font-semibold text-muted-foreground">{todayRecord?.clockOut || '--:--'}</p>
+            <div className="flex flex-col items-center space-y-1">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Check Out</span>
+              <span className="text-sm font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{todayRecord?.clockOut || '--:--'}</span>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Status</p>
-              <p className="font-semibold text-muted-foreground">{status}</p>
+            <div className="flex flex-col items-center space-y-1">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</span>
+              <Badge variant={status === 'Checked In' ? 'default' : status === 'Completed' ? 'secondary' : 'outline'} className="whitespace-nowrap font-bold px-3 py-1 text-slate-900 dark:text-slate-100">
+                {status}
+              </Badge>
             </div>
           </div>
         </Card>
