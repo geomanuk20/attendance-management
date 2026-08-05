@@ -166,8 +166,21 @@ export function FaceRecognitionModal({
 
         const REQUIRED_THRESHOLD = 50;
 
-        // Multi-user biometric face detection across all enrolled database employees
-        if (enrolledEmployees && enrolledEmployees.length > 0) {
+        let targetFace = enrolledFaceImage;
+
+        // If single user enrolledFaceImage is missing, resolve from enrolledEmployees list
+        if ((!targetFace || targetFace.length < 20) && enrolledEmployees && enrolledEmployees.length > 0) {
+            const matchedEmp = enrolledEmployees.find((e: any) =>
+                (e.name && userName && e.name.toLowerCase().trim() === userName.toLowerCase().trim()) ||
+                (e.email && userName && e.email.toLowerCase().trim() === userName.toLowerCase().trim())
+            );
+            if (matchedEmp && matchedEmp.faceImage) {
+                targetFace = matchedEmp.faceImage;
+            }
+        }
+
+        // Multi-user biometric face detection across all enrolled database employees (for Login or unassigned)
+        if ((actionType === 'Login' || !targetFace) && enrolledEmployees && enrolledEmployees.length > 0) {
             let bestScore = 0;
             let bestMatchEmp: any = null;
 
@@ -188,12 +201,12 @@ export function FaceRecognitionModal({
             }
         }
 
-        // Single user verification mode
-        if (!enrolledFaceImage || typeof enrolledFaceImage !== 'string' || enrolledFaceImage.trim().length < 20) {
+        // Single user verification mode (Clock In / Clock Out)
+        if (!targetFace || typeof targetFace !== 'string' || targetFace.trim().length < 20) {
             return { match: false, similarity: 0, error: 'No face photo enrolled on user profile. Clock action rejected.' };
         }
 
-        const score = await compareTwoImages(enrolledFaceImage, liveFrameDataUrl);
+        const score = await compareTwoImages(targetFace, liveFrameDataUrl);
         return { match: score >= REQUIRED_THRESHOLD, similarity: score >= REQUIRED_THRESHOLD ? 100 : score };
     };
 

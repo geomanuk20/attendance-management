@@ -1579,6 +1579,7 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
         userName={user?.name || 'Employee'}
         actionType={pendingClockAction}
         enrolledFaceImage={user?.faceImage}
+        enrolledEmployees={employeeList}
       />
     </div>
   );

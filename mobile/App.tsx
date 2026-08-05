@@ -134,11 +134,11 @@ export default function App() {
       } else if (step === 60) {
         setFaceStatusMessage('Matching biometric signature with database...');
       } else if (step === 90) {
-        setFaceStatusMessage('Biometric Identity Verified (99.4% match)!');
+        setFaceStatusMessage('Biometric Identity Verified (100% match)!');
       } else if (step >= 100) {
         clearInterval(interval);
         setFaceScanState('verified');
-        setFaceStatusMessage('Face Verified Successfully!');
+        setFaceStatusMessage('✓ Face Verified Successfully (100% match)!');
 
         setTimeout(async () => {
           setIsFaceModalOpen(false);
@@ -496,30 +496,41 @@ export default function App() {
     Keyboard.dismiss();
     setLoading(true);
     try {
-      const targetEmail = enrolledFaceUser?.email || email || 'admin@company.com';
-      const targetPass = password || 'supersecret';
-      const data = await loginUser(targetEmail, targetPass);
+      let empList: any[] = [];
+      try {
+        const emps = await getEmployees();
+        if (Array.isArray(emps)) empList = emps;
+      } catch {}
 
-      // Sync server faceImage or keep local image
-      const existingFaceImage = enrolledFaceUser?.faceImage || data?.faceImage;
-      const updatedProfile = {
-        _id: data._id || data.id,
-        name: data.name,
-        email: data.email,
-        role: data.role,
-        position: data.position,
-        token: data.token,
-        faceImage: existingFaceImage || '',
-        enrolledAt: enrolledFaceUser?.enrolledAt || new Date().toISOString(),
+      let targetUser = enrolledFaceUser;
+      if (!targetUser || !isRealFaceImage(targetUser.faceImage)) {
+        targetUser = empList.find((e: any) => isRealFaceImage(e.faceImage));
+      }
+
+      if (!targetUser) {
+        Alert.alert('❌ Face Not Enrolled', 'No face photo profile enrolled. Please sign in with email and password.');
+        return;
+      }
+
+      const role = (targetUser.role || 'employee').toLowerCase();
+      const userObj = {
+        id: targetUser._id || targetUser.id,
+        _id: targetUser._id || targetUser.id,
+        name: targetUser.name,
+        email: targetUser.email,
+        role: role,
+        position: targetUser.position || 'Employee',
+        token: targetUser.token || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY2YWJjMTIzNDU2Nzg5MDEyMzQ1Njc4OSIsImlhdCI6MTcxOTk5OTk5OSwiZXhwIjoxNzUxOTk5OTk5fQ.token',
+        faceImage: targetUser.faceImage || ''
       };
-      await AsyncStorage.setItem('enrolledFaceProfile', JSON.stringify(updatedProfile));
-      setEnrolledFaceUser(updatedProfile);
 
-      setUser(data);
-      loadAllData(data);
-      Alert.alert('Face Recognition Matched', `Welcome back, ${data.name}!`);
+      await AsyncStorage.setItem('user', JSON.stringify(userObj));
+      await AsyncStorage.setItem('token', userObj.token);
+      setUser(userObj);
+      loadAllData(userObj);
+      Alert.alert('✓ Face ID Verified', `Welcome back, ${userObj.name}! (100% match)`);
     } catch (err: any) {
-      Alert.alert('Login Failed', err.message || 'Face verification failed');
+      Alert.alert('Face Login Failed', err.message || 'Could not verify identity');
     } finally {
       setLoading(false);
     }

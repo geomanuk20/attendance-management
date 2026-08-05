@@ -5,7 +5,7 @@ import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { Clock, Calendar, AlertCircle, LogIn, LogOut, Loader2 } from 'lucide-react';
-import { getAttendance, clockIn, clockOut } from '../services/api';
+import { getAttendance, clockIn, clockOut, getEmployees } from '../services/api';
 import { toast } from 'sonner';
 import { FaceRecognitionModal } from './FaceRecognitionModal';
 
@@ -44,7 +44,10 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
     return `${y}-${m}-${d}`;
   };
 
+  const [allEmployees, setAllEmployees] = useState<any[]>([]);
+
   useEffect(() => {
+    getEmployees().then(setAllEmployees).catch(() => {});
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
@@ -296,6 +299,7 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
         userName={user?.name || 'Employee'}
         actionType={pendingClockAction}
         enrolledFaceImage={user?.faceImage}
+        enrolledEmployees={allEmployees}
       />
     </div>
   );
