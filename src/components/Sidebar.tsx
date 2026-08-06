@@ -126,6 +126,7 @@ export function Sidebar({
           </Button>
         </div>
       </div>
-    </>
+    </div>
+  </>
   );
 }
