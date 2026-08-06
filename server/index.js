@@ -35,19 +35,17 @@ app.use('/api/leaverequests', leaveRequestRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/app-update', appUpdateRoutes);
+app.use('/api/company-settings', companySettingsRoutes);
+
 app.use('/public', express.static(path.join(__dirname, '../public')));
 
-app.get('/download/apk', (req, res) => {
+app.get('/api/download-apk', (req, res) => {
     const apkPath = path.join(__dirname, '../public/app-release.apk');
     if (fs.existsSync(apkPath)) {
-        res.download(apkPath, 'attendance-app.apk');
+        res.download(apkPath, 'app-release.apk');
     } else {
-        const rootApk = path.join(__dirname, '../attendance-app.apk');
-        if (fs.existsSync(rootApk)) {
-            res.download(rootApk, 'attendance-app.apk');
-        } else {
-            res.status(404).json({ message: 'APK file not found on server' });
-        }
+        res.status(404).send('APK file not found');
     }
 });
 
