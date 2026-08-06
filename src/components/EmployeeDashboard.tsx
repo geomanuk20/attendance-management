@@ -61,6 +61,10 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
     }
   }, []);
 
+  const [weeklyHours, setWeeklyHours] = useState(41.5);
+  const [weeklyAttendanceChart, setWeeklyAttendanceChart] = useState<any[]>(myAttendanceData);
+  const [userActivities, setUserActivities] = useState<any[]>(myRecentActivities);
+
   const fetchTodayAttendance = async (employeeId: string) => {
     if (!employeeId) return;
     try {
@@ -82,6 +86,47 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
         }
       } else {
         setStatus('Checked Out');
+      }
+
+      // Compute weekly stats dynamically from real attendance logs
+      if (Array.isArray(data) && data.length > 0) {
+        const now = new Date();
+        const currentDay = now.getDay();
+        const diffToMon = (currentDay === 0 ? -6 : 1 - currentDay);
+        const monday = new Date(now);
+        monday.setDate(now.getDate() + diffToMon);
+        monday.setHours(0, 0, 0, 0);
+
+        let sumHours = 0;
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+        const dayMap: { [key: string]: number } = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0 };
+
+        data.forEach((rec: any) => {
+          const d = new Date(rec.date);
+          if (d >= monday) {
+            const h = rec.workHours || 0;
+            sumHours += h;
+            const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+            if (dayMap[dayName] !== undefined) {
+              dayMap[dayName] += Number(h.toFixed(1));
+            }
+          }
+        });
+
+        if (sumHours > 0) {
+          setWeeklyHours(Number(sumHours.toFixed(1)));
+          setWeeklyAttendanceChart(days.map((day) => ({ name: day, hours: dayMap[day] || 0 })));
+        }
+
+        // Recent activity feed
+        const sorted = [...data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
+        const acts = sorted.map((rec, idx) => ({
+          id: rec._id || idx,
+          action: rec.clockOut ? `Clocked out (${rec.workHours ? rec.workHours.toFixed(1) + 'h' : 'Done'})` : 'Clocked in',
+          time: rec.clockOut || rec.clockIn || '9:00 AM',
+          date: String(rec.date).split('T')[0] === today ? 'Today' : String(rec.date).split('T')[0],
+        }));
+        setUserActivities(acts);
       }
     } catch (error) {
       console.error('Error fetching attendance:', error);
@@ -223,18 +268,18 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Key Metrics - 3 Column Layout */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Hours Worked (This Week)</p>
-              <p className="text-2xl font-semibold">41.5</p>
-              <Progress value={92} className="h-2 mt-2 w-full" />
+              <p className="text-2xl font-semibold">{weeklyHours}</p>
+              <Progress value={Math.min(100, Math.round((weeklyHours / 45) * 100))} className="h-2 mt-2 w-full" />
               <p className="text-xs text-muted-foreground mt-1">Goal: 45 hours</p>
             </div>
-            <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#3BAFDA20' }}>
-              <Clock className="h-6 w-6" style={{ color: '#3BAFDA' }} />
+            <div className="h-12 w-12 rounded-lg flex items-center justify-center bg-cyan-500/10">
+              <Clock className="h-6 w-6 text-cyan-500" />
             </div>
           </div>
         </Card>
@@ -276,16 +321,15 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
         </Card>
       </div>
 
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-6">
           <h3 className="mb-4">My Attendance (Hours)</h3>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={myAttendanceData}>
+            <BarChart data={weeklyAttendanceChart}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
-              <Bar dataKey="hours" fill="#0D2B52" name="Hours" />
+              <Bar dataKey="hours" fill="#0D2B52" name="Hours" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
@@ -293,7 +337,7 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
         <Card className="p-6">
           <h3 className="mb-4">Recent Activity</h3>
           <div className="space-y-4">
-            {myRecentActivities.map((activity) => (
+            {userActivities.map((activity) => (
               <div key={activity.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                 <div>
                   <p className="text-sm font-medium">{activity.action}</p>
