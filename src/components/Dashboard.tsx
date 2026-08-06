@@ -302,6 +302,158 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
         </Card>
       </div>
 
+      {/* Leave Balance Breakdown & Official Holidays */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Leave Balance Breakdown (2026) */}
+        <Card className="p-6 space-y-4">
+          <div>
+            <h3 className="text-lg font-bold flex items-center gap-2">
+              <span>📊</span> Leave Balance Breakdown (2026)
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Annual Leave Quota Allocation</p>
+          </div>
+
+          <div className="space-y-3">
+            {/* Casual Leave */}
+            <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-900/60 border border-slate-800">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🏖️</span>
+                <div>
+                  <p className="text-sm font-semibold">Casual Leave</p>
+                  <p className="text-xs text-muted-foreground">Annual quota: 6 Days</p>
+                </div>
+              </div>
+              <span className="text-sm font-bold text-indigo-400">6 Days Left</span>
+            </div>
+
+            {/* Medical Leave */}
+            <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-900/60 border border-slate-800">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🏥</span>
+                <div>
+                  <p className="text-sm font-semibold">Medical Leave</p>
+                  <p className="text-xs text-muted-foreground">Annual quota: 6 Days</p>
+                </div>
+              </div>
+              <span className="text-sm font-bold text-emerald-400">6 Days Left</span>
+            </div>
+
+            {/* Annual Leave */}
+            <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-900/60 border border-slate-800">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">📅</span>
+                <div>
+                  <p className="text-sm font-semibold">Annual Leave</p>
+                  <p className="text-xs text-muted-foreground">Annual quota: 6 Days</p>
+                </div>
+              </div>
+              <span className="text-sm font-bold text-amber-400">2 Days Left</span>
+            </div>
+
+            {/* Week Off Policy */}
+            <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-900/60 border border-slate-800">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">⚪</span>
+                <div>
+                  <p className="text-sm font-semibold">Week Off Policy</p>
+                  <p className="text-xs text-muted-foreground">User Chooses Up to 4 Dates / Month</p>
+                </div>
+              </div>
+              <span className="text-sm font-bold text-slate-300">4 / Month</span>
+            </div>
+          </div>
+        </Card>
+
+        {/* Official Holidays (2026-2027) */}
+        <Card className="p-6 space-y-4">
+          <div>
+            <h3 className="text-lg font-bold flex items-center gap-2">
+              <span>🎉</span> Official Holidays (2026-2027)
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Company Annual Holiday Schedule</p>
+          </div>
+
+          <div className="space-y-2.5 max-h-[340px] overflow-y-auto pr-1">
+            <div className="flex items-center justify-between py-2 border-b border-border/50">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">🇮🇳</span>
+                <div>
+                  <p className="text-sm font-medium">Independence Day</p>
+                  <p className="text-xs text-muted-foreground">August 15th, 2026 • Saturday</p>
+                </div>
+              </div>
+              <Badge variant="outline" className="text-xs text-indigo-400 border-indigo-500/30 bg-indigo-500/10">National Holiday</Badge>
+            </div>
+
+            <div className="flex items-center justify-between py-2 border-b border-border/50">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">🕊️</span>
+                <div>
+                  <p className="text-sm font-medium">Gandhi Jayanti</p>
+                  <p className="text-xs text-muted-foreground">October 2nd, 2026 • Friday</p>
+                </div>
+              </div>
+              <Badge variant="outline" className="text-xs text-indigo-400 border-indigo-500/30 bg-indigo-500/10">National Holiday</Badge>
+            </div>
+
+            <div className="flex items-center justify-between py-2 border-b border-border/50">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">🪔</span>
+                <div>
+                  <p className="text-sm font-medium">Diwali</p>
+                  <p className="text-xs text-muted-foreground">November 8th, 2026 • Sunday</p>
+                </div>
+              </div>
+              <Badge variant="outline" className="text-xs text-purple-400 border-purple-500/30 bg-purple-500/10">Festival Holiday</Badge>
+            </div>
+
+            <div className="flex items-center justify-between py-2 border-b border-border/50">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">🎄</span>
+                <div>
+                  <p className="text-sm font-medium">Christmas</p>
+                  <p className="text-xs text-muted-foreground">December 25th, 2026 • Friday</p>
+                </div>
+              </div>
+              <Badge variant="outline" className="text-xs text-purple-400 border-purple-500/30 bg-purple-500/10">Festival Holiday</Badge>
+            </div>
+
+            <div className="flex items-center justify-between py-2 border-b border-border/50">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">🎆</span>
+                <div>
+                  <p className="text-sm font-medium">New Year’s Day</p>
+                  <p className="text-xs text-muted-foreground">January 1st, 2027 • Friday</p>
+                </div>
+              </div>
+              <Badge variant="outline" className="text-xs text-cyan-400 border-cyan-500/30 bg-cyan-500/10">Public Holiday</Badge>
+            </div>
+
+            <div className="flex items-center justify-between py-2 border-b border-border/50">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">🇮🇳</span>
+                <div>
+                  <p className="text-sm font-medium">Republic Day</p>
+                  <p className="text-xs text-muted-foreground">January 26th, 2027 • Tuesday</p>
+                </div>
+              </div>
+              <Badge variant="outline" className="text-xs text-indigo-400 border-indigo-500/30 bg-indigo-500/10">National Holiday</Badge>
+            </div>
+
+            <div className="flex items-center justify-between py-2">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">🔨</span>
+                <div>
+                  <p className="text-sm font-medium">Labor Day</p>
+                  <p className="text-xs text-muted-foreground">May 1st, 2027 • Saturday</p>
+                </div>
+              </div>
+              <Badge variant="outline" className="text-xs text-cyan-400 border-cyan-500/30 bg-cyan-500/10">Public Holiday</Badge>
+            </div>
+          </div>
+        </Card>
+      </div>
+
       {/* Recent Activities */}
       <Card className="p-6">
         <h3 className="mb-4">Recent Activities</h3>
