@@ -8,11 +8,7 @@ import {
   Home,
   LogOut,
   Moon,
-  Sun,
-  Menu,
-  X,
-  PanelLeftClose,
-  PanelLeftOpen
+  Sun
 } from 'lucide-react';
 import { Button } from './ui/button';
 import logoImage from '../assets/60ace96c513e5568730553.png';
@@ -26,22 +22,10 @@ interface SidebarProps {
   onLogout: () => void;
   darkMode?: boolean;
   onDarkModeChange?: (val: boolean) => void;
-  isOpen?: boolean;
-  onToggleSidebar?: () => void;
+  onCloseMobile?: () => void;
 }
 
-export function Sidebar({
-  activeSection,
-  onSectionChange,
-  userRole,
-  userName,
-  userPosition,
-  onLogout,
-  darkMode = false,
-  onDarkModeChange,
-  isOpen = true,
-  onToggleSidebar
-}: SidebarProps) {
+export function Sidebar({ activeSection, onSectionChange, userRole, userName, userPosition, onLogout, darkMode = false, onDarkModeChange, onCloseMobile }: SidebarProps) {
   const allMenuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, roles: ['admin', 'employee', 'superadmin', 'hr'] },
     { id: 'attendance', label: 'Attendance', icon: Clock, roles: ['admin', 'employee', 'superadmin', 'hr'] },
@@ -55,32 +39,21 @@ export function Sidebar({
   const menuItems = allMenuItems.filter(item => item.roles.includes(userRole));
 
   return (
-    <div className={`${isOpen ? 'w-64' : 'w-0 border-r-0'} transition-all duration-300 bg-card border-r border-border h-screen flex flex-col overflow-hidden flex-shrink-0 relative`}>
-      <div className="p-5 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-14 flex items-center justify-center overflow-hidden">
+    <div className="w-64 bg-card border-r border-border h-screen flex flex-col">
+      <div className="p-6 border-b border-border">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="h-10 w-16 flex items-center justify-center overflow-hidden">
             <img
               src={logoImage}
               alt="Attendance System Logo"
-              className="h-9 w-auto object-contain"
+              className="h-10 w-auto object-contain"
             />
           </div>
           <div>
-            <h1 className="text-base font-bold text-foreground leading-tight">Attendance System</h1>
-            <p className="text-[11px] text-muted-foreground">{['admin', 'hr', 'superadmin'].includes(userRole) ? 'HR System' : 'Employee Portal'}</p>
+            <h1 className="text-lg font-semibold text-foreground">Attendance System</h1>
+            <p className="text-xs text-muted-foreground">{['admin', 'hr', 'superadmin'].includes(userRole) ? 'HR System' : 'Employee Portal'}</p>
           </div>
         </div>
-        {onToggleSidebar && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggleSidebar}
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-            title="Collapse Sidebar"
-          >
-            <PanelLeftClose className="h-5 w-5" />
-          </Button>
-        )}
       </div>
 
       <nav className="flex-1 p-4 space-y-2">
@@ -94,7 +67,10 @@ export function Sidebar({
               variant={isActive ? "secondary" : "ghost"}
               className={`w-full justify-start gap-3 ${isActive ? 'bg-secondary text-secondary-foreground' : 'text-muted-foreground hover:text-foreground'
                 }`}
-              onClick={() => onSectionChange(item.id)}
+              onClick={() => {
+                onSectionChange(item.id);
+                if (onCloseMobile) onCloseMobile();
+              }}
             >
               <Icon className="h-4 w-4" />
               {item.label}
