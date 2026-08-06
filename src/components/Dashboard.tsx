@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
-import { Clock, Users, DollarSign, Calendar, TrendingUp, AlertCircle, Loader2 } from 'lucide-react';
+import { Clock, Users, DollarSign, Calendar, TrendingUp, AlertCircle, Loader2, Smartphone } from 'lucide-react';
+import { Button } from './ui/button';
 import { getEmployees, getAttendance, getLeaveRequests } from '../services/api';
 import { toast } from 'sonner';
 import { format, subDays, startOfDay } from 'date-fns';
@@ -179,10 +180,18 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
           <h2>Dashboard Overview</h2>
           <p className="text-muted-foreground">Welcome back! Here's what's happening today.</p>
         </div>
-        <Badge variant="secondary" className="flex items-center gap-2">
-          <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-          System Online
-        </Badge>
+        <div className="flex items-center gap-3">
+          <a href="/download/apk" download="attendance-app.apk">
+            <Button variant="outline" className="gap-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/20 font-semibold">
+              <Smartphone className="h-4 w-4 text-emerald-500" />
+              Download Mobile APK
+            </Button>
+          </a>
+          <Badge variant="secondary" className="flex items-center gap-2 px-3 py-1.5">
+            <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
+            System Online
+          </Badge>
+        </div>
       </div>
 
       {/* Key Metrics */}

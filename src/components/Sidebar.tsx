@@ -8,7 +8,8 @@ import {
   Home,
   LogOut,
   Moon,
-  Sun
+  Sun,
+  Smartphone
 } from 'lucide-react';
 import { Button } from './ui/button';
 import logoImage from '../assets/60ace96c513e5568730553.png';
@@ -73,6 +74,16 @@ export function Sidebar({ activeSection, onSectionChange, userRole, userName, us
             </Button>
           );
         })}
+
+        <a href="/download/apk" download="attendance-app.apk" className="block pt-2">
+          <Button
+            variant="outline"
+            className="w-full justify-start gap-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20 font-medium"
+          >
+            <Smartphone className="h-4 w-4 text-emerald-500" />
+            Download Mobile APK
+          </Button>
+        </a>
       </nav>
 
       <div className="p-4 border-t border-border">
