@@ -210,11 +210,17 @@ export function FaceRecognitionModal({
         if (actionType === 'Clock In' || actionType === 'Clock Out') {
             let userFace = enrolledFaceImage;
 
+            let currentUser: any = null;
+            try {
+                const stored = localStorage.getItem('user');
+                if (stored) currentUser = JSON.parse(stored);
+            } catch {}
+
             if ((!userFace || userFace.length < 20) && enrolledEmployees && enrolledEmployees.length > 0) {
                 const myEmp = enrolledEmployees.find((e: any) =>
-                    (e._id && user?._id && String(e._id) === String(user._id)) ||
-                    (e.id && user?.id && String(e.id) === String(user.id)) ||
-                    (e.email && user?.email && e.email.toLowerCase().trim() === user.email.toLowerCase().trim()) ||
+                    (e._id && currentUser?._id && String(e._id) === String(currentUser._id)) ||
+                    (e.id && currentUser?.id && String(e.id) === String(currentUser.id)) ||
+                    (e.email && currentUser?.email && e.email.toLowerCase().trim() === currentUser.email.toLowerCase().trim()) ||
                     (e.name && userName && e.name.toLowerCase().trim() === userName.toLowerCase().trim())
                 );
                 if (myEmp && myEmp.faceImage && myEmp.faceImage.length > 20) {
