@@ -251,12 +251,6 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
 
   const verifyLocation = (): Promise<boolean> => {
     return new Promise((resolve) => {
-      // Localhost / development override for testing
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        resolve(true);
-        return;
-      }
-
       if (!navigator.geolocation) {
         toast.error('Geolocation is not supported by your browser');
         resolve(false);
@@ -268,7 +262,7 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
           const dist = getDistanceKm(pos.coords.latitude, pos.coords.longitude, OFFICE_LAT, OFFICE_LNG);
           if (dist > ALLOWED_RADIUS_KM) {
             const distDisplay = dist > 1 ? `${dist.toFixed(1)}km` : `${Math.round(dist * 1000)}m`;
-            toast.error(`Outside 100m office zone (${distDisplay} away). Clock In/Out is restricted to office location.`);
+            toast.error(`❌ Restricted: You are ${distDisplay} away. Clock In/Out is only allowed within 100 meters of Whiteswan TV Office.`);
             resolve(false);
           } else {
             resolve(true);
@@ -276,7 +270,7 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
         },
         (err) => {
           console.warn('Geolocation error:', err);
-          toast.error('Location permission required to verify 100m office zone.');
+          toast.error('Location permission required to verify 100m Whiteswan TV office zone.');
           resolve(false);
         },
         { enableHighAccuracy: true, timeout: 5000 }
@@ -284,17 +278,24 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
     });
   };
 
-  const handleClockIn = () => {
+  const handleClockIn = async () => {
     // Check face enrolled before allowing clock-in
     if (!isValidFaceImage(user?.faceImage)) {
       toast.error('Please upload your face photo first before clocking in.');
       return;
     }
+
+    const isOk = await verifyLocation();
+    if (!isOk) return;
+
     setPendingClockAction('Clock In');
     setIsFaceModalOpen(true);
   };
 
-  const handleClockOut = () => {
+  const handleClockOut = async () => {
+    const isOk = await verifyLocation();
+    if (!isOk) return;
+
     setPendingClockAction('Clock Out');
     setIsFaceModalOpen(true);
   };

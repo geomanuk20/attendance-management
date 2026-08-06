@@ -22,10 +22,9 @@ interface SidebarProps {
   onLogout: () => void;
   darkMode?: boolean;
   onDarkModeChange?: (val: boolean) => void;
-  onCloseMobile?: () => void;
 }
 
-export function Sidebar({ activeSection, onSectionChange, userRole, userName, userPosition, onLogout, darkMode = false, onDarkModeChange, onCloseMobile }: SidebarProps) {
+export function Sidebar({ activeSection, onSectionChange, userRole, userName, userPosition, onLogout, darkMode = false, onDarkModeChange }: SidebarProps) {
   const allMenuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, roles: ['admin', 'employee', 'superadmin', 'hr'] },
     { id: 'attendance', label: 'Attendance', icon: Clock, roles: ['admin', 'employee', 'superadmin', 'hr'] },
@@ -67,10 +66,7 @@ export function Sidebar({ activeSection, onSectionChange, userRole, userName, us
               variant={isActive ? "secondary" : "ghost"}
               className={`w-full justify-start gap-3 ${isActive ? 'bg-secondary text-secondary-foreground' : 'text-muted-foreground hover:text-foreground'
                 }`}
-              onClick={() => {
-                onSectionChange(item.id);
-                if (onCloseMobile) onCloseMobile();
-              }}
+              onClick={() => onSectionChange(item.id)}
             >
               <Icon className="h-4 w-4" />
               {item.label}

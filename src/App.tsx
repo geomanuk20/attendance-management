@@ -11,8 +11,9 @@ import { EmployeeManagement } from './components/EmployeeManagement';
 import { Settings } from './components/Settings';
 import { Button } from './components/ui/button';
 // import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
-import { Menu, X } from 'lucide-react';
-import logoImage from './assets/60ace96c513e5568730553.png';
+// import { User, Shield } from 'lucide-react';
+
+
 import { Toaster } from './components/ui/sonner';
 import { updatePreferences, getEmployees } from './services/api';
 
@@ -20,7 +21,6 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<{ name: string; role: 'admin' | 'employee' | 'superadmin' | 'hr'; position?: string; token?: string } | null>(null);
   const userRole = currentUser?.role || null;
   const [activeSection, setActiveSection] = useState('dashboard');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currency, setCurrency] = useState(() => {
     try {
       const storedUser = localStorage.getItem('user');
@@ -182,93 +182,13 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-background overflow-hidden">
-      {/* Mobile & Tablet Header Bar (Only visible on screens < lg, i.e. mobile and tablet) */}
-      <header className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card shadow-sm z-30">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsMobileMenuOpen(true)}
-            aria-label="Open Navigation Menu"
-            className="text-foreground hover:bg-muted focus:ring-0"
-          >
-            <Menu className="h-6 w-6" />
-          </Button>
-
-          <div className="flex items-center gap-2">
-            <img src={logoImage} alt="Logo" className="h-7 w-auto object-contain" />
-            <span className="font-semibold text-foreground text-sm tracking-tight">Attendance System</span>
-          </div>
-        </div>
-      </header>
-
-      {/* Desktop Permanent Sidebar (Only visible on lg screens and above) */}
-      <div className="hidden lg:block h-full">
-        <Sidebar
-          activeSection={activeSection}
-          onSectionChange={setActiveSection}
-          userRole={userRole!}
-          userName={currentUser?.name || 'User'}
-          userPosition={currentUser?.position || ''}
-          darkMode={darkMode}
-          onDarkModeChange={setDarkMode}
-          onLogout={() => {
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
-            setCurrentUser(null);
-            setDarkMode(false);
-          }}
-        />
-      </div>
-
-      {/* Mobile & Tablet Slide-in Sidebar Drawer Overlay */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 flex lg:hidden">
-          {/* Backdrop Blur Overlay */}
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-
-          {/* Sliding Drawer Content */}
-          <div className="relative flex-1 max-w-xs w-full bg-card shadow-2xl z-10 flex flex-col h-full animate-in slide-in-from-left duration-300">
-            <div className="absolute top-4 right-4 z-20">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="text-foreground hover:bg-muted rounded-full"
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-
-            <Sidebar
-              activeSection={activeSection}
-              onSectionChange={(sec) => {
-                setActiveSection(sec);
-                setIsMobileMenuOpen(false);
-              }}
-              userRole={userRole!}
-              userName={currentUser?.name || 'User'}
-              userPosition={currentUser?.position || ''}
-              darkMode={darkMode}
-              onDarkModeChange={setDarkMode}
-              onCloseMobile={() => setIsMobileMenuOpen(false)}
-              onLogout={() => {
-                localStorage.removeItem('user');
-                localStorage.removeItem('token');
-                setCurrentUser(null);
-                setDarkMode(false);
-                setIsMobileMenuOpen(false);
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Main Content View Container */}
+    <div className="flex h-screen bg-background">
+      <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} userRole={userRole!} userName={currentUser?.name || 'User'} userPosition={currentUser?.position || ''} darkMode={darkMode} onDarkModeChange={setDarkMode} onLogout={() => {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        setCurrentUser(null);
+        setDarkMode(false); // Reset dark mode on logout
+      }} />
       <main className="flex-1 overflow-auto bg-background">
         {renderContent()}
       </main>
