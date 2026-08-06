@@ -145,24 +145,7 @@ export default function App() {
           if (pendingFaceAction === 'login') {
             await executeFaceLogin();
           } else if (pendingFaceAction === 'enroll') {
-            // Generate full biometric face signature image string (> 3000 chars) upon camera scan
-            const fullBiometricFaceDataUrl = 'data:image/jpeg;base64,' + 'iVBORw0KGgoAAAANSUhEUgAAAKAAAACgCAYAAACAn50AAAB'.repeat(60);
-            const updatedProfile = {
-              ...(enrolledFaceUser || {}),
-              _id: user?._id || user?.id,
-              name: user?.name,
-              email: user?.email,
-              faceImage: fullBiometricFaceDataUrl,
-              enrolledAt: new Date().toISOString(),
-            };
-            setEnrolledFaceUser(updatedProfile);
-            await AsyncStorage.setItem('enrolledFaceProfile', JSON.stringify(updatedProfile));
-            if (user) {
-              const newUser = { ...user, faceImage: fullBiometricFaceDataUrl };
-              setUser(newUser);
-              await AsyncStorage.setItem('user', JSON.stringify(newUser));
-            }
-            Alert.alert('✓ Face ID Enrolled', 'Your face biometric profile has been scanned and enrolled successfully!');
+            await handleEnrollFacePhoto();
           } else if (pendingFaceAction === 'clockIn' || pendingFaceAction === 'clockOut') {
             await executeClockAction();
           }
