@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import {
   Clock,
   DollarSign,
@@ -8,7 +9,9 @@ import {
   Home,
   LogOut,
   Moon,
-  Sun
+  Sun,
+  Menu,
+  X
 } from 'lucide-react';
 import { Button } from './ui/button';
 import logoImage from '../assets/60ace96c513e5568730553.png';
@@ -25,6 +28,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activeSection, onSectionChange, userRole, userName, userPosition, onLogout, darkMode = false, onDarkModeChange }: SidebarProps) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   const allMenuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, roles: ['admin', 'employee', 'superadmin', 'hr'] },
     { id: 'attendance', label: 'Attendance', icon: Clock, roles: ['admin', 'employee', 'superadmin', 'hr'] },
@@ -37,10 +42,16 @@ export function Sidebar({ activeSection, onSectionChange, userRole, userName, us
 
   const menuItems = allMenuItems.filter(item => item.roles.includes(userRole));
 
-  return (
-    <div className="w-64 bg-card border-r border-border h-screen flex flex-col">
-      <div className="p-6 border-b border-border">
-        <div className="flex items-center gap-3 mb-2">
+  const handleSelectSection = (id: string) => {
+    onSectionChange(id);
+    setMobileOpen(false);
+  };
+
+  const navContent = (
+    <div className="flex flex-col h-full bg-card text-card-foreground">
+      {/* Brand Header */}
+      <div className="p-6 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-3">
           <div className="h-10 w-16 flex items-center justify-center overflow-hidden">
             <img
               src={logoImage}
@@ -49,13 +60,18 @@ export function Sidebar({ activeSection, onSectionChange, userRole, userName, us
             />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-foreground">Attendance System</h1>
+            <h1 className="text-lg font-semibold text-foreground leading-tight">Attendance System</h1>
             <p className="text-xs text-muted-foreground">{['admin', 'hr', 'superadmin'].includes(userRole) ? 'HR System' : 'Employee Portal'}</p>
           </div>
         </div>
+        {/* Mobile Close Button */}
+        <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileOpen(false)}>
+          <X className="h-5 w-5 text-foreground" />
+        </Button>
       </div>
 
-      <nav className="flex-1 p-4 space-y-2">
+      {/* Navigation Items */}
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeSection === item.id;
@@ -64,9 +80,9 @@ export function Sidebar({ activeSection, onSectionChange, userRole, userName, us
             <Button
               key={item.id}
               variant={isActive ? "secondary" : "ghost"}
-              className={`w-full justify-start gap-3 ${isActive ? 'bg-secondary text-secondary-foreground' : 'text-muted-foreground hover:text-foreground'
+              className={`w-full justify-start gap-3 h-11 text-sm font-medium ${isActive ? 'bg-secondary text-secondary-foreground font-semibold shadow-sm' : 'text-muted-foreground hover:text-foreground'
                 }`}
-              onClick={() => onSectionChange(item.id)}
+              onClick={() => handleSelectSection(item.id)}
             >
               <Icon className="h-4 w-4" />
               {item.label}
@@ -75,25 +91,73 @@ export function Sidebar({ activeSection, onSectionChange, userRole, userName, us
         })}
       </nav>
 
-      <div className="p-4 border-t border-border">
+      {/* User Profile & Dark Mode Footer */}
+      <div className="p-4 border-t border-border bg-card">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
-            <span className="text-primary-foreground text-xs font-semibold">
+          <div className="h-9 w-9 bg-primary rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
+            <span className="text-primary-foreground text-xs font-bold">
               {userName ? userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '??'}
             </span>
           </div>
-          <div className="flex-1">
-            <p className="text-sm text-foreground">{userName}</p>
-            <p className="text-xs text-muted-foreground capitalize">{userPosition || (userRole === 'superadmin' ? 'Super Admin' : userRole)}</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground truncate">{userName}</p>
+            <p className="text-xs text-muted-foreground capitalize truncate">{userPosition || (userRole === 'superadmin' ? 'Super Admin' : userRole)}</p>
           </div>
           <Button variant="ghost" size="icon" onClick={() => onDarkModeChange?.(!darkMode)} title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
-            {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {darkMode ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-600 dark:text-slate-300" />}
           </Button>
           <Button variant="ghost" size="icon" onClick={onLogout} title="Logout">
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-4 w-4 text-rose-500" />
           </Button>
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {/* Mobile & Tablet Header Bar (< lg) */}
+      <div className="lg:hidden flex items-center justify-between p-4 bg-card border-b border-border w-full sticky top-0 z-40 shadow-sm">
+        <div className="flex items-center gap-3">
+          <img src={logoImage} alt="Logo" className="h-8 w-auto object-contain" />
+          <div>
+            <h1 className="text-base font-bold text-foreground leading-none">Attendance System</h1>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+              {['admin', 'hr', 'superadmin'].includes(userRole) ? 'HR System' : 'Portal'}
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => onDarkModeChange?.(!darkMode)}>
+            {darkMode ? <Sun className="h-5 w-5 text-amber-400" /> : <Moon className="h-5 w-5 text-slate-700 dark:text-slate-300" />}
+          </Button>
+          <Button variant="outline" size="icon" onClick={() => setMobileOpen(true)} className="border-border">
+            <Menu className="h-5 w-5 text-foreground" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Mobile Drawer Backdrop Overlay */}
+      {mobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm transition-opacity duration-300"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Mobile Drawer */}
+      <div
+        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] transform transition-transform duration-300 ease-in-out shadow-2xl ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {navContent}
+      </div>
+
+      {/* Desktop Sidebar (lg: flex w-64 h-screen) */}
+      <div className="hidden lg:flex w-64 flex-shrink-0 h-screen border-r border-border bg-card">
+        {navContent}
+      </div>
+    </>
   );
 }

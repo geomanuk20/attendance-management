@@ -182,14 +182,14 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex flex-col lg:flex-row h-screen bg-background overflow-hidden">
       <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} userRole={userRole!} userName={currentUser?.name || 'User'} userPosition={currentUser?.position || ''} darkMode={darkMode} onDarkModeChange={setDarkMode} onLogout={() => {
         localStorage.removeItem('user');
         localStorage.removeItem('token');
         setCurrentUser(null);
-        setDarkMode(false); // Reset dark mode on logout
+        setDarkMode(false);
       }} />
-      <main className="flex-1 overflow-auto bg-background">
+      <main className="flex-1 overflow-y-auto bg-background p-2 sm:p-4 lg:p-6">
         {renderContent()}
       </main>
       <Toaster />
