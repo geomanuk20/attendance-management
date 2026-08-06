@@ -8,6 +8,7 @@ import { Clock, Calendar, AlertCircle, LogIn, LogOut, Loader2 } from 'lucide-rea
 import { getAttendance, clockIn, clockOut, getEmployees } from '../services/api';
 import { toast } from 'sonner';
 import { FaceRecognitionModal } from './FaceRecognitionModal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 
 const myAttendanceData = [
   { name: 'Mon', hours: 8.5 },
@@ -36,6 +37,7 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
   // Face Recognition Modal State
   const [isFaceModalOpen, setIsFaceModalOpen] = useState(false);
   const [pendingClockAction, setPendingClockAction] = useState<'Clock In' | 'Clock Out'>('Clock In');
+  const [isLeaveBalanceModalOpen, setIsLeaveBalanceModalOpen] = useState(false);
 
   const toLocalDateStr = (date: Date) => {
     const y = date.getFullYear();
@@ -236,15 +238,20 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card
+          className="p-6 cursor-pointer hover:border-amber-500/50 hover:shadow-lg transition-all"
+          onClick={() => setIsLeaveBalanceModalOpen(true)}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Leave Balance</p>
-              <p className="text-2xl font-semibold">12 Days</p>
-              <p className="text-xs text-muted-foreground mt-1">Available for 2024</p>
+              <p className="text-2xl font-semibold">14 Days</p>
+              <p className="text-xs text-amber-500 mt-1 flex items-center gap-1 font-medium">
+                <span>Click to view breakdown</span>
+              </p>
             </div>
-            <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F9A82520' }}>
-              <Calendar className="h-6 w-6" style={{ color: '#F9A825' }} />
+            <div className="h-12 w-12 rounded-lg flex items-center justify-center bg-amber-500/10 hover:bg-amber-500/20 transition-colors">
+              <Calendar className="h-6 w-6 text-amber-500" />
             </div>
           </div>
         </Card>
@@ -453,6 +460,70 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
         enrolledFaceImage={user?.faceImage}
         enrolledEmployees={allEmployees}
       />
+
+      {/* Leave Balance Breakdown Dialog Modal */}
+      <Dialog open={isLeaveBalanceModalOpen} onOpenChange={setIsLeaveBalanceModalOpen}>
+        <DialogContent className="max-w-md w-full p-6 rounded-2xl border border-slate-800 bg-slate-900 text-white shadow-2xl space-y-4">
+          <DialogHeader className="p-0 space-y-1">
+            <DialogTitle className="text-lg font-bold flex items-center gap-2 text-white">
+              <span>📊</span> Leave Balance Breakdown (2026)
+            </DialogTitle>
+            <DialogDescription className="text-slate-400 text-xs">
+              Annual Leave Quota Allocation & Available Balances
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            {/* Casual Leave */}
+            <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🏖️</span>
+                <div>
+                  <p className="text-sm font-semibold text-white">Casual Leave</p>
+                  <p className="text-xs text-slate-400">Annual quota: 6 Days</p>
+                </div>
+              </div>
+              <span className="text-sm font-bold text-indigo-400">6 Days Left</span>
+            </div>
+
+            {/* Medical Leave */}
+            <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🏥</span>
+                <div>
+                  <p className="text-sm font-semibold text-white">Medical Leave</p>
+                  <p className="text-xs text-slate-400">Annual quota: 6 Days</p>
+                </div>
+              </div>
+              <span className="text-sm font-bold text-emerald-400">6 Days Left</span>
+            </div>
+
+            {/* Annual Leave */}
+            <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">📅</span>
+                <div>
+                  <p className="text-sm font-semibold text-white">Annual Leave</p>
+                  <p className="text-xs text-slate-400">Annual quota: 6 Days</p>
+                </div>
+              </div>
+              <span className="text-sm font-bold text-amber-400">2 Days Left</span>
+            </div>
+
+            {/* Week Off Policy */}
+            <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">⚪</span>
+                <div>
+                  <p className="text-sm font-semibold text-white">Week Off Policy</p>
+                  <p className="text-xs text-slate-400">User Chooses Up to 4 Dates / Month</p>
+                </div>
+              </div>
+              <span className="text-sm font-bold text-slate-300">4 / Month</span>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
