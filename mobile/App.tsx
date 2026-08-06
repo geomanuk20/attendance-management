@@ -1286,26 +1286,44 @@ export default function App() {
   };
 
   const getWeeklyHours = () => {
-    let totalMs = 0;
+    let totalHours = 0;
     const now = new Date();
     const dayOfWeek = (now.getDay() + 6) % 7;
     const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);
     startOfWeek.setHours(0, 0, 0, 0);
 
-    attendanceLogs.forEach((log) => {
-      const inDate = new Date(log.clockIn || log.date || log.createdAt);
-      if (!isNaN(inDate.getTime()) && inDate >= startOfWeek) {
-        let outDate = log.clockOut ? new Date(log.clockOut) : new Date();
-        if (isNaN(outDate.getTime())) outDate = new Date();
-        const diffMs = outDate.getTime() - inDate.getTime();
-        if (diffMs > 0 && diffMs < 24 * 3600 * 1000) {
-          totalMs += diffMs;
+    const logsToSearch = (attendanceLogs && attendanceLogs.length > 0) ? attendanceLogs : allAttendanceLogs;
+
+    logsToSearch.forEach((log) => {
+      const dateStr = log.date ? String(log.date).split('T')[0] : (log.createdAt ? String(log.createdAt).split('T')[0] : '');
+      const logDate = new Date(dateStr + 'T00:00:00');
+      if (!isNaN(logDate.getTime()) && logDate >= startOfWeek) {
+        if (typeof log.workHours === 'number' && log.workHours > 0) {
+          totalHours += log.workHours;
+        } else if (log.clockIn && log.clockOut) {
+          try {
+            const [inH, inM] = String(log.clockIn).split(':').map(Number);
+            const [outH, outM] = String(log.clockOut).split(':').map(Number);
+            if (!isNaN(inH) && !isNaN(outH)) {
+              const diff = (outH + outM / 60) - (inH + inM / 60);
+              if (diff > 0) totalHours += diff;
+            }
+          } catch {}
+        } else if (log.clockIn && !log.clockOut) {
+          try {
+            const [inH, inM] = String(log.clockIn).split(':').map(Number);
+            const currentH = now.getHours();
+            const currentM = now.getMinutes();
+            if (!isNaN(inH)) {
+              const diff = (currentH + currentM / 60) - (inH + inM / 60);
+              if (diff > 0) totalHours += diff;
+            }
+          } catch {}
         }
       }
     });
 
-    const hours = (totalMs / (1000 * 60 * 60)).toFixed(1);
-    return parseFloat(hours) > 0 ? hours : '41.5';
+    return totalHours.toFixed(1);
   };
 
   const getLeaveBalance = () => {
