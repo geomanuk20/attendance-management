@@ -374,16 +374,7 @@ export default function App() {
 
   const isCurrentFaceEnrolled = () => {
     if (!user) return false;
-    if (isRealFaceImage(user.faceImage)) return true;
-    if (enrolledFaceUser) {
-      const isSameUser =
-        (enrolledFaceUser._id && (String(enrolledFaceUser._id) === String(user._id) || String(enrolledFaceUser._id) === String(user.id))) ||
-        (enrolledFaceUser.email && user.email && enrolledFaceUser.email.toLowerCase() === user.email.toLowerCase());
-      if (isSameUser && isRealFaceImage(enrolledFaceUser.faceImage)) {
-        return true;
-      }
-    }
-    return false;
+    return isRealFaceImage(user.faceImage);
   };
 
   const loadAllData = async (userData: any) => {
@@ -405,27 +396,8 @@ export default function App() {
       setEnrolledFaceUser(profile);
       await AsyncStorage.setItem('enrolledFaceProfile', JSON.stringify(profile));
     } else {
-      // Check if stored enrolledFaceProfile belongs to this logged in user
-      const storedVal = await AsyncStorage.getItem('enrolledFaceProfile');
-      if (storedVal) {
-        try {
-          const parsed = JSON.parse(storedVal);
-          const isSame =
-            (parsed._id && String(parsed._id) === String(userId)) ||
-            (parsed.email && userData.email && parsed.email.toLowerCase() === userData.email.toLowerCase());
-          if (isSame && isRealFaceImage(parsed.faceImage)) {
-            setEnrolledFaceUser(parsed);
-          } else {
-            setEnrolledFaceUser(null);
-            await AsyncStorage.removeItem('enrolledFaceProfile');
-          }
-        } catch {
-          setEnrolledFaceUser(null);
-          await AsyncStorage.removeItem('enrolledFaceProfile');
-        }
-      } else {
-        setEnrolledFaceUser(null);
-      }
+      setEnrolledFaceUser(null);
+      await AsyncStorage.removeItem('enrolledFaceProfile');
     }
 
     const isAdminOrHr = userData.role === 'admin' || userData.role === 'hr' || userData.role === 'superadmin';
@@ -550,15 +522,21 @@ export default function App() {
       const list = await getEmployees();
       setEmployees(list || []);
       if (list && user) {
-        const myRecord = list.find((e: any) => (e._id || e.id) === user._id);
+        const myRecord = list.find((e: any) => (e._id || e.id) === (user._id || user.id));
         if (myRecord) {
+          const hasRealFace = isRealFaceImage(myRecord.faceImage);
           const updatedUser = {
             ...user,
             ...myRecord,
+            faceImage: hasRealFace ? myRecord.faceImage : '',
             employeeCode: myRecord.employeeCode || (myRecord._id ? `WTN-${myRecord._id.substring(0, 6).toUpperCase()}` : 'WTN 025')
           };
           setUser(updatedUser);
           await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+          if (!hasRealFace) {
+            setEnrolledFaceUser(null);
+            await AsyncStorage.removeItem('enrolledFaceProfile');
+          }
         }
       }
     } catch (err) {
