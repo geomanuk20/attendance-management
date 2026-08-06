@@ -594,39 +594,32 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 {/* Face ID Photo Upload Section */}
-                <div className="p-4 bg-slate-950/40 dark:bg-slate-900/60 rounded-xl border border-emerald-500/30 flex items-center justify-between gap-4 w-full">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-emerald-400/60 bg-slate-800 flex-shrink-0 flex items-center justify-center shadow-inner">
+                <div className="p-4 bg-slate-950/40 dark:bg-slate-900/60 rounded-xl border border-emerald-500/30 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-emerald-400/60 bg-slate-800 flex items-center justify-center shadow-inner">
                       {formData.faceImage ? (
                         <img src={formData.faceImage} alt="Face ID Preview" className="w-full h-full object-cover" />
                       ) : (
-                        <Camera className="h-5 w-5 text-slate-400" />
+                        <Camera className="h-6 w-6 text-slate-400" />
                       )}
                     </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 font-semibold text-xs text-emerald-500 dark:text-emerald-400 whitespace-nowrap">
-                        <ShieldCheck className="h-4 w-4 flex-shrink-0" />
-                        <span>Biometric Face ID Photo</span>
+                    <div>
+                      <div className="flex items-center gap-1.5 font-semibold text-xs text-emerald-400">
+                        <ShieldCheck className="h-4 w-4" />
+                        Biometric Face ID Photo
                       </div>
-                      <div className="flex items-center gap-1 mt-0.5 text-xs text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap">
-                        {formData.faceImage ? (
-                          <>
-                            <Check className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
-                            <span>Face Photo Enrolled & Saved</span>
-                          </>
-                        ) : (
-                          <span>Upload photo for face recognition</span>
-                        )}
-                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {formData.faceImage ? '✓ Face Photo Attached & Ready (Face ID Active)' : 'Upload photo for face recognition attendance'}
+                      </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-2">
                     <Button
                       type="button"
                       size="sm"
                       onClick={() => setIsCameraModalOpen(true)}
-                      className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold gap-1.5 whitespace-nowrap"
+                      className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold gap-1.5"
                     >
                       <Camera className="h-3.5 w-3.5" />
                       {formData.faceImage ? 'Recapture Face' : 'Capture Face Photo'}
@@ -634,9 +627,9 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                     {formData.faceImage && (
                       <Button
                         type="button"
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        className="h-8 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-rose-200 dark:border-rose-900 whitespace-nowrap px-3"
+                        className="h-8 text-xs text-rose-400 hover:text-rose-300"
                         onClick={() => setFormData(prev => ({ ...prev, faceImage: '' }))}
                       >
                         Remove
@@ -1071,42 +1064,35 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
           </DialogHeader>
           <Tabs defaultValue="personal" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="personal" className="text-xs sm:text-sm whitespace-nowrap px-2">Personal Info</TabsTrigger>
-              <TabsTrigger value="employment" className="text-xs sm:text-sm whitespace-nowrap px-2">Employment & Salary</TabsTrigger>
-              <TabsTrigger value="contact" className="text-xs sm:text-sm whitespace-nowrap px-2">Contact</TabsTrigger>
+              <TabsTrigger value="personal">Personal Info</TabsTrigger>
+              <TabsTrigger value="employment">Employment & Salary</TabsTrigger>
+              <TabsTrigger value="contact">Contact</TabsTrigger>
             </TabsList>
             <TabsContent value="personal" className="space-y-4">
                 {/* Face ID Photo Upload Section */}
-                <div className="p-4 bg-slate-950/40 dark:bg-slate-900/60 rounded-xl border border-emerald-500/30 flex items-center justify-between gap-4 w-full">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-emerald-400/60 bg-slate-800 flex-shrink-0 flex items-center justify-center shadow-inner">
+                <div className="p-4 bg-slate-950/40 dark:bg-slate-900/60 rounded-xl border border-emerald-500/30 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-emerald-400/60 bg-slate-800 flex items-center justify-center shadow-inner">
                       {formData.faceImage ? (
                         <img src={formData.faceImage} alt="Face ID Preview" className="w-full h-full object-cover" />
                       ) : (
-                        <Camera className="h-5 w-5 text-slate-400" />
+                        <Camera className="h-6 w-6 text-slate-400" />
                       )}
                     </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 font-semibold text-xs text-emerald-500 dark:text-emerald-400 whitespace-nowrap">
-                        <ShieldCheck className="h-4 w-4 flex-shrink-0" />
-                        <span>Biometric Face ID Photo</span>
+                    <div>
+                      <div className="flex items-center gap-1.5 font-semibold text-xs text-emerald-400">
+                        <ShieldCheck className="h-4 w-4" />
+                        Biometric Face ID Photo
                       </div>
-                      <div className="flex items-center gap-1 mt-0.5 text-xs text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap">
-                        {formData.faceImage ? (
-                          <>
-                            <Check className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
-                            <span>Face Photo Enrolled & Saved</span>
-                          </>
-                        ) : (
-                          <span>Upload photo for face recognition</span>
-                        )}
-                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {formData.faceImage ? '✓ Face Photo Enrolled & Saved (Face ID Active)' : 'Upload photo for face recognition attendance'}
+                      </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-2">
                     <label className="cursor-pointer">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg shadow-sm transition-colors whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg shadow-sm transition-colors">
                         <Upload className="h-3.5 w-3.5" />
                         {formData.faceImage ? 'Change Photo' : 'Upload Photo'}
                       </span>
@@ -1120,9 +1106,9 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                     {formData.faceImage && (
                       <Button
                         type="button"
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        className="h-8 text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-rose-200 dark:border-rose-900 whitespace-nowrap px-3"
+                        className="h-8 text-xs text-rose-400 hover:text-rose-300"
                         onClick={() => setFormData(prev => ({ ...prev, faceImage: '' }))}
                       >
                         Remove

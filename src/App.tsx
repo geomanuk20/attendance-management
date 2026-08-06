@@ -10,12 +10,12 @@ import { Reports } from './components/Reports';
 import { EmployeeManagement } from './components/EmployeeManagement';
 import { Settings } from './components/Settings';
 import { Button } from './components/ui/button';
-import { Menu, X } from 'lucide-react';
-import logoImage from './assets/60ace96c513e5568730553.png';
+import { Menu, PanelLeftOpen } from 'lucide-react';
 import { Toaster } from './components/ui/sonner';
 import { updatePreferences, getEmployees } from './services/api';
 
 export default function App() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [currentUser, setCurrentUser] = useState<{ name: string; role: 'admin' | 'employee' | 'superadmin' | 'hr'; position?: string; token?: string } | null>(null);
   const userRole = currentUser?.role || null;
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -179,56 +179,40 @@ export default function App() {
     }
   };
 
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-background overflow-hidden">
-      {/* Mobile Top Navbar */}
-      <header className="flex md:hidden items-center justify-between px-4 py-3 border-b border-border bg-card text-card-foreground z-30 shadow-sm flex-shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="h-8 w-12 flex items-center justify-center overflow-hidden">
-            <img src={logoImage} alt="Logo" className="h-8 w-auto object-contain" />
-          </div>
-          <div>
-            <h1 className="text-sm font-bold leading-none">Attendance System</h1>
-            <span className="text-[10px] text-muted-foreground font-medium">{['admin', 'hr', 'superadmin'].includes(userRole) ? 'HR System' : 'Employee Portal'}</span>
-          </div>
-        </div>
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-9 w-9 border-border text-foreground"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        >
-          {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
-      </header>
-
-      {/* Responsive Sidebar */}
+    <div className="flex h-screen bg-background relative overflow-hidden">
       <Sidebar
         activeSection={activeSection}
-        onSectionChange={(section) => {
-          setActiveSection(section);
-          setIsMobileMenuOpen(false);
-        }}
+        onSectionChange={setActiveSection}
         userRole={userRole!}
         userName={currentUser?.name || 'User'}
         userPosition={currentUser?.position || ''}
         darkMode={darkMode}
         onDarkModeChange={setDarkMode}
-        isOpenOnMobile={isMobileMenuOpen}
-        onCloseMobile={() => setIsMobileMenuOpen(false)}
+        isOpen={isSidebarOpen}
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         onLogout={() => {
           localStorage.removeItem('user');
           localStorage.removeItem('token');
           setCurrentUser(null);
           setDarkMode(false);
-          setIsMobileMenuOpen(false);
         }}
       />
 
-      {/* Main Page Area */}
-      <main className="flex-1 overflow-auto bg-background p-0 min-w-0">
+      <main className="flex-1 overflow-auto bg-background relative flex flex-col min-w-0">
+        {!isSidebarOpen && (
+          <div className="p-3 border-b border-border bg-card/60 backdrop-blur-md flex items-center gap-3 sticky top-0 z-30">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsSidebarOpen(true)}
+              className="gap-2 font-medium"
+            >
+              <Menu className="h-4 w-4" />
+              <span>Show Sidebar</span>
+            </Button>
+          </div>
+        )}
         {renderContent()}
       </main>
       <Toaster />

@@ -4,10 +4,9 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
-import { Clock, Calendar, AlertCircle, LogIn, LogOut, Loader2, ShieldCheck } from 'lucide-react';
+import { Clock, Calendar, AlertCircle, LogIn, LogOut, Loader2 } from 'lucide-react';
 import { getAttendance, clockIn, clockOut, getEmployees } from '../services/api';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 import { FaceRecognitionModal } from './FaceRecognitionModal';
 
 const myAttendanceData = [
@@ -32,13 +31,7 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<'Checked In' | 'Checked Out' | 'Completed'>('Checked Out');
   const [todayRecord, setTodayRecord] = useState<any>(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Face Recognition Modal State
   const [isFaceModalOpen, setIsFaceModalOpen] = useState(false);
@@ -195,71 +188,37 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">My Dashboard</h2>
+          <h2>My Dashboard</h2>
           <p className="text-muted-foreground">Welcome back, {user?.name?.split(' ')[0] || 'Employee'}! Here's your overview.</p>
         </div>
+        <div className="flex items-center gap-4">
+          {status === 'Checked Out' && (
+            <Button onClick={handleClockIn} disabled={loading} className="gap-2 bg-green-600 hover:bg-green-700 text-black dark:text-white">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
+              Clock In
+            </Button>
+          )}
+          {status === 'Checked In' && (
+            <Button onClick={handleClockOut} disabled={loading} className="gap-2 bg-red-600 hover:bg-red-700 text-black dark:text-white">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+              Clock Out
+            </Button>
+          )}
+
+          <Badge variant="secondary" className={`flex items-center gap-2 px-3 py-1 ${status === 'Checked In' ? 'bg-green-100 text-green-700' :
+            status === 'Checked Out' ? 'bg-slate-100 text-slate-700' :
+              'bg-blue-100 text-blue-700'
+            }`}>
+            <div className={`h-2 w-2 rounded-full ${status === 'Checked In' ? 'bg-green-500 animate-pulse' :
+              status === 'Checked Out' ? 'bg-slate-400' :
+                'bg-blue-500'
+              }`}></div>
+            {status === 'Checked In' ? 'Working Now' : status === 'Checked Out' ? 'Not Checked In' : 'Completed Today'}
+          </Badge>
+        </div>
       </div>
-
-      {/* Main Face Scan Clock Card */}
-      <Card className="p-8 flex flex-col items-center justify-center space-y-6 bg-card text-card-foreground border border-border shadow-lg">
-        <div className="text-center space-y-2">
-          <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{format(currentTime, 'EEEE, MMMM do, yyyy')}</h3>
-          <p className="text-slate-600 dark:text-slate-400 text-xl font-semibold font-mono tracking-wider">{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
-        </div>
-
-        {status === 'Checked Out' && (
-          <Button
-            size="lg"
-            className="h-32 w-32 rounded-full text-base font-bold shadow-xl transition-all duration-200 active:scale-95 bg-emerald-600 hover:bg-emerald-700 text-white flex flex-col items-center justify-center gap-1 p-2 text-center cursor-pointer"
-            onClick={handleClockIn}
-          >
-            <ShieldCheck className="h-6 w-6 text-white" />
-            <span>Face Scan</span>
-            <span className="text-xs font-semibold opacity-90">Clock In</span>
-          </Button>
-        )}
-
-        {status === 'Checked In' && (
-          <Button
-            size="lg"
-            className="h-32 w-32 rounded-full text-base font-bold shadow-xl transition-all duration-200 active:scale-95 bg-rose-600 hover:bg-rose-700 text-white flex flex-col items-center justify-center gap-1 p-2 text-center cursor-pointer"
-            onClick={handleClockOut}
-          >
-            <ShieldCheck className="h-6 w-6 text-white" />
-            <span>Face Scan</span>
-            <span className="text-xs font-semibold opacity-90">Clock Out</span>
-          </Button>
-        )}
-
-        {status === 'Completed' && (
-          <Button
-            size="lg"
-            disabled
-            className="h-32 w-32 rounded-full text-lg font-bold shadow-lg transition-all duration-300 bg-slate-400 text-white"
-          >
-            Done
-          </Button>
-        )}
-
-        <div className="grid grid-cols-3 gap-6 sm:gap-12 text-center w-full max-w-md pt-4 border-t border-border/60">
-          <div className="flex flex-col items-center space-y-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Check In</span>
-            <span className="text-sm font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{todayRecord?.clockIn || '--:--'}</span>
-          </div>
-          <div className="flex flex-col items-center space-y-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Check Out</span>
-            <span className="text-sm font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{todayRecord?.clockOut || '--:--'}</span>
-          </div>
-          <div className="flex flex-col items-center space-y-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</span>
-            <Badge variant={status === 'Checked In' ? 'default' : status === 'Completed' ? 'secondary' : 'outline'} className="whitespace-nowrap font-bold px-3 py-1 text-slate-900 dark:text-slate-100">
-              {status}
-            </Badge>
-          </div>
-        </div>
-      </Card>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

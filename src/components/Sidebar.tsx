@@ -9,7 +9,10 @@ import {
   LogOut,
   Moon,
   Sun,
-  X
+  Menu,
+  X,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import { Button } from './ui/button';
 import logoImage from '../assets/60ace96c513e5568730553.png';
@@ -23,8 +26,8 @@ interface SidebarProps {
   onLogout: () => void;
   darkMode?: boolean;
   onDarkModeChange?: (val: boolean) => void;
-  isOpenOnMobile?: boolean;
-  onCloseMobile?: () => void;
+  isOpen?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 export function Sidebar({
@@ -36,8 +39,8 @@ export function Sidebar({
   onLogout,
   darkMode = false,
   onDarkModeChange,
-  isOpenOnMobile = false,
-  onCloseMobile
+  isOpen = true,
+  onToggleSidebar
 }: SidebarProps) {
   const allMenuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, roles: ['admin', 'employee', 'superadmin', 'hr'] },
@@ -52,40 +55,33 @@ export function Sidebar({
   const menuItems = allMenuItems.filter(item => item.roles.includes(userRole));
 
   return (
-    <>
-      {/* Mobile Backdrop Overlay */}
-      {isOpenOnMobile && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-xs md:hidden"
-          onClick={onCloseMobile}
-        />
-      )}
-
-      {/* Drawer Container */}
-      <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border h-screen flex flex-col transition-transform duration-300 ease-in-out md:static md:translate-x-0
-        ${isOpenOnMobile ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'}
-      `}>
-        <div className="p-6 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-16 flex items-center justify-center overflow-hidden">
-              <img
-                src={logoImage}
-                alt="Attendance System Logo"
-                className="h-10 w-auto object-contain"
-              />
-            </div>
-            <div>
-              <h1 className="text-base font-semibold text-foreground">Attendance System</h1>
-              <p className="text-xs text-muted-foreground">{['admin', 'hr', 'superadmin'].includes(userRole) ? 'HR System' : 'Employee Portal'}</p>
-            </div>
+    <div className={`${isOpen ? 'w-64' : 'w-0 border-r-0'} transition-all duration-300 bg-card border-r border-border h-screen flex flex-col overflow-hidden flex-shrink-0 relative`}>
+      <div className="p-5 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-14 flex items-center justify-center overflow-hidden">
+            <img
+              src={logoImage}
+              alt="Attendance System Logo"
+              className="h-9 w-auto object-contain"
+            />
           </div>
-          {onCloseMobile && (
-            <Button variant="ghost" size="icon" className="md:hidden text-muted-foreground" onClick={onCloseMobile}>
-              <X className="h-5 w-5" />
-            </Button>
-          )}
+          <div>
+            <h1 className="text-base font-bold text-foreground leading-tight">Attendance System</h1>
+            <p className="text-[11px] text-muted-foreground">{['admin', 'hr', 'superadmin'].includes(userRole) ? 'HR System' : 'Employee Portal'}</p>
+          </div>
         </div>
+        {onToggleSidebar && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleSidebar}
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            title="Collapse Sidebar"
+          >
+            <PanelLeftClose className="h-5 w-5" />
+          </Button>
+        )}
+      </div>
 
       <nav className="flex-1 p-4 space-y-2">
         {menuItems.map((item) => {
@@ -127,6 +123,5 @@ export function Sidebar({
         </div>
       </div>
     </div>
-  </>
   );
 }
