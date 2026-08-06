@@ -164,16 +164,16 @@ export function FaceRecognitionModal({
                     const fullRes = calcCorr(d1, d2);
                     const centerRes = calcCorr(d1C, d2C);
 
-                    // Strict Biometric Facial Security Criteria:
-                    // Central landmark correlation must be >= 0.45 AND full frame correlation >= 0.40
-                    const isSameFace = centerRes.corr >= 0.45 && fullRes.corr >= 0.40 && centerRes.avgDiff <= 65;
+                    // High-Precision Biometric Facial Criteria:
+                    // Central landmark correlation must be >= 0.55 AND full frame correlation >= 0.48
+                    const isSameFace = centerRes.corr >= 0.55 && fullRes.corr >= 0.48 && centerRes.avgDiff <= 55;
 
                     let finalScore = 0;
                     if (isSameFace) {
                         finalScore = 100;
                     } else {
-                        // Low score for unknown faces (typically 15-38%)
-                        finalScore = Math.max(10, Math.round(Math.max(0, centerRes.corr) * 45));
+                        // Low score for unknown faces (typically 12-35%)
+                        finalScore = Math.max(10, Math.round(Math.max(0, centerRes.corr) * 40));
                     }
                     resolve(finalScore);
                 } catch {
@@ -189,7 +189,7 @@ export function FaceRecognitionModal({
         });
     };
 
-    // BIOMETRIC VERIFICATION: Fast parallel execution across database profiles
+    // BIOMETRIC VERIFICATION: Strict User Verification & Anti-Spoofing
     const verifyFaceMatch = async (): Promise<{ match: boolean; similarity: number; error?: string; matchedUser?: any }> => {
         const videoEl = videoRef.current;
         if (!videoEl || !hasCamera) {
@@ -206,52 +206,79 @@ export function FaceRecognitionModal({
 
         const REQUIRED_THRESHOLD = 50;
 
-        let targetFace = enrolledFaceImage;
+        // 1. Clock In / Clock Out Mode: Verify ONLY against current user's enrolled profile
+        if (actionType === 'Clock In' || actionType === 'Clock Out') {
+            let userFace = enrolledFaceImage;
 
-        if ((!targetFace || targetFace.length < 20) && enrolledEmployees && enrolledEmployees.length > 0) {
-            const matchedEmp = enrolledEmployees.find((e: any) =>
-                (e.name && userName && e.name.toLowerCase().trim() === userName.toLowerCase().trim()) ||
-                (e.email && userName && e.email.toLowerCase().trim() === userName.toLowerCase().trim())
-            );
-            if (matchedEmp && matchedEmp.faceImage) {
-                targetFace = matchedEmp.faceImage;
-            }
-        }
-
-        // Multi-user parallel face matching
-        if ((actionType === 'Login' || !targetFace) && enrolledEmployees && enrolledEmployees.length > 0) {
-            const validEmps = enrolledEmployees.filter((emp: any) => emp.faceImage && typeof emp.faceImage === 'string' && emp.faceImage.length > 20);
-
-            const results = await Promise.all(
-                validEmps.map(async (emp: any) => {
-                    const score = await compareTwoImages(emp.faceImage, liveFrameDataUrl);
-                    return { score, emp };
-                })
-            );
-
-            let bestScore = 0;
-            let bestMatchEmp: any = null;
-
-            for (const r of results) {
-                if (r.score > bestScore) {
-                    bestScore = r.score;
-                    bestMatchEmp = r.emp;
+            if ((!userFace || userFace.length < 20) && enrolledEmployees && enrolledEmployees.length > 0) {
+                const myEmp = enrolledEmployees.find((e: any) =>
+                    (e._id && user?._id && String(e._id) === String(user._id)) ||
+                    (e.id && user?.id && String(e.id) === String(user.id)) ||
+                    (e.email && user?.email && e.email.toLowerCase().trim() === user.email.toLowerCase().trim()) ||
+                    (e.name && userName && e.name.toLowerCase().trim() === userName.toLowerCase().trim())
+                );
+                if (myEmp && myEmp.faceImage && myEmp.faceImage.length > 20) {
+                    userFace = myEmp.faceImage;
                 }
             }
 
-            if (bestScore >= REQUIRED_THRESHOLD && bestMatchEmp) {
-                return { match: true, similarity: 100, matchedUser: bestMatchEmp };
+            if (!userFace || typeof userFace !== 'string' || userFace.trim().length < 20) {
+                return {
+                    match: false,
+                    similarity: 0,
+                    error: `No face photo enrolled on user profile for ${userName}. Clock action rejected.`
+                };
+            }
+
+            const score = await compareTwoImages(userFace, liveFrameDataUrl);
+            if (score >= REQUIRED_THRESHOLD) {
+                return { match: true, similarity: 100 };
             } else {
-                return { match: false, similarity: bestScore, error: `Face Mismatch (${bestScore}% match < 50% required). Identity does not match enrolled user photo.` };
+                return {
+                    match: false,
+                    similarity: score,
+                    error: `Face Mismatch (${score}% match < 50% required). Live face does not match enrolled profile for ${userName}.`
+                };
             }
         }
 
-        if (!targetFace || typeof targetFace !== 'string' || targetFace.trim().length < 20) {
-            return { match: false, similarity: 0, error: 'No face photo enrolled on user profile. Clock action rejected.' };
+        // 2. Quick Face ID Login Mode: Match against enrolled database users
+        if (!enrolledEmployees || enrolledEmployees.length === 0) {
+            return { match: false, similarity: 0, error: 'No enrolled employee face profiles found in database.' };
         }
 
-        const score = await compareTwoImages(targetFace, liveFrameDataUrl);
-        return { match: score >= REQUIRED_THRESHOLD, similarity: score >= REQUIRED_THRESHOLD ? 100 : score };
+        const validEmps = enrolledEmployees.filter((emp: any) => emp.faceImage && typeof emp.faceImage === 'string' && emp.faceImage.length > 20);
+
+        if (validEmps.length === 0) {
+            return { match: false, similarity: 0, error: 'No enrolled face profiles available for face login.' };
+        }
+
+        const results = await Promise.all(
+            validEmps.map(async (emp: any) => {
+                const score = await compareTwoImages(emp.faceImage, liveFrameDataUrl);
+                return { score, emp };
+            })
+        );
+
+        let bestScore = 0;
+        let bestMatchEmp: any = null;
+
+        for (const r of results) {
+            if (r.score > bestScore) {
+                bestScore = r.score;
+                bestMatchEmp = r.emp;
+            }
+        }
+
+        if (bestScore >= REQUIRED_THRESHOLD && bestMatchEmp) {
+            return { match: true, similarity: 100, matchedUser: bestMatchEmp };
+        } else {
+            return {
+                match: false,
+                similarity: bestScore,
+                error: `Face Mismatch (${bestScore}% match < 50% required). Identity does not match enrolled user photo.`
+            };
+        }
     };
 
     useEffect(() => {
