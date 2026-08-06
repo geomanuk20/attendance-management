@@ -10,10 +10,8 @@ import { Reports } from './components/Reports';
 import { EmployeeManagement } from './components/EmployeeManagement';
 import { Settings } from './components/Settings';
 import { Button } from './components/ui/button';
-// import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
-// import { User, Shield } from 'lucide-react';
-
-
+import { Menu, X } from 'lucide-react';
+import logoImage from './assets/60ace96c513e5568730553.png';
 import { Toaster } from './components/ui/sonner';
 import { updatePreferences, getEmployees } from './services/api';
 
@@ -181,15 +179,56 @@ export default function App() {
     }
   };
 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-background overflow-hidden">
-      <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} userRole={userRole!} userName={currentUser?.name || 'User'} userPosition={currentUser?.position || ''} darkMode={darkMode} onDarkModeChange={setDarkMode} onLogout={() => {
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
-        setCurrentUser(null);
-        setDarkMode(false);
-      }} />
-      <main className="flex-1 overflow-y-auto bg-background p-2 sm:p-4 lg:p-6">
+    <div className="flex flex-col md:flex-row h-screen bg-background overflow-hidden">
+      {/* Mobile Top Navbar */}
+      <header className="flex md:hidden items-center justify-between px-4 py-3 border-b border-border bg-card text-card-foreground z-30 shadow-sm flex-shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="h-8 w-12 flex items-center justify-center overflow-hidden">
+            <img src={logoImage} alt="Logo" className="h-8 w-auto object-contain" />
+          </div>
+          <div>
+            <h1 className="text-sm font-bold leading-none">Attendance System</h1>
+            <span className="text-[10px] text-muted-foreground font-medium">{['admin', 'hr', 'superadmin'].includes(userRole) ? 'HR System' : 'Employee Portal'}</span>
+          </div>
+        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-9 w-9 border-border text-foreground"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </Button>
+      </header>
+
+      {/* Responsive Sidebar */}
+      <Sidebar
+        activeSection={activeSection}
+        onSectionChange={(section) => {
+          setActiveSection(section);
+          setIsMobileMenuOpen(false);
+        }}
+        userRole={userRole!}
+        userName={currentUser?.name || 'User'}
+        userPosition={currentUser?.position || ''}
+        darkMode={darkMode}
+        onDarkModeChange={setDarkMode}
+        isOpenOnMobile={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
+        onLogout={() => {
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          setCurrentUser(null);
+          setDarkMode(false);
+          setIsMobileMenuOpen(false);
+        }}
+      />
+
+      {/* Main Page Area */}
+      <main className="flex-1 overflow-auto bg-background p-0 min-w-0">
         {renderContent()}
       </main>
       <Toaster />
