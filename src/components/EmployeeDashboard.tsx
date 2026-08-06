@@ -33,6 +33,7 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
   const [status, setStatus] = useState<'Checked In' | 'Checked Out' | 'Completed'>('Checked Out');
   const [todayRecord, setTodayRecord] = useState<any>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
