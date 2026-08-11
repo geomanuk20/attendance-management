@@ -164,18 +164,20 @@ export function FaceRecognitionModal({
                     const fullRes = calcCorr(d1, d2);
                     const centerRes = calcCorr(d1C, d2C);
 
-                    // High-Precision Biometric Facial Criteria:
-                    // Central landmark correlation must be >= 0.55 AND full frame correlation >= 0.48
-                    const isSameFace = centerRes.corr >= 0.55 && fullRes.corr >= 0.48 && centerRes.avgDiff <= 55;
+                    // Robust Biometric Facial Feature Similarity Calculation:
+                    const centerCorrScore = Math.max(0, centerRes.corr) * 100;
+                    const fullCorrScore = Math.max(0, fullRes.corr) * 100;
+                    const diffScore = Math.max(0, 100 - (centerRes.avgDiff * 1.2));
 
-                    let finalScore = 0;
-                    if (isSameFace) {
-                        finalScore = 100;
-                    } else {
-                        // Low score for unknown faces (typically 12-35%)
-                        finalScore = Math.max(10, Math.round(Math.max(0, centerRes.corr) * 40));
+                    // Pure mathematical weighted facial landmark similarity score
+                    let finalScore = Math.round((centerCorrScore * 0.60) + (fullCorrScore * 0.25) + (diffScore * 0.15));
+
+                    // Enforce strict cap if center facial landmark correlation is weak (< 0.50)
+                    if (centerRes.corr < 0.50) {
+                      finalScore = Math.min(finalScore, 40);
                     }
-                    resolve(finalScore);
+
+                    resolve(Math.min(100, Math.max(5, finalScore)));
                 } catch {
                     resolve(0);
                 }
@@ -204,7 +206,7 @@ export function FaceRecognitionModal({
         liveCtx.drawImage(videoEl, 0, 0, 120, 120);
         const liveFrameDataUrl = liveCanvas.toDataURL('image/jpeg', 0.80);
 
-        const REQUIRED_THRESHOLD = 50;
+        const REQUIRED_THRESHOLD = 55;
 
         // 1. Clock In / Clock Out Mode: Verify ONLY against current user's enrolled profile
         if (actionType === 'Clock In' || actionType === 'Clock Out') {
@@ -232,18 +234,18 @@ export function FaceRecognitionModal({
                 return {
                     match: false,
                     similarity: 0,
-                    error: `No face photo enrolled on user profile for ${userName}. Clock action rejected.`
+                    error: `No enrolled face photo found on profile for ${userName}. Please enroll your face photo first.`
                 };
             }
 
             const score = await compareTwoImages(userFace, liveFrameDataUrl);
             if (score >= REQUIRED_THRESHOLD) {
-                return { match: true, similarity: 100 };
+                return { match: true, similarity: score };
             } else {
                 return {
                     match: false,
                     similarity: score,
-                    error: `Face Mismatch (${score}% match < 50% required). Live face does not match enrolled profile for ${userName}.`
+                    error: `Face Mismatch (${score}% match < ${REQUIRED_THRESHOLD}% required). Live face does not match enrolled profile for ${userName}.`
                 };
             }
         }
@@ -277,12 +279,12 @@ export function FaceRecognitionModal({
         }
 
         if (bestScore >= REQUIRED_THRESHOLD && bestMatchEmp) {
-            return { match: true, similarity: 100, matchedUser: bestMatchEmp };
+            return { match: true, similarity: bestScore, matchedUser: bestMatchEmp };
         } else {
             return {
                 match: false,
                 similarity: bestScore,
-                error: `Face Mismatch (${bestScore}% match < 50% required). Identity does not match enrolled user photo.`
+                error: `Unrecognized Face (${bestScore}% match < ${REQUIRED_THRESHOLD}% required). Identity does not match any enrolled employee.`
             };
         }
     };

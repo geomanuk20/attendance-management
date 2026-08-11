@@ -86,6 +86,11 @@ const employeeSchema = mongoose.Schema({
     faceImage: {
         type: String,
         default: '',
+    },
+    employmentType: {
+        type: String,
+        enum: ['Full-Time', 'Part-Time', 'Hybrid', 'Remote', 'Contract'],
+        default: 'Full-Time',
     }
 }, {
     timestamps: true,

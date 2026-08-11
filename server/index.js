@@ -40,15 +40,6 @@ app.use('/api/company-settings', companySettingsRoutes);
 
 app.use('/public', express.static(path.join(__dirname, '../public')));
 
-app.get('/api/download-apk', (req, res) => {
-    const apkPath = path.join(__dirname, '../public/app-release.apk');
-    if (fs.existsSync(apkPath)) {
-        res.download(apkPath, 'app-release.apk');
-    } else {
-        res.status(404).send('APK file not found');
-    }
-});
-
 const buildPath = path.join(__dirname, '../build');
 if (fs.existsSync(buildPath)) {
     app.use(express.static(buildPath));

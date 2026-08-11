@@ -191,12 +191,12 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2>Reports & Analytics</h2>
           <p className="text-muted-foreground">Comprehensive insights into your HR metrics and performance</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" className="gap-2">
             <Filter className="h-4 w-4" />
             Filters

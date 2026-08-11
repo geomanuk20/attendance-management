@@ -34,6 +34,7 @@
             "@types/react": "^19.2.14",
             "@types/react-dom": "^19.2.3",
             "@vitejs/plugin-react-swc": "^3.10.2",
+            "@vladmandic/human": "^3.3.6",
             "bcryptjs": "^3.0.3",
             "class-variance-authority": "^0.7.1",
             "clsx": "*",
@@ -72,9 +73,7 @@
             "mobile:dev": "concurrently \"nodemon server/index.js\" \"cd mobile && npx expo start\"",
             "build": "vite build",
             "server": "nodemon server/index.js",
-            "client": "vite",
-            "mobile:apk": "cd mobile/android && ./gradlew assembleDebug",
-            "mobile:eas-apk": "cd mobile && npx eas-cli build -p android --profile preview"
+            "client": "vite"
       },
       "overrides": {
             "esbuild": "^0.25.0"

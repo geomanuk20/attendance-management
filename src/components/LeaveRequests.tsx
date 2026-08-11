@@ -113,6 +113,15 @@ export function LeaveRequests({ userRole = 'admin' }: LeaveRequestsProps) {
     const matchesStatus = selectedStatus === 'all' || request.status === selectedStatus;
     const matchesType = selectedType === 'all' || request.leaveType === selectedType;
     return matchesSearch && matchesDepartment && matchesStatus && matchesType;
+  }).sort((a, b) => {
+    const parseD = (str?: string) => {
+      if (!str) return 0;
+      const clean = String(str).split('T')[0];
+      const p = clean.split('-');
+      if (p.length === 3) return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10)).getTime();
+      return new Date(str).getTime();
+    };
+    return parseD(b.startDate || b.createdAt) - parseD(a.startDate || a.createdAt);
   });
 
   const pendingCount = leaveRequests.filter(r => r.status === 'Pending').length;
@@ -152,7 +161,7 @@ export function LeaveRequests({ userRole = 'admin' }: LeaveRequestsProps) {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2>Leave Requests</h2>
           <p className="text-muted-foreground">Manage employee leave requests and approvals</p>
@@ -164,7 +173,7 @@ export function LeaveRequests({ userRole = 'admin' }: LeaveRequestsProps) {
               New Request
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl w-[90vw] max-h-[85vh] overflow-y-auto p-4 sm:p-6 rounded-2xl shadow-2xl border border-border bg-background">
             <DialogHeader>
               <DialogTitle>Submit Leave Request</DialogTitle>
               <DialogDescription>

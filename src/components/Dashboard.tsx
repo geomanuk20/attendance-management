@@ -174,20 +174,12 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2>Dashboard Overview</h2>
           <p className="text-muted-foreground">Welcome back! Here's what's happening today.</p>
         </div>
-        <div className="flex items-center gap-4">
-          <a
-            href="/public/app-release.apk"
-            download="app-release.apk"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-sm shadow-md transition-all duration-200 transform hover:scale-[1.02]"
-          >
-            <span>📱</span>
-            <span>Download Mobile APK</span>
-          </a>
+        <div className="flex flex-wrap items-center gap-3">
           <Badge variant="secondary" className="flex items-center gap-2">
             <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
             System Online

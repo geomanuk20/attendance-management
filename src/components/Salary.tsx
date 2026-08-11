@@ -665,12 +665,12 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2>Salary Management</h2>
           <p className="text-muted-foreground">Manage employee salaries and payroll processing</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" className="gap-2" onClick={exportToExcel}>
             <Download className="h-4 w-4" />
             Export
@@ -693,30 +693,30 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
       </div>
 
 
-      <Card className="p-6">
-        <div className="flex flex-wrap gap-4 items-center">
-          <div className="flex items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
+      <Card className="p-4 sm:p-6">
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex items-center gap-2 flex-1 sm:flex-initial min-w-[200px]">
+            <Search className="h-4 w-4 text-muted-foreground shrink-0" />
             <Input
               placeholder="Search employees..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-64"
+              className="w-full sm:w-64"
             />
           </div>
 
-          <div className="relative flex items-center">
+          <div className="relative flex items-center flex-1 sm:flex-initial min-w-[140px]">
             <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
             <Input
               type="month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-40 pl-10"
+              className="w-full sm:w-40 pl-10"
             />
           </div>
 
           <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="Department" />
             </SelectTrigger>
             <SelectContent>
@@ -728,7 +728,7 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
           </Select>
 
           <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-full sm:w-32">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -741,8 +741,9 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
       </Card>
 
       <Card>
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <h3 className="mb-4">Employee Salary Details</h3>
+          <div className="overflow-x-auto rounded-xl border border-border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -835,151 +836,173 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
               )}
             </TableBody>
           </Table>
+          </div>
         </div>
       </Card>
 
       {/* Details Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Salary Details</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="max-w-xl w-[90vw] max-h-[85vh] overflow-y-auto p-4 sm:p-6 rounded-2xl shadow-2xl border border-border bg-background">
+          <DialogHeader className="pb-2 border-b">
+            <DialogTitle className="text-xl font-bold text-foreground">Salary Details</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
               Breakdown for {selectedRecord?.name} - {new Date(selectedMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}
             </DialogDescription>
           </DialogHeader>
           {selectedRecord && (
-            <div className="space-y-4 py-2" ref={slipRef}>
+            <div className="space-y-4 py-3" ref={slipRef}>
+              {/* Employee Summary Card */}
+              <div className="bg-slate-100 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <span className="text-muted-foreground block text-[11px] font-medium">Employee Name</span>
+                  <span className="font-bold text-foreground text-sm">{selectedRecord?.name}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block text-[11px] font-medium">Designation & Department</span>
+                  <span className="font-semibold text-foreground">{selectedRecord?.position || 'Employee'} • {selectedRecord?.department || 'Engineering'}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block text-[11px] font-medium mb-1">Employment Type</span>
+                  <Badge variant="outline" className="text-[10px] py-0.5 px-2 font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700">
+                    {selectedRecord?.employmentType || selectedRecord?.empDetails?.employmentType || 'Full-Time'}
+                  </Badge>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block text-[11px] font-medium">Employee Code / ID</span>
+                  <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{selectedRecord?.employeeCode || 'EMP-101'}</span>
+                </div>
+              </div>
+
               {/* Additions Section */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center hide-on-print">
-                  <h4 className="text-sm font-semibold text-green-700 uppercase tracking-wider">Earnings</h4>
+                  <h4 className="text-xs font-semibold text-green-700 dark:text-green-400 uppercase tracking-wider">Earnings</h4>
                   {!isEditing && (
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="h-6 px-2 text-green-700 hover:bg-green-100 hover:text-green-800">
-                      <Edit2 className="h-3 w-3 mr-1" /> Edit
+                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="h-7 px-2 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-950/50">
+                      <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
                     </Button>
                   )}
                 </div>
-                <div className="bg-green-50 p-4 rounded-lg space-y-2">
-                  <div className="flex justify-between text-sm items-center">
-                    <span className="text-gray-600">Basic Salary</span>
+                <div className="bg-green-50 dark:bg-emerald-950/30 p-3.5 sm:p-4 rounded-xl space-y-2.5 border border-green-100 dark:border-emerald-900/40">
+                  <div className="flex justify-between text-sm items-center gap-3">
+                    <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Basic Salary</span>
                     {isEditing ? (
                       <Input
                         type="number"
-                        className="h-7 w-24 text-right"
+                        className="h-8 w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 focus:ring-2 focus:ring-emerald-500"
                         value={editValues.basicSalary}
                         onChange={(e) => setEditValues({ ...editValues, basicSalary: Number(e.target.value) })}
                       />
                     ) : (
-                      <span className="font-medium">{formatCurrency(selectedRecord.basicSalary)}</span>
+                      <span className="font-semibold text-foreground">{formatCurrency(selectedRecord.basicSalary)}</span>
                     )}
                   </div>
-                  <div className="flex justify-between text-sm items-center">
-                    <span className="text-gray-600">HRA</span>
+                  <div className="flex justify-between text-sm items-center gap-3">
+                    <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">HRA</span>
                     {isEditing ? (
                       <Input
                         type="number"
-                        className="h-7 w-24 text-right"
+                        className="h-8 w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 focus:ring-2 focus:ring-emerald-500"
                         value={editValues.hra}
                         onChange={(e) => setEditValues({ ...editValues, hra: Number(e.target.value) })}
                       />
                     ) : (
-                      <span className="font-medium">{formatCurrency(selectedRecord.hra)}</span>
+                      <span className="font-semibold text-foreground">{formatCurrency(selectedRecord.hra)}</span>
                     )}
                   </div>
-                  <div className="flex justify-between text-sm items-center">
-                    <span className="text-gray-600">Allowances</span>
+                  <div className="flex justify-between text-sm items-center gap-3">
+                    <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Allowances</span>
                     {isEditing ? (
                       <Input
                         type="number"
-                        className="h-7 w-24 text-right"
+                        className="h-8 w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 focus:ring-2 focus:ring-emerald-500"
                         value={editValues.otherAllowances}
                         onChange={(e) => setEditValues({ ...editValues, otherAllowances: Number(e.target.value) })}
                       />
                     ) : (
-                      <span className="font-medium">{formatCurrency(selectedRecord.otherAllowances)}</span>
+                      <span className="font-semibold text-foreground">{formatCurrency(selectedRecord.otherAllowances)}</span>
                     )}
                   </div>
 
-                  <div className="flex justify-between text-sm items-center">
-                    <span className="text-gray-600">Overtime</span>
+                  <div className="flex justify-between text-sm items-center gap-3">
+                    <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Overtime</span>
                     {isEditing ? (
                       <Input
                         type="number"
-                        className="h-7 w-24 text-right"
+                        className="h-8 w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 focus:ring-2 focus:ring-emerald-500"
                         value={editValues.overtime}
                         onChange={(e) => setEditValues({ ...editValues, overtime: Number(e.target.value) })}
                       />
                     ) : (
-                      <span className={`font-medium ${selectedRecord.overtime > 0 ? 'text-green-600' : ''}`}>
+                      <span className={`font-semibold ${selectedRecord.overtime > 0 ? 'text-green-600 dark:text-green-400' : 'text-foreground'}`}>
                         +{formatCurrency(selectedRecord.overtime || 0)}
                       </span>
                     )}
                   </div>
-                  <div className="flex justify-between text-sm items-center">
-                    <span className="text-gray-600">Bonus / Incentive</span>
+                  <div className="flex justify-between text-sm items-center gap-3">
+                    <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Bonus / Incentive</span>
                     {isEditing ? (
                       <Input
                         type="number"
-                        className="h-7 w-24 text-right"
+                        className="h-8 w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 focus:ring-2 focus:ring-emerald-500"
                         value={editValues.bonus}
                         onChange={(e) => setEditValues({ ...editValues, bonus: Number(e.target.value) })}
                       />
                     ) : (
-                      <span className={`font-medium ${selectedRecord.bonus > 0 ? 'text-green-600' : ''}`}>
+                      <span className={`font-semibold ${selectedRecord.bonus > 0 ? 'text-green-600 dark:text-green-400' : 'text-foreground'}`}>
                         +{formatCurrency(selectedRecord.bonus || 0)}
                       </span>
                     )}
                   </div>
 
-
-                  <div className="border-t border-green-200 pt-2 mt-2 flex justify-between font-bold">
+                  <div className="border-t border-green-200 dark:border-emerald-900/60 pt-2.5 mt-2 flex justify-between items-center font-bold text-slate-900 dark:text-white">
                     <span>Gross Earnings</span>
-                    <span>{formatCurrency(calculatedGross + (isEditing ? editValues.overtime : (selectedRecord.overtime || 0)) + (isEditing ? editValues.bonus : (selectedRecord.bonus || 0)))}</span>
+                    <span className="text-base">{formatCurrency(calculatedGross + (isEditing ? editValues.overtime : (selectedRecord.overtime || 0)) + (isEditing ? editValues.bonus : (selectedRecord.bonus || 0)))}</span>
                   </div>
                 </div>
               </div>
 
               {/* Deductions Section */}
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-red-700 uppercase tracking-wider">Deductions</h4>
-                <div className="bg-red-50 p-4 rounded-lg space-y-2">
-                  <div className="flex justify-between text-sm items-center">
-                    <span className="text-gray-600">Tax / Standard Deductions</span>
+                <h4 className="text-xs font-semibold text-red-700 dark:text-red-400 uppercase tracking-wider">Deductions</h4>
+                <div className="bg-red-50 dark:bg-rose-950/30 p-3.5 sm:p-4 rounded-xl space-y-2.5 border border-red-100 dark:border-rose-900/40">
+                  <div className="flex justify-between text-sm items-center gap-3">
+                    <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Tax / Standard Deductions</span>
                     {isEditing ? (
                       <Input
                         type="number"
-                        className="h-7 w-24 text-right"
+                        className="h-8 w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 focus:ring-2 focus:ring-rose-500"
                         value={editValues.deductions}
                         onChange={(e) => setEditValues({ ...editValues, deductions: Number(e.target.value) })}
                       />
                     ) : (
-                      <span className="font-medium text-red-600">-{formatCurrency(selectedRecord.deductions || 0)}</span>
+                      <span className="font-semibold text-red-600 dark:text-red-400">-{formatCurrency(selectedRecord.deductions || 0)}</span>
                     )}
                   </div>
-                  <div className="flex justify-between text-sm items-center">
-                    <span className="text-gray-600">Salary Advance / Loan</span>
+                  <div className="flex justify-between text-sm items-center gap-3">
+                    <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Salary Advance / Loan</span>
                     {isEditing ? (
                       <Input
                         type="number"
-                        className="h-7 w-24 text-right"
+                        className="h-8 w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 focus:ring-2 focus:ring-rose-500"
                         value={editValues.advance}
                         onChange={(e) => setEditValues({ ...editValues, advance: Number(e.target.value) })}
                       />
                     ) : (
-                      <span className={`font-medium ${selectedRecord.advance > 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                      <span className={`font-semibold ${selectedRecord.advance > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-400'}`}>
                         -{formatCurrency(selectedRecord.advance || 0)}
                       </span>
                     )}
                   </div>
-                  <div className="border-t border-red-200 pt-2 mt-2 flex justify-between font-bold text-red-700">
+                  <div className="border-t border-red-200 dark:border-rose-900/60 pt-2.5 mt-2 flex justify-between items-center font-bold text-red-700 dark:text-red-400">
                     <span>Total Deductions</span>
-                    <span>-{formatCurrency((isEditing ? editValues.deductions : (selectedRecord.deductions || 0)) + (isEditing ? editValues.advance : (selectedRecord.advance || 0)))}</span>
+                    <span className="text-base">-{formatCurrency((isEditing ? editValues.deductions : (selectedRecord.deductions || 0)) + (isEditing ? editValues.advance : (selectedRecord.advance || 0)))}</span>
                   </div>
                 </div>
               </div>
 
               {/* Net Pay */}
-              <div className="bg-slate-900 text-white p-4 rounded-lg flex justify-between items-center shadow-lg">
+              <div className="bg-slate-900 dark:bg-slate-800 text-white p-4 rounded-xl flex justify-between items-center shadow-lg border border-slate-800">
                 <div>
                   <p className="text-xs text-slate-400">Net Pay</p>
                   <h3 className="text-xl font-bold">{formatCurrency(calculatedNetSalary)}</h3>
@@ -991,13 +1014,13 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
 
               {/* Status Edit - Only visible in Edit Mode */}
               {isEditing && (
-                <div className="space-y-2">
-                  <Label htmlFor="edit-status">Payment Status</Label>
+                <div className="space-y-1.5 pt-1">
+                  <Label htmlFor="edit-status" className="text-xs font-semibold text-slate-700 dark:text-slate-300">Payment Status</Label>
                   <Select
                     value={editValues.status}
                     onValueChange={(val) => setEditValues({ ...editValues, status: val })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full h-9 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-xs font-medium">
                       <SelectValue placeholder="Select Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1010,33 +1033,33 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
             </div>
           )}
 
-          <DialogFooter className={`gap-2 sm:gap-0 ${isEditing ? '' : 'sm:justify-between'}`}>
+          <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-border justify-between items-stretch sm:items-center w-full">
             {isEditing ? (
-              <>
+              <div className="flex justify-end gap-2 w-full">
                 <Button variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
                 <Button onClick={handleSaveChanges}>
                   <Save className="h-4 w-4 mr-2" />
                   Save Changes
                 </Button>
-              </>
+              </div>
             ) : (
               <>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleDownloadPDF}>
-                    <Download className="h-4 w-4 mr-2" /> Download PDF
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                  <Button variant="outline" size="sm" onClick={handleDownloadPDF} className="flex-1 sm:flex-initial">
+                    <Download className="h-4 w-4 mr-1.5" /> Download PDF
                   </Button>
-                  <Button variant="outline" onClick={handleEmailSlip} disabled={emailLoading}>
-                    {emailLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
+                  <Button variant="outline" size="sm" onClick={handleEmailSlip} disabled={emailLoading} className="flex-1 sm:flex-initial">
+                    {emailLoading ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Mail className="h-4 w-4 mr-1.5" />}
                     Email Slip
                   </Button>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
                   {selectedRecord?.status === 'Pending' && (
-                    <Button onClick={() => handleProcessIndividual(selectedRecord)} className="bg-green-600 hover:bg-green-700">
+                    <Button size="sm" onClick={() => handleProcessIndividual(selectedRecord)} className="flex-1 sm:flex-initial bg-green-600 hover:bg-green-700 text-white">
                       Process Payroll
                     </Button>
                   )}
-                  <Button onClick={() => setIsDetailsOpen(false)}>Close</Button>
+                  <Button size="sm" variant="secondary" onClick={() => setIsDetailsOpen(false)} className="flex-1 sm:flex-initial">Close</Button>
                 </div>
               </>
             )}
@@ -1046,7 +1069,7 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
 
       {/* Salary & Payroll Calculator Modal */}
       <Dialog open={isCalcOpen} onOpenChange={setIsCalcOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="max-w-xl w-[90vw] max-h-[85vh] overflow-y-auto p-4 sm:p-6 rounded-2xl shadow-2xl border border-border bg-background">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
               <Calculator className="h-5 w-5 text-primary" />
@@ -1181,7 +1204,7 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-border justify-between items-stretch sm:items-center w-full">
             <Button variant="outline" onClick={() => setIsCalcOpen(false)}>
               Close
             </Button>

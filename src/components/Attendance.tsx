@@ -7,7 +7,7 @@ import { Input } from './ui/input';
 import { Calendar } from './ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Clock, CalendarIcon, Search, Loader2, ChevronsUpDown, Check, Download, Pencil, ShieldCheck, Camera, Upload, AlertCircle } from 'lucide-react';
+import { Clock, CalendarIcon, Search, Loader2, ChevronsUpDown, Check, Download, Pencil, ShieldCheck, Camera, Upload, AlertCircle, CheckCircle } from 'lucide-react';
 import { getAttendance, clockIn, clockOut, getEmployees, getEmployeeNames, getLeaveRequests, updateAttendanceRecord, updateEmployee } from '../services/api';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
@@ -21,6 +21,54 @@ import { ModernSpinner } from './ui/ModernSpinner';
 interface AttendanceProps {
   userRole?: 'admin' | 'employee' | 'superadmin' | 'hr';
 }
+
+const parseTimeToSeconds = (tStr: string | null | undefined): number | null => {
+  if (!tStr || tStr === '-' || tStr === 'In progress') return null;
+  const parts = String(tStr).trim().split(/\s+/);
+  if (parts.length < 1) return null;
+  const timeSegments = parts[0].split(':').map(Number);
+  if (timeSegments.some(isNaN)) return null;
+  let h = timeSegments[0];
+  const m = timeSegments[1] || 0;
+  const s = timeSegments[2] || 0;
+  const period = parts.length > 1 ? parts[1].toUpperCase() : null;
+  if (period === 'PM' && h !== 12) h += 12;
+  if (period === 'AM' && h === 12) h = 0;
+  return h * 3600 + m * 60 + s;
+};
+
+const calculateWorkHoursFromTimes = (clockInStr: string | null | undefined, clockOutStr: string | null | undefined): number => {
+  const inSec = parseTimeToSeconds(clockInStr);
+  const outSec = parseTimeToSeconds(clockOutStr);
+  if (inSec === null || outSec === null) return 0;
+  let diffSec = outSec - inSec;
+  if (diffSec < 0) diffSec += 24 * 3600; // Handle overnight / cross-midnight shift
+  return parseFloat((diffSec / 3600).toFixed(4));
+};
+
+const formatWorkHours = (hours: number | null | undefined, clockInStr?: string, clockOutStr?: string) => {
+  let effHours = typeof hours === 'number' ? hours : 0;
+  if ((!effHours || effHours <= 0) && clockInStr && clockOutStr && clockOutStr !== '-') {
+    effHours = calculateWorkHoursFromTimes(clockInStr, clockOutStr);
+  }
+
+  if (!effHours || effHours <= 0) return null;
+
+  const totalSeconds = Math.round(effHours * 3600);
+  if (totalSeconds <= 0) return null;
+
+  if (totalSeconds < 60) {
+    return `${totalSeconds}s`;
+  }
+
+  const totalMinutes = Math.round(totalSeconds / 60);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+};
 
 export function Attendance({ userRole = 'admin' }: AttendanceProps) {
   // Common state
@@ -541,7 +589,7 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
         const empIdKey2 = String(emp.id || emp._id || '');
         const empNameClean = String(emp.name || '').toLowerCase().trim();
         const empNameFormatted = formatName(emp.name);
-        const empObj = { _id: empIdKey1, name: emp.name, employeeCode: emp.employeeCode, department: emp.department };
+        const empObj: any = { _id: empIdKey1, name: emp.name, employeeCode: emp.employeeCode, department: emp.department, employmentType: (emp as any)?.employmentType };
 
         const existing = existingMap.get(`${empIdKey1}_${dStr}`) ||
                          existingMap.get(`${empIdKey2}_${dStr}`) ||
@@ -552,36 +600,7 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
                          approvedLeaveMap.get(`${empNameClean}_${dStr}`) ||
                          approvedLeaveMap.get(`${empNameFormatted}_${dStr}`);
 
-        if (existing) {
-          let effStatus = existing.status || 'Present';
-          if (existing.clockIn && effStatus === 'Absent') {
-            effStatus = 'Present';
-          }
-          let hrs = Number(existing.workHours) || 0;
-          if (!hrs && existing.clockIn && existing.clockOut) {
-            const parseMins = (tStr: string) => {
-              if (!tStr || tStr === '-') return null;
-              const parts = String(tStr).trim().split(' ');
-              if (parts.length < 2) return null;
-              const timeParts = parts[0].split(':').map(Number);
-              let h = timeParts[0];
-              const m = timeParts[1] || 0;
-              const period = parts[1].toUpperCase();
-              if (period === 'PM' && h !== 12) h += 12;
-              if (period === 'AM' && h === 12) h = 0;
-              return h * 60 + m;
-            };
-            const inM = parseMins(existing.clockIn);
-            const outM = parseMins(existing.clockOut);
-            if (inM !== null && outM !== null && outM > inM) {
-              hrs = (outM - inM) / 60;
-            }
-          }
-          if (hrs > 0 && hrs < 5 && (effStatus === 'Present' || effStatus === 'Attendance')) {
-            effStatus = 'Half-Day';
-          }
-          records.push({ ...existing, employeeId: empObj, status: effStatus, workHours: hrs || existing.workHours });
-        } else if (leaveRec) {
+        if (leaveRec && (!existing || !existing.clockIn)) {
           const lType = String(leaveRec.leaveType || '').toLowerCase();
           let derivedStatus = 'Leave';
           if (lType.includes('week')) {
@@ -593,18 +612,38 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
           }
 
           records.push({
-            _id: `gen_leave_${empIdKey1}_${dStr}`,
+            ...(existing || {}),
+            _id: existing?._id || `gen_leave_${empIdKey1}_${dStr}`,
             employeeId: empObj,
             name: emp.name,
             employeeCode: emp.employeeCode,
             department: emp.department,
             date: dStr,
-            clockIn: null,
-            clockOut: null,
-            workHours: 0,
+            clockIn: existing?.clockIn || null,
+            clockOut: existing?.clockOut || null,
+            workHours: existing?.workHours || 0,
             status: derivedStatus,
             isGenerated: true
           });
+        } else if (existing) {
+          let effStatus = existing.status || 'Present';
+          if (existing.clockIn && effStatus === 'Absent') {
+            effStatus = 'Present';
+          }
+          let hrs = Number(existing.workHours) || 0;
+          if (!hrs && existing.clockIn && existing.clockOut) {
+            hrs = calculateWorkHoursFromTimes(existing.clockIn, existing.clockOut);
+          }
+          const empType = (emp as any)?.employmentType || (empObj as any)?.employmentType || 'Full-Time';
+          const isPartTime = empType === 'Part-Time';
+          const halfDayCutoff = isPartTime ? 2 : 4;
+
+          if (hrs >= 4 && (effStatus === 'Half-Day' || effStatus === 'Half Day' || effStatus === 'Attendance')) {
+            effStatus = 'Present';
+          } else if (hrs > 0 && hrs < halfDayCutoff && (effStatus === 'Present' || effStatus === 'Attendance')) {
+            effStatus = 'Half-Day';
+          }
+          records.push({ ...existing, employeeId: empObj, status: effStatus, workHours: hrs || existing.workHours });
         } else {
           records.push({
             _id: `gen_${empIdKey1}_${dStr}`,
@@ -679,14 +718,7 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
     return matchesSearch && matchesDepartment && matchesStatus && matchesEmployee;
   });
 
-  const formatWorkHours = (hours: number) => {
-    if (!hours || hours <= 0) return null;
-    const h = Math.floor(hours);
-    const m = Math.round((hours - h) * 60);
-    if (h === 0) return `${m}m`;
-    if (m === 0) return `${h}h`;
-    return `${h}h ${m}m`;
-  };
+
 
   const exportToExcel = async () => {
     try {
@@ -1145,13 +1177,13 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
           )}
 
           {status === 'Completed' && (
-            <Button
-              size="lg"
-              disabled
-              className="h-32 w-32 rounded-full text-lg font-bold shadow-lg transition-all duration-300 bg-slate-400 text-white"
-            >
-              Done
-            </Button>
+            <div className="px-6 py-3 rounded-md shadow-md bg-slate-900 dark:bg-slate-950 text-white flex items-center justify-center gap-3 border-2 border-emerald-500 min-w-[190px] select-none animate-in fade-in zoom-in-95">
+              <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" />
+              <div className="flex flex-col text-left">
+                <span className="text-white font-extrabold text-sm tracking-wide leading-none">Shift Done</span>
+                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mt-1">Completed</span>
+              </div>
+            </div>
           )}
           <div className="flex gap-8 text-center">
             <div>
@@ -1204,17 +1236,16 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2>Attendance Management</h2>
           <p className="text-muted-foreground">Track and manage employee attendance records</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" className="gap-2" onClick={exportToExcel}>
             <Download className="h-4 w-4" />
             Export
           </Button>
-          {/* Admin generally doesn't clock in here, but maybe for testing */}
         </div>
       </div>
 
@@ -1469,11 +1500,8 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
                     <TableCell>{record.clockIn || '-'}</TableCell>
                     <TableCell>{record.clockOut || '-'}</TableCell>
                     <TableCell>
-                      {record.workHours > 0
-                        ? formatWorkHours(record.workHours)
-                        : record.clockIn && !record.clockOut
-                          ? 'In progress'
-                          : '-'}
+                      {formatWorkHours(record.workHours, record.clockIn, record.clockOut) ||
+                        (record.clockIn && (!record.clockOut || record.clockOut === '-') ? 'In progress' : '-')}
                     </TableCell>
                     <TableCell>{getStatusBadge(record.status)}</TableCell>
                     <TableCell className="text-right">

@@ -17,7 +17,9 @@
       "icon": "./assets/icon.png",
       "infoPlist": {
         "NSCameraUsageDescription": "Camera is used to capture your face photo for biometric attendance authentication.",
-        "NSPhotoLibraryUsageDescription": "Photo library access is needed to select a face photo for authentication."
+        "NSPhotoLibraryUsageDescription": "Photo library access is needed to select a face photo for authentication.",
+        "NSLocationWhenInUseUsageDescription": "Location access is required to verify office geofence attendance location.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Location access is required to verify office geofence attendance location."
       }
     },
     "android": {

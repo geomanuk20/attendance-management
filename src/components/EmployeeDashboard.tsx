@@ -242,14 +242,7 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
           <p className="text-muted-foreground">Welcome back, {user?.name?.split(' ')[0] || 'Employee'}! Here's your overview.</p>
         </div>
         <div className="flex items-center gap-4">
-          <a
-            href="/public/app-release.apk"
-            download="app-release.apk"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-sm shadow-md transition-all duration-200 transform hover:scale-[1.02]"
-          >
-            <span>📱</span>
-            <span>Download Mobile APK</span>
-          </a>
+
           {status === 'Checked Out' && (
             <Button onClick={handleClockIn} disabled={loading} className="gap-2 bg-green-600 hover:bg-green-700 text-black dark:text-white">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}

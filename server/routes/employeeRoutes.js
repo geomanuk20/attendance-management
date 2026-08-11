@@ -17,7 +17,7 @@ const getEmployees = asyncHandler(async (req, res) => {
 // @route   POST /api/employees
 // @access  Public
 const createEmployee = asyncHandler(async (req, res) => {
-    const { name, email, password, phone, department, position, role, employeeCode, salary, hireDate, address, emergencyContact, ctc, basicSalary, hra, otherAllowances, faceImage } = req.body;
+    const { name, email, password, phone, department, position, role, employeeCode, salary, hireDate, address, emergencyContact, ctc, basicSalary, hra, otherAllowances, faceImage, employmentType } = req.body;
 
     const employeeExists = await Employee.findOne({ email });
 
@@ -46,7 +46,8 @@ const createEmployee = asyncHandler(async (req, res) => {
             basicSalary: basicSalary || 0,
             hra: hra || 0,
             otherAllowances: otherAllowances || 0,
-            faceImage: faceImage || ''
+            faceImage: faceImage || '',
+            employmentType: employmentType || 'Full-Time'
         });
 
         res.status(201).json(employee);
@@ -86,6 +87,7 @@ const updateEmployee = asyncHandler(async (req, res) => {
         if (req.body.department) employee.department = req.body.department;
         if (req.body.position) employee.position = req.body.position;
         if (req.body.role) employee.role = req.body.role;
+        if (req.body.employmentType !== undefined) employee.employmentType = req.body.employmentType;
         if (req.body.employeeCode !== undefined) employee.employeeCode = req.body.employeeCode;
         if (req.body.salary !== undefined) employee.salary = req.body.salary;
         if (req.body.status) employee.status = req.body.status;
@@ -153,6 +155,7 @@ const downloadSalarySlip = asyncHandler(async (req, res) => {
     const employeeCode = req.query.employeeCode || 'WTN 025';
     const position = req.query.position || 'Technical Head';
     const department = req.query.department || 'Management';
+    const employmentType = req.query.employmentType || 'Full-Time';
     const salary = parseInt(req.query.salary || '35000', 10);
     const month = req.query.month || 'July 2026';
 
@@ -221,6 +224,7 @@ const downloadSalarySlip = asyncHandler(async (req, res) => {
       <div class="info-row"><div class="info-label">Employee Name:</div><div class="info-val" style="font-weight:bold;">${name}</div></div>
       <div class="info-row"><div class="info-label">Designation:</div><div class="info-val">${position}</div></div>
       <div class="info-row"><div class="info-label">Department:</div><div class="info-val">${department}</div></div>
+      <div class="info-row"><div class="info-label">Employment Type:</div><div class="info-val" style="color:#059669; font-weight:bold;">${employmentType}</div></div>
       <div class="info-row"><div class="info-label">Employee ID:</div><div class="info-val">${employeeCode}</div></div>
       <div class="info-row"><div class="info-label">Pay Period:</div><div class="info-val" style="color:#4338ca; font-weight:bold;">${month}</div></div>
     </div>

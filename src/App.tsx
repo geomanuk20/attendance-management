@@ -9,10 +9,6 @@ import { LeaveRequests } from './components/LeaveRequests';
 import { Reports } from './components/Reports';
 import { EmployeeManagement } from './components/EmployeeManagement';
 import { Settings } from './components/Settings';
-import { Button } from './components/ui/button';
-// import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
-// import { User, Shield } from 'lucide-react';
-
 
 import { Toaster } from './components/ui/sonner';
 import { updatePreferences, getEmployees } from './services/api';

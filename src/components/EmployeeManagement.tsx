@@ -5,7 +5,7 @@ import { Badge } from './ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
@@ -101,6 +101,7 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
     address: '',
     emergencyContact: '',
     status: 'Active',
+    employmentType: 'Full-Time',
     faceImage: '' // Face ID Photo
   });
 
@@ -354,6 +355,7 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
       address: '',
       emergencyContact: '',
       status: 'Active',
+      employmentType: 'Full-Time',
       faceImage: ''
     });
     setIsCustomDepartment(false);
@@ -386,6 +388,7 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
         otherAllowances: Number(formData.otherAllowances) || 0,
         hireDate: hireDateValid,
         status: 'Active',
+        employmentType: formData.employmentType || 'Full-Time',
         address: formData.address || '',
         emergencyContact: formData.emergencyContact || '',
         faceImage: formData.faceImage || ''
@@ -436,6 +439,7 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
       address: employee.address || '',
       emergencyContact: employee.emergencyContact || '',
       status: employee.status,
+      employmentType: employee.employmentType || 'Full-Time',
       faceImage: employee.faceImage || ''
     });
 
@@ -472,7 +476,8 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
         hireDate: formData.hireDate || selectedEmployee.hireDate,
         address: formData.address || '',
         emergencyContact: formData.emergencyContact || '',
-        status: formData.status || 'Active'
+        status: formData.status || 'Active',
+        employmentType: formData.employmentType || 'Full-Time'
       };
 
       await updateEmployee(empId, updatedData);
@@ -568,12 +573,12 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2>Employee Management</h2>
           <p className="text-muted-foreground">Manage employee profiles, information, and status</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" className="gap-2">
             <Download className="h-4 w-4" />
             Export
@@ -585,14 +590,15 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                 Add Employee
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Add New Employee</DialogTitle>
+            <DialogContent className="max-w-3xl w-[90vw] max-h-[88vh] flex flex-col p-0 rounded-2xl shadow-2xl border border-border bg-background overflow-hidden">
+              <DialogHeader className="p-6 pb-4 border-b border-border shrink-0 bg-slate-50/50 dark:bg-slate-900/50">
+                <DialogTitle className="text-xl font-bold">Add New Employee</DialogTitle>
                 <DialogDescription>
                   Enter the details of the new employee to add them to the system.
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
+
+              <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
                 {/* Face ID Photo Upload Section */}
                 <div className="p-4 bg-slate-950/40 dark:bg-slate-900/60 rounded-xl border border-emerald-500/30 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
@@ -658,7 +664,7 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                     <Input id="phone" placeholder="+1 (555) 123-4567" value={formData.phone} onChange={handleInputChange} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
                     <Input id="password" type="password" placeholder="Initial password" value={formData.password} onChange={handleInputChange} />
@@ -674,6 +680,21 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                         <SelectItem value="hr">HR</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                         <SelectItem value="superadmin">Super Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="employmentType" className="text-emerald-600 font-semibold">Employment Type</Label>
+                    <Select onValueChange={(val: string) => handleSelectChange('employmentType', val)} value={formData.employmentType || 'Full-Time'}>
+                      <SelectTrigger className="border-emerald-200 bg-emerald-50/30">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Full-Time">💼 Full-Time</SelectItem>
+                        <SelectItem value="Part-Time">⏱️ Part-Time</SelectItem>
+                        <SelectItem value="Hybrid">🏢 Hybrid</SelectItem>
+                        <SelectItem value="Remote">🌐 Remote</SelectItem>
+                        <SelectItem value="Contract">📄 Contract</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -821,13 +842,12 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                   <Label htmlFor="emergencyContact">Emergency Contact</Label>
                   <Input id="emergencyContact" placeholder="Name - Phone number" value={formData.emergencyContact} onChange={handleInputChange} />
                 </div>
-                <div className="flex gap-2 pt-4">
-                  <Button className="flex-1" onClick={handleAddEmployee}>Add Employee</Button>
-                  <Button variant="outline" className="flex-1" onClick={() => setIsAddDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                </div>
               </div>
+
+              <DialogFooter className="p-4 sm:p-5 border-t border-border shrink-0 bg-slate-50/50 dark:bg-slate-900/50 flex flex-row gap-3 justify-end items-center">
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleAddEmployee} className="px-6 font-semibold">Add Employee</Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
@@ -990,7 +1010,14 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>{employee.position}</TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <p className="font-medium text-xs">{employee.position}</p>
+                      <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700">
+                        {employee.employmentType || 'Full-Time'}
+                      </Badge>
+                    </div>
+                  </TableCell>
                   <TableCell>{employee.department}</TableCell>
                   <TableCell>{formatDate(employee.hireDate)}</TableCell>
                   <TableCell>{formatCurrency(employee.salary || (employee.ctc ? employee.ctc / 12 : 0))}</TableCell>
@@ -1055,14 +1082,15 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
 
       {/* Edit Employee Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Employee Details</DialogTitle>
+        <DialogContent className="max-w-3xl w-[90vw] max-h-[88vh] flex flex-col p-0 rounded-2xl shadow-2xl border border-border bg-background overflow-hidden">
+          <DialogHeader className="p-6 pb-4 border-b border-border shrink-0 bg-slate-50/50 dark:bg-slate-900/50">
+            <DialogTitle className="text-xl font-bold">Edit Employee Details</DialogTitle>
             <DialogDescription>
               View and edit employee information.
             </DialogDescription>
           </DialogHeader>
-          <Tabs defaultValue="personal" className="w-full">
+          <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
+            <Tabs defaultValue="personal" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="personal">Personal Info</TabsTrigger>
               <TabsTrigger value="employment">Employment & Salary</TabsTrigger>
@@ -1267,7 +1295,7 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-hireDate">Hire Date</Label>
                   <Input id="hireDate" type="date" value={formData.hireDate} onChange={handleInputChange} />
@@ -1282,6 +1310,21 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                       <SelectItem value="Active">Active</SelectItem>
                       <SelectItem value="On Leave">On Leave</SelectItem>
                       <SelectItem value="Inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-employmentType" className="text-emerald-600 font-semibold">Employment Type</Label>
+                  <Select value={formData.employmentType || 'Full-Time'} onValueChange={(val: string) => handleSelectChange('employmentType', val)}>
+                    <SelectTrigger className="border-emerald-200 bg-emerald-50/30">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Full-Time">💼 Full-Time</SelectItem>
+                      <SelectItem value="Part-Time">⏱️ Part-Time</SelectItem>
+                      <SelectItem value="Hybrid">🏢 Hybrid</SelectItem>
+                      <SelectItem value="Remote">🌐 Remote</SelectItem>
+                      <SelectItem value="Contract">📄 Contract</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1300,10 +1343,12 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
               </div>
             </TabsContent>
           </Tabs>
-          <div className="flex gap-2 pt-4">
-            <Button onClick={handleUpdateEmployee}>Save Changes</Button>
+        </div>
+
+          <DialogFooter className="p-4 sm:p-5 border-t border-border shrink-0 bg-slate-50/50 dark:bg-slate-900/50 flex flex-row gap-3 justify-end items-center">
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-          </div>
+            <Button onClick={handleUpdateEmployee} className="px-6 font-semibold">Save Changes</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       {/* Face Camera Capture Modal */}

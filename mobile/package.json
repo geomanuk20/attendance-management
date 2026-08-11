@@ -11,19 +11,20 @@
     "build:eas": "npx eas-cli build -p android --profile preview"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "1.23.1",
-    "expo": "~51.0.0",
-    "expo-image-picker": "~15.0.7",
-    "expo-location": "~17.0.1",
-    "expo-notifications": "~0.28.19",
-    "expo-status-bar": "~1.12.1",
-    "react": "18.2.0",
-    "react-native": "0.74.5"
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "expo": "~54.0.0",
+    "expo-camera": "~16.0.0",
+    "expo-image-picker": "~17.0.11",
+    "expo-location": "~19.0.8",
+    "expo-notifications": "~0.32.17",
+    "expo-status-bar": "~3.0.9",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
-    "@types/react": "~18.2.45",
-    "typescript": "~5.3.3"
+    "@types/react": "~19.1.10",
+    "typescript": "^5.3.3"
   },
   "private": true
 }

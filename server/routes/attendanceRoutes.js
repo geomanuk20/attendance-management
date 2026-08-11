@@ -70,20 +70,40 @@ const clockOut = asyncHandler(async (req, res) => {
 
         // Calculate work hours from clockIn and clockOut
         try {
-            const toMinutes = (timeStr) => {
-                const [time, period] = timeStr.split(' ');
-                let [h, m, s] = time.split(':').map(Number);
+            const toSeconds = (timeStr) => {
+                if (!timeStr || timeStr === '-' || timeStr === 'In progress') return null;
+                const parts = String(timeStr).trim().split(/\s+/);
+                if (parts.length < 1) return null;
+                const timeSegments = parts[0].split(':').map(Number);
+                if (timeSegments.some(isNaN)) return null;
+                let h = timeSegments[0];
+                const m = timeSegments[1] || 0;
+                const s = timeSegments[2] || 0;
+                const period = parts.length > 1 ? parts[1].toUpperCase() : null;
                 if (period === 'PM' && h !== 12) h += 12;
                 if (period === 'AM' && h === 12) h = 0;
-                return h * 60 + m;
+                return h * 3600 + m * 60 + s;
             };
-            const inMins = toMinutes(attendance.clockIn);
-            const outMins = toMinutes(clockOutTime);
-            const diffMins = outMins - inMins;
-            const hrs = diffMins > 0 ? parseFloat((diffMins / 60).toFixed(2)) : 0;
-            attendance.workHours = hrs;
-            if (hrs > 0 && hrs < 5) {
-                attendance.status = 'Half-Day';
+            const inSec = toSeconds(attendance.clockIn);
+            const outSec = toSeconds(clockOutTime);
+            if (inSec !== null && outSec !== null) {
+                let diffSec = outSec - inSec;
+                if (diffSec < 0) diffSec += 24 * 3600; // Handle overnight / cross-midnight shift
+                const hrs = parseFloat((diffSec / 3600).toFixed(4));
+                attendance.workHours = hrs;
+
+                // Lookup employee employmentType for Part-Time 4-hour rule
+                const populatedEmp = await Attendance.findById(attendance._id).populate('employeeId', 'employmentType');
+                const isPartTime = populatedEmp?.employeeId?.employmentType === 'Part-Time';
+                const halfDayCutoff = isPartTime ? 2 : 4;
+
+                if (hrs >= 4) {
+                    attendance.status = 'Present'; // 4 hours complete is Full Day Present for all (including Part-Time)
+                } else if (hrs >= halfDayCutoff && hrs < 4) {
+                    attendance.status = 'Half-Day';
+                } else if (hrs > 0 && hrs < halfDayCutoff) {
+                    attendance.status = 'Half-Day';
+                }
             }
         } catch (e) {
             attendance.workHours = 0;
@@ -137,24 +157,31 @@ const updateAttendance = asyncHandler(async (req, res) => {
 
     if (attendance.clockIn && attendance.clockOut && attendance.clockOut !== '-') {
         try {
-            const toMinutes = (timeStr) => {
-                if (!timeStr || timeStr === '-') return null;
-                const parts = timeStr.trim().split(' ');
-                if (parts.length < 2) return null;
-                let [h, m] = parts[0].split(':').map(Number);
-                const period = parts[1].toUpperCase();
+            const toSeconds = (timeStr) => {
+                if (!timeStr || timeStr === '-' || timeStr === 'In progress') return null;
+                const parts = String(timeStr).trim().split(/\s+/);
+                if (parts.length < 1) return null;
+                const timeSegments = parts[0].split(':').map(Number);
+                if (timeSegments.some(isNaN)) return null;
+                let h = timeSegments[0];
+                const m = timeSegments[1] || 0;
+                const s = timeSegments[2] || 0;
+                const period = parts.length > 1 ? parts[1].toUpperCase() : null;
                 if (period === 'PM' && h !== 12) h += 12;
                 if (period === 'AM' && h === 12) h = 0;
-                return h * 60 + m;
+                return h * 3600 + m * 60 + s;
             };
-            const inMins = toMinutes(attendance.clockIn);
-            const outMins = toMinutes(attendance.clockOut);
-            if (inMins !== null && outMins !== null && outMins > inMins) {
-                const diffMins = outMins - inMins;
-                const hrs = parseFloat((diffMins / 60).toFixed(2));
+            const inSec = toSeconds(attendance.clockIn);
+            const outSec = toSeconds(attendance.clockOut);
+            if (inSec !== null && outSec !== null) {
+                let diffSec = outSec - inSec;
+                if (diffSec < 0) diffSec += 24 * 3600; // Handle overnight / cross-midnight shift
+                const hrs = parseFloat((diffSec / 3600).toFixed(4));
                 attendance.workHours = hrs;
-                if (hrs > 0 && hrs < 5 && (!status || status === 'Present' || status === 'Attendance')) {
+                if (hrs > 0 && hrs < 4 && (!status || status === 'Present' || status === 'Attendance')) {
                     attendance.status = 'Half-Day';
+                } else if (hrs >= 4 && (!status || status === 'Half-Day' || status === 'Half Day')) {
+                    attendance.status = 'Present';
                 }
             }
         } catch (e) {}

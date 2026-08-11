@@ -16,7 +16,7 @@ const getLeaveRequests = asyncHandler(async (req, res) => {
         query = { employeeId };
     }
 
-    const leaveRequests = await LeaveRequest.find(query).populate('employeeId', 'name position department');
+    const leaveRequests = await LeaveRequest.find(query).sort({ startDate: -1, createdAt: -1 }).populate('employeeId', 'name position department');
     res.json(leaveRequests);
 });
 
