@@ -34,8 +34,11 @@ export const fetchWithPortFallback = async (endpoint: string, options: RequestIn
     // 2. Mobile Android APK / Native Webview Candidate Hosts
     if (isCapacitor || isLocalNativeHost) {
         const mobileCandidateHosts = [
-            'http://10.0.2.2:5002', // Android Studio Emulator bridge to localhost
+            'http://192.168.1.22:5002', // Local LAN Wi-Fi IP of development Mac
+            'http://192.168.1.22:5001',
+            'http://10.0.2.2:5002',     // Android Studio Emulator bridge to localhost
             'http://10.0.2.2:5001',
+            'https://attendance.louisbella.store', // Cloud backend endpoint
             'http://localhost:5002',
             'http://127.0.0.1:5002',
         ];
@@ -43,8 +46,10 @@ export const fetchWithPortFallback = async (endpoint: string, options: RequestIn
         for (const host of mobileCandidateHosts) {
             try {
                 const controller = new AbortController();
-                const timer = setTimeout(() => controller.abort(), 4000);
-                const res = await fetch(`${host}/api${path}`, {
+                const timer = setTimeout(() => controller.abort(), 3500);
+                const cleanHost = host.endsWith('/') ? host.slice(0, -1) : host;
+                const url = cleanHost.endsWith('/api') ? `${cleanHost}${path}` : `${cleanHost}/api${path}`;
+                const res = await fetch(url, {
                     ...options,
                     signal: options.signal || controller.signal,
                 });
