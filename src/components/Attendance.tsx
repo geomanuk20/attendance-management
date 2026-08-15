@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Clock, CalendarIcon, Search, Loader2, ChevronsUpDown, Check, Download, Pencil, ShieldCheck, Camera, Upload, AlertCircle, CheckCircle } from 'lucide-react';
 import { getAttendance, clockIn, clockOut, getEmployees, getEmployeeNames, getLeaveRequests, updateAttendanceRecord, updateEmployee } from '../services/api';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from './ui/dialog';
 import { Label } from './ui/label';
 import { format, subDays, endOfMonth } from 'date-fns';
 import { toast } from 'sonner';
@@ -380,8 +380,8 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
     }
   };
 
-  const executeVerifiedClockAction = async () => {
-    const userId = user?.id || user?._id;
+  const executeVerifiedClockAction = async (matchedUser?: any) => {
+    const userId = matchedUser?._id || matchedUser?.id || user?.id || user?._id;
     if (!userId) {
       toast.error('Session invalid. Please logout and login again.');
       return;
@@ -390,15 +390,17 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
     try {
       if (pendingClockAction === 'Clock In') {
         const res = await clockIn(userId);
-        toast.success(`Face Verified! Clocked in successfully at ${res.clockIn || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
+        const timeStr = res.clockIn || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        toast.success(`✓ Biometric Face Verified! Clocked In at ${timeStr}`);
         fetchTodayStatus(userId);
       } else {
         const res = await clockOut(userId);
+        const timeStr = res.clockOut || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const totalHours = res.workHours || 0;
         const h = Math.floor(totalHours);
         const m = Math.round((totalHours - h) * 60);
         const duration = h > 0 ? `${h}h ${m}m` : `${m}m`;
-        toast.success(`Face Verified! Clocked out successfully at ${res.clockOut || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. Today's working hours: ${duration}`);
+        toast.success(`✓ Biometric Face Verified! Clocked Out at ${timeStr}. Today's Hours: ${duration}`);
         fetchTodayStatus(userId);
       }
     } catch (error: any) {
@@ -461,20 +463,20 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
     switch (status) {
       case 'Present':
       case 'Attendance':
-        return <Badge style={{ backgroundColor: '#10B981', color: '#ffffff' }} className="hover:bg-green-600">Present</Badge>;
+        return <Badge style={{ backgroundColor: '#10B981', color: '#ffffff' }} className="hover:bg-emerald-600 px-4 py-1 font-semibold text-center min-w-[72px] inline-flex items-center justify-center">Present</Badge>;
       case 'Vacation':
       case 'Leave':
-        return <Badge style={{ backgroundColor: '#F9A825', color: '#ffffff' }} className="hover:bg-yellow-600">Leave</Badge>;
+        return <Badge style={{ backgroundColor: '#F9A825', color: '#ffffff' }} className="hover:bg-yellow-600 px-4 py-1 font-semibold text-center min-w-[72px] inline-flex items-center justify-center">Leave</Badge>;
       case 'Half-Day':
       case 'Half Day':
-        return <Badge style={{ backgroundColor: '#3BAFDA', color: '#ffffff' }} className="hover:bg-blue-600">Half-Day</Badge>;
+        return <Badge style={{ backgroundColor: '#3BAFDA', color: '#ffffff' }} className="hover:bg-blue-600 px-4 py-1 font-semibold text-center min-w-[72px] inline-flex items-center justify-center">Half-Day</Badge>;
       case 'Week Off':
       case 'Weekend Off':
-        return <Badge style={{ backgroundColor: '#64748B', color: '#ffffff' }} className="hover:bg-slate-600">Week Off</Badge>;
+        return <Badge style={{ backgroundColor: '#64748B', color: '#ffffff' }} className="hover:bg-slate-600 px-4 py-1 font-semibold text-center min-w-[72px] inline-flex items-center justify-center">Week Off</Badge>;
       case 'Absent':
-        return <Badge style={{ backgroundColor: '#EF4444', color: '#ffffff' }} className="hover:bg-red-600">Absent</Badge>;
+        return <Badge style={{ backgroundColor: '#EF4444', color: '#ffffff' }} className="hover:bg-red-600 px-4 py-1 font-semibold text-center min-w-[72px] inline-flex items-center justify-center">Absent</Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>;
+        return <Badge variant="secondary" className="px-4 py-1 font-semibold text-center min-w-[72px] inline-flex items-center justify-center">{status}</Badge>;
     }
   };
 
@@ -1292,13 +1294,13 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
       {/* Filters */}
       <Card className="p-6">
         <div className="flex flex-wrap gap-4 items-center">
-          <div className="flex items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
+          <div className="relative flex items-center flex-1 sm:flex-initial min-w-[200px] sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
             <Input
               placeholder="Search employees..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-64"
+              className="pl-9 w-full"
             />
           </div>
 
@@ -1530,71 +1532,123 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
         </div>
       </Card>
 
-      {/* Admin Edit Attendance Status & Times Modal */}
+      {/* Admin Edit Attendance Status & Times Modal - High Precision SaaS Design */}
       <Dialog open={!!editingRecord} onOpenChange={(open) => !open && setEditingRecord(null)}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Update Attendance Record</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[480px] p-0 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white overflow-hidden">
+          {/* Header Banner */}
+          <div className="px-6 pt-6 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-800/40">
+                <Pencil className="h-5 w-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-base font-bold text-slate-900 dark:text-white">Update Attendance Record</DialogTitle>
+                <DialogDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Modify attendance status & time stamps
+                </DialogDescription>
+              </div>
+            </div>
+          </div>
+
           {editingRecord && (
-            <div className="grid gap-4 py-4">
-              <div className="flex justify-between items-center bg-muted/50 p-3 rounded-lg text-sm border">
-                <div>
-                  <p className="font-semibold text-foreground">{editingRecord.employeeId?.name || 'Employee'}</p>
-                  <p className="text-xs text-muted-foreground">{editingRecord.employeeId?.department || 'Department'}</p>
+            <div className="p-6 space-y-5">
+              {/* Employee & Date Information Card */}
+              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
+                    {(editingRecord.employeeId?.name || 'EM').substring(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-900 dark:text-white text-sm leading-tight">
+                      {editingRecord.employeeId?.name || 'Employee'}
+                    </p>
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                      {editingRecord.employeeId?.department || 'General Staff'}
+                    </p>
+                  </div>
                 </div>
-                <Badge variant="outline" className="text-xs font-mono bg-background">
-                  {editingRecord.date}
+                <Badge variant="outline" className="text-xs font-mono font-bold bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs">
+                  📅 {editingRecord.date}
                 </Badge>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="editStatus">Status</Label>
+              {/* Status Selector */}
+              <div className="space-y-1.5">
+                <Label htmlFor="editStatus" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Attendance Status
+                </Label>
                 <Select value={editStatus} onValueChange={setEditStatus}>
-                  <SelectTrigger id="editStatus">
+                  <SelectTrigger id="editStatus" className="h-11 w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 shadow-xs font-semibold text-slate-800 dark:text-slate-100 hover:border-slate-400">
                     <SelectValue placeholder="Select Status" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Present">Present</SelectItem>
-                    <SelectItem value="Absent">Absent</SelectItem>
-                    <SelectItem value="Leave">Leave</SelectItem>
-                    <SelectItem value="Half-Day">Half-Day</SelectItem>
-                    <SelectItem value="Week Off">Week Off</SelectItem>
+                  <SelectContent className="rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl bg-white dark:bg-slate-800">
+                    <SelectItem value="Present" className="font-semibold text-emerald-600 dark:text-emerald-400">● Present</SelectItem>
+                    <SelectItem value="Absent" className="font-semibold text-rose-600 dark:text-rose-400">● Absent</SelectItem>
+                    <SelectItem value="Leave" className="font-semibold text-amber-600 dark:text-amber-400">● Leave</SelectItem>
+                    <SelectItem value="Half-Day" className="font-semibold text-blue-600 dark:text-blue-400">● Half-Day</SelectItem>
+                    <SelectItem value="Week Off" className="font-semibold text-slate-600 dark:text-slate-400">● Week Off</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="editClockIn">Clock In Time</Label>
-                  <Input
-                    id="editClockIn"
-                    placeholder="e.g. 09:30:00 AM"
-                    value={editClockIn}
-                    onChange={(e) => setEditClockIn(e.target.value)}
-                  />
+              {/* Clock In and Clock Out Grid */}
+              <div className="grid grid-cols-2 gap-3.5">
+                <div className="space-y-1.5">
+                  <Label htmlFor="editClockIn" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Clock In Time
+                  </Label>
+                  <div className="relative">
+                    <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                    <Input
+                      id="editClockIn"
+                      placeholder="09:30:00 AM"
+                      value={editClockIn}
+                      onChange={(e) => setEditClockIn(e.target.value)}
+                      className="h-11 pl-10 pr-3 font-mono text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xs text-slate-900 dark:text-white"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editClockOut">Clock Out Time</Label>
-                  <Input
-                    id="editClockOut"
-                    placeholder="e.g. 06:30:00 PM"
-                    value={editClockOut}
-                    onChange={(e) => setEditClockOut(e.target.value)}
-                  />
+                <div className="space-y-1.5">
+                  <Label htmlFor="editClockOut" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Clock Out Time
+                  </Label>
+                  <div className="relative">
+                    <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                    <Input
+                      id="editClockOut"
+                      placeholder="06:30:00 PM"
+                      value={editClockOut}
+                      onChange={(e) => setEditClockOut(e.target.value)}
+                      className="h-11 pl-10 pr-3 font-mono text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xs text-slate-900 dark:text-white"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingRecord(null)}>
+
+          {/* Footer Controls */}
+          <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setEditingRecord(null)}
+              className="h-10 px-5 rounded-xl font-semibold text-xs border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+            >
               Cancel
             </Button>
-            <Button onClick={handleSaveAttendanceEdit} disabled={isUpdating}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSaveAttendanceEdit}
+              disabled={isUpdating}
+              className="h-10 px-6 rounded-xl font-bold text-xs bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white shadow-md hover:shadow-lg transition-all cursor-pointer"
+            >
               {isUpdating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Save Changes
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 

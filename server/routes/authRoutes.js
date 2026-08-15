@@ -109,4 +109,62 @@ router.post('/login', asyncHandler(async (req, res) => {
     throw new Error('Invalid email or password');
 }));
 
+// @desc    Get all employees with enrolled face profiles for Quick Face ID Login
+// @route   GET /api/auth/enrolled-faces
+// @access  Public
+router.get('/enrolled-faces', asyncHandler(async (req, res) => {
+    if (mongoose.connection.readyState === 1) {
+        await ensureSeedUsers();
+        const employees = await Employee.find({ faceImage: { $exists: true, $ne: '' } })
+            .select('_id name email role position department employeeCode faceImage faceEmbedding')
+            .lean();
+        return res.json(employees);
+    }
+    res.json([]);
+}));
+
+// @desc    Auth user via biometric face login
+// @route   POST /api/auth/face-login
+// @access  Public
+router.post('/face-login', asyncHandler(async (req, res) => {
+    const { employeeId, email } = req.body;
+
+    if (!employeeId && !email) {
+        res.status(400);
+        throw new Error('Employee identifier required for Face Login');
+    }
+
+    if (mongoose.connection.readyState === 1) {
+        let employee = null;
+        if (employeeId && mongoose.Types.ObjectId.isValid(employeeId)) {
+            employee = await Employee.findById(employeeId);
+        }
+        if (!employee && email) {
+            employee = await Employee.findOne({ email: new RegExp(`^${email.trim()}$`, 'i') });
+        }
+
+        if (employee) {
+            const empCode = employee.employeeCode || (employee._id ? `EMP-${employee._id.toString().substring(0, 6).toUpperCase()}` : 'EMP-101');
+            return res.json({
+                _id: employee._id.toString(),
+                id: employee._id.toString(),
+                name: employee.name,
+                email: employee.email,
+                role: employee.role,
+                position: employee.position,
+                department: employee.department,
+                employeeCode: empCode,
+                salary: employee.salary,
+                faceImage: employee.faceImage || '',
+                hireDate: employee.hireDate || employee.createdAt,
+                darkMode: employee.darkMode || false,
+                token: generateToken(employee._id),
+            });
+        }
+    }
+
+    res.status(404);
+    throw new Error('Enrolled employee profile not found');
+}));
+
 export default router;

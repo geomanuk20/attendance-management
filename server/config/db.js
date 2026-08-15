@@ -1,10 +1,12 @@
 import mongoose from 'mongoose';
+import { ensureSeedData } from './seedData.js';
 
 const connectDB = async () => {
     try {
         const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/mtor_attendance';
         const conn = await mongoose.connect(mongoUri);
         console.log(`MongoDB Connected: ${conn.connection.host}`);
+        await ensureSeedData();
     } catch (error) {
         console.error(`MongoDB Connection Error: ${error.message}`);
         
@@ -14,6 +16,7 @@ const connectDB = async () => {
             try {
                 const conn = await mongoose.connect('mongodb://127.0.0.1:27017/mtor_attendance');
                 console.log(`Connected to local MongoDB: ${conn.connection.host}`);
+                await ensureSeedData();
                 return;
             } catch (fallbackError) {
                 console.error(`Local MongoDB Connection Error: ${fallbackError.message}`);

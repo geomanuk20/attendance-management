@@ -695,13 +695,13 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
 
       <Card className="p-4 sm:p-6">
         <div className="flex flex-wrap gap-3 items-center">
-          <div className="flex items-center gap-2 flex-1 sm:flex-initial min-w-[200px]">
-            <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div className="relative flex items-center flex-1 sm:flex-initial min-w-[200px] sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
             <Input
               placeholder="Search employees..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-64"
+              className="pl-9 w-full"
             />
           </div>
 
@@ -863,7 +863,7 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
                 </div>
                 <div>
                   <span className="text-muted-foreground block text-[11px] font-medium mb-1">Employment Type</span>
-                  <Badge variant="outline" className="text-[10px] py-0.5 px-2 font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700">
+                  <Badge variant="outline" className="text-[10px] py-0.5 px-2 font-bold leading-none bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700">
                     {selectedRecord?.employmentType || selectedRecord?.empDetails?.employmentType || 'Full-Time'}
                   </Badge>
                 </div>

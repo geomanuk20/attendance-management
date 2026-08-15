@@ -1,6 +1,7 @@
 import express from 'express';
 import asyncHandler from 'express-async-handler';
 import Employee from '../models/employeeModel.js';
+import { ensureSeedData } from '../config/seedData.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -9,7 +10,11 @@ const router = express.Router();
 // @route   GET /api/employees
 // @access  Public
 const getEmployees = asyncHandler(async (req, res) => {
-    const employees = await Employee.find({});
+    let employees = await Employee.find({});
+    if (!employees || employees.length === 0) {
+        await ensureSeedData();
+        employees = await Employee.find({});
+    }
     res.json(employees);
 });
 
@@ -17,7 +22,7 @@ const getEmployees = asyncHandler(async (req, res) => {
 // @route   POST /api/employees
 // @access  Public
 const createEmployee = asyncHandler(async (req, res) => {
-    const { name, email, password, phone, department, position, role, employeeCode, salary, hireDate, address, emergencyContact, ctc, basicSalary, hra, otherAllowances, faceImage, employmentType } = req.body;
+    const { name, email, password, phone, department, position, role, employeeCode, salary, hireDate, address, emergencyContact, ctc, basicSalary, hra, otherAllowances, faceImage, faceEmbedding, employmentType } = req.body;
 
     const employeeExists = await Employee.findOne({ email });
 
@@ -47,6 +52,7 @@ const createEmployee = asyncHandler(async (req, res) => {
             hra: hra || 0,
             otherAllowances: otherAllowances || 0,
             faceImage: faceImage || '',
+            faceEmbedding: faceEmbedding || [],
             employmentType: employmentType || 'Full-Time'
         });
 
@@ -72,9 +78,12 @@ const updateEmployee = asyncHandler(async (req, res) => {
     const isSelf = req.user && req.user._id.toString() === req.params.id;
     const isAdminOrHr = !req.user || (req.user && (req.user.role === 'admin' || req.user.role === 'superadmin' || req.user.role === 'hr'));
 
-    // Save face biometric photo if provided
+    // Save face biometric photo & embedding if provided
     if (req.body.faceImage !== undefined) {
         employee.faceImage = req.body.faceImage;
+    }
+    if (req.body.faceEmbedding !== undefined) {
+        employee.faceEmbedding = req.body.faceEmbedding;
     }
     if (req.body.phone !== undefined) employee.phone = req.body.phone;
     if (req.body.address !== undefined) employee.address = req.body.address;

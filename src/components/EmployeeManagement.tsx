@@ -481,6 +481,26 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
       };
 
       await updateEmployee(empId, updatedData);
+      
+      if (updatedData.faceImage && updatedData.faceImage.length > 20) {
+        try {
+          localStorage.setItem('enrolledFaceProfile', JSON.stringify({
+            _id: empId,
+            id: empId,
+            name: updatedData.name,
+            email: updatedData.email,
+            faceImage: updatedData.faceImage
+          }));
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            const parsed = JSON.parse(storedUser);
+            if ((parsed._id && String(parsed._id) === String(empId)) || (parsed.id && String(parsed.id) === String(empId))) {
+              localStorage.setItem('user', JSON.stringify({ ...parsed, faceImage: updatedData.faceImage }));
+            }
+          }
+        } catch {}
+      }
+
       toast.success('Employee updated successfully');
       setIsEditDialogOpen(false);
       setSelectedEmployee(null);
@@ -511,12 +531,27 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
   };
 
   const filteredEmployees = employees.filter(employee => {
-    const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDepartment = selectedDepartment === 'all' || employee.department === selectedDepartment;
-    const empId = String(employee._id || employee.id);
-    const attendanceStatus = onLeaveToday.has(empId) ? 'On Leave' : clockedInToday.has(empId) ? 'Active' : 'Inactive';
-    const matchesStatus = selectedStatus === 'all' || attendanceStatus === selectedStatus;
+    const nameStr = String(employee.name || '').toLowerCase();
+    const emailStr = String(employee.email || '').toLowerCase();
+    const posStr = String(employee.position || '').toLowerCase();
+    const deptStr = String(employee.department || '').toLowerCase();
+    const codeStr = String(employee.employeeCode || '').toLowerCase();
+    const searchLower = searchTerm.trim().toLowerCase();
+
+    const matchesSearch = !searchLower ||
+      nameStr.includes(searchLower) ||
+      emailStr.includes(searchLower) ||
+      posStr.includes(searchLower) ||
+      deptStr.includes(searchLower) ||
+      codeStr.includes(searchLower);
+
+    const matchesDepartment = selectedDepartment === 'all' ||
+      String(employee.department || '').toLowerCase() === selectedDepartment.toLowerCase();
+
+    const empAccountStatus = employee.status || 'Active';
+    const matchesStatus = selectedStatus === 'all' ||
+      String(empAccountStatus).toLowerCase() === selectedStatus.toLowerCase();
+
     return matchesSearch && matchesDepartment && matchesStatus;
   });
 
@@ -919,13 +954,13 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
       {/* Filters */}
       <Card className="p-6">
         <div className="flex flex-wrap gap-4 items-center">
-          <div className="flex items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
+          <div className="relative flex items-center flex-1 sm:flex-initial min-w-[200px] sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
             <Input
               placeholder="Search employees..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-64"
+              className="pl-9 w-full"
             />
           </div>
 
@@ -1013,7 +1048,7 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                   <TableCell>
                     <div className="space-y-1">
                       <p className="font-medium text-xs">{employee.position}</p>
-                      <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700">
+                      <Badge variant="outline" className="text-[10px] py-0.5 px-2 font-semibold leading-none bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700">
                         {employee.employmentType || 'Full-Time'}
                       </Badge>
                     </div>

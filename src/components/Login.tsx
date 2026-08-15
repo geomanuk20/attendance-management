@@ -3,9 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Lock, Mail, Scan, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import { loginUser } from '../services/api';
+import { loginUser, getEnrolledFaceProfiles, loginWithFace, getAttendance, clockIn, clockOut } from '../services/api';
+import { FaceRecognitionModal } from './FaceRecognitionModal';
 
 interface LoginProps {
     onLogin: (user: any) => void;
@@ -16,6 +17,11 @@ export function Login({ onLogin }: LoginProps) {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    
+    // Face Recognition Quick Login State
+    const [isFaceModalOpen, setIsFaceModalOpen] = useState(false);
+    const [enrolledFaceProfiles, setEnrolledFaceProfiles] = useState<any[]>([]);
+    const [loadingFaces, setLoadingFaces] = useState(false);
 
     const performLogin = async (targetEmail: string, targetPass: string) => {
         setLoading(true);
@@ -52,6 +58,77 @@ export function Login({ onLogin }: LoginProps) {
         await performLogin(email, password);
     };
 
+    const handleStartFaceLogin = async () => {
+        setLoadingFaces(true);
+        try {
+            const profiles = await getEnrolledFaceProfiles();
+            if (!profiles || profiles.length === 0) {
+                toast.error('No enrolled employee face photos found in database. Please log in with email/password and upload a biometric face photo in Employee Management.');
+                return;
+            }
+            setEnrolledFaceProfiles(profiles);
+            setIsFaceModalOpen(true);
+        } catch (err: any) {
+            toast.error('Could not load biometric face database');
+        } finally {
+            setLoadingFaces(false);
+        }
+    };
+
+    const handleFaceVerified = async (matchedUser: any) => {
+        if (!matchedUser || !matchedUser.faceImage || matchedUser.faceImage.length < 50) {
+            toast.error('Unrecognized Face: Identity does not match any enrolled user photo.');
+            return;
+        }
+        setLoading(true);
+        try {
+            const data = await loginWithFace(matchedUser);
+            const empId = data._id || data.id || matchedUser._id || matchedUser.id;
+
+            let clockStatusMessage = '';
+            if (empId) {
+                try {
+                    const attendanceLogs = await getAttendance(empId);
+                    const today = new Date().toISOString().split('T')[0];
+                    const todayRec = Array.isArray(attendanceLogs) ? attendanceLogs.find((r: any) => String(r.date).split('T')[0] === today) : null;
+
+                    if (!todayRec || !todayRec.clockIn) {
+                        const clockRes = await clockIn(empId);
+                        const timeStr = clockRes.clockIn || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        clockStatusMessage = ` & Clocked In at ${timeStr}`;
+                    } else if (todayRec.clockIn && (!todayRec.clockOut || todayRec.clockOut === '-')) {
+                        const clockRes = await clockOut(empId);
+                        const timeStr = clockRes.clockOut || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const totalHours = clockRes.workHours || 0;
+                        const h = Math.floor(totalHours);
+                        const m = Math.round((totalHours - h) * 60);
+                        const duration = h > 0 ? `${h}h ${m}m` : `${m}m`;
+                        clockStatusMessage = ` & Clocked Out at ${timeStr} (Worked: ${duration})`;
+                    }
+                } catch (clockErr) {
+                    console.warn('Auto clock in/out on face login error:', clockErr);
+                }
+            }
+
+            localStorage.setItem('enrolledFaceProfile', JSON.stringify({
+                _id: empId,
+                name: data.name || matchedUser.name,
+                email: data.email || matchedUser.email,
+                role: data.role || matchedUser.role,
+                position: data.position || matchedUser.position,
+                token: data.token,
+                enrolledAt: new Date().toISOString()
+            }));
+
+            onLogin(data);
+            toast.success(`✓ Biometric Face Verified! Welcome, ${data.name || matchedUser.name}${clockStatusMessage}!`);
+        } catch (err: any) {
+            toast.error(err.message || 'Biometric Face Login failed');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen w-full flex items-center justify-center bg-slate-50 p-4 sm:p-6">
             <Card className="w-full max-w-sm shadow-md border border-slate-200/80 bg-white rounded-xl">
@@ -61,6 +138,28 @@ export function Login({ onLogin }: LoginProps) {
                 </CardHeader>
                 <form onSubmit={handleSubmit}>
                     <CardContent className="space-y-4 pt-2 pb-6">
+                        {/* Quick Face Scan Pill Button (Matching Uploaded Design) */}
+                        <Button
+                            type="button"
+                            onClick={handleStartFaceLogin}
+                            disabled={loading || loadingFaces}
+                            className="w-full h-12 bg-white hover:bg-slate-50 text-slate-900 border border-slate-200/90 shadow-md hover:shadow-lg rounded-full font-bold text-sm gap-3 transition-all cursor-pointer"
+                        >
+                            {loadingFaces ? (
+                                <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
+                            ) : (
+                                <div className="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-200/60">
+                                    <Scan className="h-4 w-4 text-emerald-600 animate-pulse" />
+                                </div>
+                            )}
+                            <span className="tracking-tight text-slate-800 font-bold">Quick Face Scan Login</span>
+                        </Button>
+
+                        <div className="relative flex items-center justify-center my-2">
+                            <div className="border-t border-slate-200 w-full" />
+                            <span className="bg-white px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider absolute">or</span>
+                        </div>
+
                         <div className="space-y-2">
                             <Label htmlFor="email" className="text-sm font-medium text-slate-700">Email</Label>
                             <div className="relative flex items-center">
@@ -103,8 +202,8 @@ export function Login({ onLogin }: LoginProps) {
                                 </button>
                             </div>
                         </div>
-                        <div className="pt-4 space-y-3">
-                            <Button className="w-full h-10 bg-slate-900 hover:bg-slate-800 text-white font-semibold" type="submit" disabled={loading}>
+                        <div className="pt-2 space-y-3">
+                            <Button className="w-full h-10 bg-slate-900 hover:bg-slate-800 text-white font-semibold cursor-pointer" type="submit" disabled={loading}>
                                 {loading ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -118,6 +217,15 @@ export function Login({ onLogin }: LoginProps) {
                     </CardContent>
                 </form>
             </Card>
+
+            {/* Biometric Face Recognition Login Modal */}
+            <FaceRecognitionModal
+                isOpen={isFaceModalOpen}
+                onClose={() => setIsFaceModalOpen(false)}
+                onVerified={handleFaceVerified}
+                actionType="Login"
+                enrolledEmployees={enrolledFaceProfiles}
+            />
         </div>
     );
 }

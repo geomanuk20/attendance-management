@@ -4,6 +4,9 @@
       "type": "module",
       "private": true,
       "dependencies": {
+            "@capacitor/android": "^8.5.0",
+            "@capacitor/cli": "^8.5.0",
+            "@capacitor/core": "^8.5.0",
             "@radix-ui/react-accordion": "^1.2.3",
             "@radix-ui/react-alert-dialog": "^1.1.6",
             "@radix-ui/react-aspect-ratio": "^1.1.2",
@@ -73,7 +76,11 @@
             "mobile:dev": "concurrently \"nodemon server/index.js\" \"cd mobile && npx expo start\"",
             "build": "vite build",
             "server": "nodemon server/index.js",
-            "client": "vite"
+            "client": "vite",
+            "cap:sync": "npx cap sync android",
+            "cap:open": "npx cap open android",
+            "build:android": "npm run build && npx cap sync android",
+            "build:apk": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug"
       },
       "overrides": {
             "esbuild": "^0.25.0"

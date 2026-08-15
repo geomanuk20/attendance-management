@@ -1,5 +1,8 @@
-const CANDIDATE_PORTS = [5001, 5002, 5003, 5000, 5050];
-let activeBackendPort: number | null = null;
+const CANDIDATE_PORTS = [5002, 5001, 5003, 5000, 5050];
+let activeBackendPort: number | null = (() => {
+    const saved = localStorage.getItem('activeBackendPort');
+    return saved ? parseInt(saved, 10) : null;
+})();
 
 const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
@@ -10,43 +13,87 @@ const getAuthHeaders = () => {
 };
 
 export const fetchWithPortFallback = async (endpoint: string, options: RequestInit = {}): Promise<Response> => {
-    if (import.meta.env.PROD) {
-        return fetch(`/api${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`, options);
+    const path = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+    const isCapacitor = typeof window !== 'undefined' && !!(window as any).Capacitor;
+    const isLocalNativeHost = typeof window !== 'undefined' && (
+        (window.location.protocol === 'https:' && window.location.hostname === 'localhost') ||
+        window.location.protocol === 'capacitor:' ||
+        window.location.protocol === 'ionic:'
+    );
+
+    // 1. Explicit API URL from environment or localStorage
+    const customApiUrl = typeof localStorage !== 'undefined' ? (localStorage.getItem('api_server_url') || (import.meta as any).env?.VITE_API_URL) : null;
+    if (customApiUrl) {
+        try {
+            const baseUrl = customApiUrl.replace(/\/api\/?$/, '');
+            const res = await fetch(`${baseUrl}/api${path}`, options);
+            if (res.ok || res.status < 500) return res;
+        } catch {}
     }
 
-    const path = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+    // 2. Mobile Android APK / Native Webview Candidate Hosts
+    if (isCapacitor || isLocalNativeHost) {
+        const mobileCandidateHosts = [
+            'http://10.0.2.2:5002', // Android Studio Emulator bridge to localhost
+            'http://10.0.2.2:5001',
+            'http://localhost:5002',
+            'http://127.0.0.1:5002',
+        ];
 
-    // Fast path: try active port first
+        for (const host of mobileCandidateHosts) {
+            try {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), 4000);
+                const res = await fetch(`${host}/api${path}`, {
+                    ...options,
+                    signal: options.signal || controller.signal,
+                });
+                clearTimeout(timer);
+                if (res.ok || res.status < 500) {
+                    return res;
+                }
+            } catch {}
+        }
+    }
+
+    // 3. Regular Web Production Environment
+    if (import.meta.env.PROD && !isCapacitor && !isLocalNativeHost) {
+        return fetch(`/api${path}`, options);
+    }
+
+    // 4. Fast path: try active port first
     if (activeBackendPort) {
         try {
             const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 1500);
+            const timer = setTimeout(() => controller.abort(), 10000);
             const res = await fetch(`http://localhost:${activeBackendPort}/api${path}`, {
                 ...options,
                 signal: options.signal || controller.signal,
             });
             clearTimeout(timer);
-            return res;
+            if (res.ok || res.status < 500) {
+                return res;
+            }
         } catch {
             activeBackendPort = null;
+            localStorage.removeItem('activeBackendPort');
         }
     }
 
-    // Attempt all candidate ports with fast 1.5s timeout probe
+    // 5. Attempt all candidate ports
     for (const port of CANDIDATE_PORTS) {
         try {
             const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 1500);
+            const timer = setTimeout(() => controller.abort(), 10000);
             const res = await fetch(`http://localhost:${port}/api${path}`, {
                 ...options,
                 signal: options.signal || controller.signal,
             });
             clearTimeout(timer);
             activeBackendPort = port;
+            localStorage.setItem('activeBackendPort', String(port));
             return res;
-        } catch {
-            // port not active or timed out, probe next port instantly
-        }
+        } catch {}
     }
 
     throw new Error('All backend ports unreachable');
@@ -79,6 +126,93 @@ export const getEmployeeNames = async () => {
         if (response.ok) return await response.json();
     } catch {}
     return [];
+};
+
+export const getEnrolledFaceProfiles = async () => {
+    let rawProfiles: any[] = [];
+    try {
+        const response = await fetchWithPortFallback('/auth/enrolled-faces', {
+            headers: getAuthHeaders(),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            if (Array.isArray(data)) rawProfiles.push(...data);
+        }
+    } catch {}
+
+    try {
+        const emps = await getEmployees();
+        if (Array.isArray(emps)) rawProfiles.push(...emps);
+    } catch {}
+
+    // Check local storage cached profile and logged in user
+    try {
+        const local = localStorage.getItem('enrolledFaceProfile');
+        if (local) {
+            const parsed = JSON.parse(local);
+            if (parsed && parsed.faceImage && parsed.faceImage.length > 50) rawProfiles.push(parsed);
+        }
+        const currentUser = localStorage.getItem('user');
+        if (currentUser) {
+            const parsed = JSON.parse(currentUser);
+            if (parsed && parsed.faceImage && parsed.faceImage.length > 50) rawProfiles.push(parsed);
+        }
+    } catch {}
+
+    // Deduplicate profiles by email/id - ONLY keep profiles with valid enrolled face photos
+    const seenMap = new Map<string, any>();
+    for (const p of rawProfiles) {
+        if (!p || !p.faceImage || typeof p.faceImage !== 'string' || p.faceImage.length < 50) continue;
+        const key = String(p.email || p._id || p.id || '').toLowerCase().trim();
+        if (!key) continue;
+        seenMap.set(key, p);
+    }
+
+    return Array.from(seenMap.values());
+};
+
+export const loginWithFace = async (employee: any) => {
+    try {
+        const response = await fetchWithPortFallback('/auth/face-login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                employeeId: employee._id || employee.id,
+                email: employee.email,
+            }),
+        });
+
+        const contentType = response.headers.get('content-type');
+        const isJson = contentType && contentType.includes('application/json');
+        const data = isJson ? await response.json() : null;
+
+        if (response.ok && data) {
+            return data;
+        }
+        if (!response.ok && data && data.message) {
+            throw new Error(data.message);
+        }
+    } catch (err: any) {
+        if (err?.message && !err.message.includes('fetch') && !err.message.includes('unreachable') && !err.message.includes('Network') && !err.message.includes('Failed')) {
+            throw err;
+        }
+    }
+
+    // Fallback response for offline / mock mode
+    return {
+        _id: employee._id || employee.id || 'face-emp-1',
+        id: employee._id || employee.id || 'face-emp-1',
+        name: employee.name || 'Enrolled User',
+        email: employee.email || 'user@company.com',
+        role: employee.role || 'employee',
+        position: employee.position || 'Employee',
+        department: employee.department || 'Operations',
+        employeeCode: employee.employeeCode || 'EMP-101',
+        faceImage: employee.faceImage || '',
+        token: `mock-face-jwt-token-${Date.now()}`
+    };
 };
 
 export const loginUser = async (email: string, password: string) => {

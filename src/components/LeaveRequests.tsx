@@ -324,13 +324,13 @@ export function LeaveRequests({ userRole = 'admin' }: LeaveRequestsProps) {
       {/* Filters */}
       <Card className="p-6">
         <div className="flex flex-wrap gap-4 items-center">
-          <div className="flex items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
+          <div className="relative flex items-center flex-1 sm:flex-initial min-w-[200px] sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
             <Input
               placeholder="Search employees..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-64"
+              className="pl-9 w-full"
             />
           </div>
 

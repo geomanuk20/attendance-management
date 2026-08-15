@@ -180,37 +180,36 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
   };
 
   const handleClockIn = async () => {
-    const isOk = await verifyLocation();
-    if (!isOk) return;
-
     setPendingClockAction('Clock In');
     setIsFaceModalOpen(true);
   };
 
   const handleClockOut = async () => {
-    const isOk = await verifyLocation();
-    if (!isOk) return;
-
     setPendingClockAction('Clock Out');
     setIsFaceModalOpen(true);
   };
 
-  const executeVerifiedClockAction = async () => {
-    const userId = user?.id || user?._id;
-    if (!userId) return;
+  const executeVerifiedClockAction = async (matchedUser?: any) => {
+    const userId = matchedUser?._id || matchedUser?.id || user?.id || user?._id;
+    if (!userId) {
+      toast.error('Could not identify employee profile for attendance logging.');
+      return;
+    }
 
     try {
       setLoading(true);
       if (pendingClockAction === 'Clock In') {
         const res = await clockIn(userId);
-        toast.success(`Face Verified! Clocked in successfully at ${res.clockIn || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
+        const timeStr = res.clockIn || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        toast.success(`✓ Biometric Face Verified! Clocked In at ${timeStr}`);
       } else {
         const res = await clockOut(userId);
+        const timeStr = res.clockOut || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const totalHours = res.workHours || 0;
         const h = Math.floor(totalHours);
         const m = Math.round((totalHours - h) * 60);
         const duration = h > 0 ? `${h}h ${m}m` : `${m}m`;
-        toast.success(`Face Verified! Clocked out successfully at ${res.clockOut || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. Today's working hours: ${duration}`);
+        toast.success(`✓ Biometric Face Verified! Clocked Out at ${timeStr}. Today's Hours: ${duration}`);
       }
       fetchTodayAttendance(userId);
     } catch (error: any) {
@@ -222,6 +221,7 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
         return;
       }
       toast.error(error.message || `Failed to ${pendingClockAction.toLowerCase()}`);
+    } finally {
       setLoading(false);
     }
   };

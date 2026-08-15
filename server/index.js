@@ -25,7 +25,11 @@ import authRoutes from './routes/authRoutes.js';
 import appUpdateRoutes from './routes/appUpdateRoutes.js';
 import companySettingsRoutes from './routes/companySettingsRoutes.js';
 
-app.use(cors({ origin: '*' }));
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 

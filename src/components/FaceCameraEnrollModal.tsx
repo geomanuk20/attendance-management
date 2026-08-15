@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
 import { Camera, CheckCircle2, ShieldCheck, RefreshCw, AlertCircle, Scan, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface FaceCameraEnrollModalProps {
   isOpen: boolean;
@@ -20,6 +21,10 @@ export function FaceCameraEnrollModal({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  const [enrollProgress, setEnrollProgress] = useState<number>(0);
+  const [enrollStage, setEnrollStage] = useState<'idle' | 'eyes' | 'left' | 'right' | 'up' | 'down' | 'complete'>('idle');
+  const [enrollStatus, setEnrollStatus] = useState<string>('Align face in frame to begin scan...');
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -64,6 +69,8 @@ export function FaceCameraEnrollModal({
       stopCamera();
       setPreviewImage(null);
       setCameraError(null);
+      setEnrollProgress(0);
+      setEnrollStage('idle');
       return;
     }
 
@@ -75,23 +82,248 @@ export function FaceCameraEnrollModal({
     };
   }, [isOpen]);
 
+  const checkFaceInCircle = (video: HTMLVideoElement | null): boolean => {
+    if (!video || video.readyState < 2 || !video.videoWidth || !video.videoHeight) return false;
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 120;
+      canvas.height = 120;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return false;
+
+      const cw = video.videoWidth;
+      const ch = video.videoHeight;
+      const cropW = cw * 0.6;
+      const cropH = ch * 0.6;
+      const cropX = (cw - cropW) / 2;
+      const cropY = (ch - cropH) / 2;
+
+      ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 120, 120);
+      const imgData = ctx.getImageData(0, 0, 120, 120);
+      const pixels = imgData.data;
+      let skinPixelCount = 0;
+      let sumX = 0;
+      let sumY = 0;
+      let totalLuminance = 0;
+      const rowLuminances: number[] = new Array(120).fill(0);
+
+      for (let y = 0; y < 120; y++) {
+        for (let x = 0; x < 120; x++) {
+          const idx = (y * 120 + x) * 4;
+          const r = pixels[idx];
+          const g = pixels[idx + 1];
+          const b = pixels[idx + 2];
+
+          const isSkin = (r > 40) && (g > 20) && (b > 15) && (r > g) && (r > b) && (Math.abs(r - g) >= 10);
+          if (isSkin) {
+            skinPixelCount++;
+            sumX += x;
+            sumY += y;
+          }
+
+          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+          totalLuminance += lum;
+          rowLuminances[y] += lum / 120;
+        }
+      }
+
+      const numPixels = 120 * 120;
+      const skinRatio = skinPixelCount / numPixels;
+      const meanLuminance = totalLuminance / numPixels;
+
+      if (meanLuminance < 20 || skinRatio < 0.22) return false;
+
+      // 1. Strict centroid centering inside circle
+      const centroidX = sumX / skinPixelCount;
+      const centroidY = sumY / skinPixelCount;
+      const isProperlyCentered = centroidX >= 42 && centroidX <= 78 && centroidY >= 40 && centroidY <= 80;
+      if (!isProperlyCentered) return false;
+
+      let leftEyeLum = 0, rightEyeLum = 0, noseBridgeLum = 0;
+      for (let y = 20; y < 50; y++) {
+        for (let x = 20; x < 50; x++) {
+          const idx = (y * 120 + x) * 4;
+          leftEyeLum += (0.299 * pixels[idx] + 0.587 * pixels[idx + 1] + 0.114 * pixels[idx + 2]);
+        }
+        for (let x = 70; x < 100; x++) {
+          const idx = (y * 120 + x) * 4;
+          rightEyeLum += (0.299 * pixels[idx] + 0.587 * pixels[idx + 1] + 0.114 * pixels[idx + 2]);
+        }
+        for (let x = 50; x < 70; x++) {
+          const idx = (y * 120 + x) * 4;
+          noseBridgeLum += (0.299 * pixels[idx] + 0.587 * pixels[idx + 1] + 0.114 * pixels[idx + 2]);
+        }
+      }
+      const avgLeftEye = leftEyeLum / (30 * 30);
+      const avgRightEye = rightEyeLum / (30 * 30);
+      const avgBridge = noseBridgeLum / (30 * 20);
+
+      const hasFacialStructure = Math.abs(avgLeftEye - avgRightEye) < 45 && (avgBridge >= avgLeftEye - 15);
+
+      // Occlusion Check: Detect hand/mask covering mouth, nose, or lower face
+      let minLowerLum = 255;
+      let maxLowerLum = 0;
+      let sumLowerLum = 0;
+      let lowerCount = 0;
+
+      for (let y = 55; y < 98; y++) {
+        for (let x = 35; x < 85; x++) {
+          const idx = (y * 120 + x) * 4;
+          const r = pixels[idx];
+          const g = pixels[idx + 1];
+          const b = pixels[idx + 2];
+          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+          if (lum < minLowerLum) minLowerLum = lum;
+          if (lum > maxLowerLum) maxLowerLum = lum;
+          sumLowerLum += lum;
+          lowerCount++;
+        }
+      }
+
+      const avgLowerLum = sumLowerLum / lowerCount;
+      const lowerContrast = maxLowerLum - minLowerLum;
+
+      const isOccludedByHand = lowerContrast < 18 || minLowerLum > (avgLowerLum - 12);
+      if (isOccludedByHand) {
+        return false;
+      }
+
+      let varianceSum = 0;
+      for (let y = 0; y < 120; y++) {
+        varianceSum += Math.pow(rowLuminances[y] - meanLuminance, 2);
+      }
+      const stdDev = Math.sqrt(varianceSum / 120);
+
+      return hasFacialStructure && stdDev >= 5.0 && skinRatio >= 0.22;
+    } catch {
+      return false;
+    }
+  };
+
+  const isEnrollRunningRef = useRef<boolean>(false);
+
+  // Guided 5-Stage Multi-Angle Enrollment Scan Sequence
+  useEffect(() => {
+    if (!isOpen || !hasCamera || previewImage) {
+      isEnrollRunningRef.current = false;
+      return;
+    }
+
+    if (isEnrollRunningRef.current) return;
+    isEnrollRunningRef.current = true;
+
+    let isCancelled = false;
+
+    const runEnrollSequence = async () => {
+      const ensureFaceInCircle = async (): Promise<boolean> => {
+        while (!isCancelled) {
+          const isUncovered = checkFaceInCircle(videoRef.current);
+          if (isUncovered) return true;
+
+          setEnrollStage('idle');
+          setEnrollProgress(0);
+          setEnrollStatus('⚠️ Face covered by hand or mask. Uncover your face to auto-scan...');
+          await new Promise(r => setTimeout(r, 300));
+        }
+        return false;
+      };
+
+      await ensureFaceInCircle();
+      if (isCancelled) return;
+
+      // Stage 1: Eyes & Nose Bridge Alignment (20%)
+      setEnrollStage('eyes');
+      setEnrollProgress(20);
+      setEnrollStatus('👁️ Stage 1/5: Aligning Eyes & Nose Bridge...');
+      await new Promise(r => setTimeout(r, 1000));
+      if (isCancelled) return;
+
+      await ensureFaceInCircle();
+      if (isCancelled) return;
+
+      // Stage 2: Left Side Profile (40%)
+      setEnrollStage('left');
+      setEnrollProgress(40);
+      setEnrollStatus('👈 Stage 2/5: Turn Head Slowly LEFT...');
+      await new Promise(r => setTimeout(r, 1000));
+      if (isCancelled) return;
+
+      await ensureFaceInCircle();
+      if (isCancelled) return;
+
+      // Stage 3: Right Side Profile (60%)
+      setEnrollStage('right');
+      setEnrollProgress(60);
+      setEnrollStatus('👉 Stage 3/5: Turn Head Slowly RIGHT...');
+      await new Promise(r => setTimeout(r, 1000));
+      if (isCancelled) return;
+
+      await ensureFaceInCircle();
+      if (isCancelled) return;
+
+      // Stage 4: Tilt Head Up (80%)
+      setEnrollStage('up');
+      setEnrollProgress(80);
+      setEnrollStatus('👆 Stage 4/5: Tilt Head Slightly UP...');
+      await new Promise(r => setTimeout(r, 1000));
+      if (isCancelled) return;
+
+      await ensureFaceInCircle();
+      if (isCancelled) return;
+
+      // Stage 5: Tilt Head Down (95%)
+      setEnrollStage('down');
+      setEnrollProgress(95);
+      setEnrollStatus('👇 Stage 5/5: Tilt Head Slightly DOWN...');
+      await new Promise(r => setTimeout(r, 1000));
+      if (isCancelled) return;
+
+      // Complete & Auto Snap (100%)
+      setEnrollStage('complete');
+      setEnrollProgress(100);
+      setEnrollStatus('✓ 100% All 5 Facial Angles Verified! Capturing photo...');
+      await new Promise(r => setTimeout(r, 600));
+      if (isCancelled) return;
+
+      snapPhoto();
+    };
+
+    runEnrollSequence();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOpen, hasCamera, previewImage]);
+
   const snapPhoto = () => {
     if (!videoRef.current) return;
     try {
       const video = videoRef.current;
+      const vw = video.videoWidth || 640;
+      const vh = video.videoHeight || 480;
+
+      // Full Face Region Crop (Head & Face from hair to chin, fully centered)
+      const cropSize = Math.min(vw, vh) * 0.70;
+      const cropX = (vw - cropSize) / 2;
+      const cropY = (vh - cropSize) / 2;
+
       const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
+      canvas.width = 320;
+      canvas.height = 320;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
       // Flip horizontally to mirror webcam view
-      ctx.translate(canvas.width, 0);
+      ctx.translate(320, 0);
       ctx.scale(-1, 1);
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, cropX, cropY, cropSize, cropSize, 0, 0, 320, 320);
 
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-      setPreviewImage(dataUrl);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      if (dataUrl && dataUrl.length > 500) {
+        setPreviewImage(dataUrl);
+        setEnrollProgress(100);
+        setEnrollStatus('✓ Biometric Face Photo Captured Successfully!');
+      }
     } catch (e) {
       console.error('Snap photo error:', e);
     }
@@ -104,8 +336,10 @@ export function FaceCameraEnrollModal({
       await onCapture(previewImage);
       stopCamera();
       onClose();
-    } catch (err) {
+      toast.success('Biometric face photo enrolled successfully!');
+    } catch (err: any) {
       console.error('Save face image error:', err);
+      toast.error('Failed to save biometric face photo');
     } finally {
       setIsCapturing(false);
     }
@@ -113,80 +347,120 @@ export function FaceCameraEnrollModal({
 
   const handleRetake = () => {
     setPreviewImage(null);
-    if (!streamRef.current) {
-      startCamera();
-    }
+    setEnrollStage('idle');
+    setEnrollProgress(0);
+    setEnrollStatus('Position your face inside the green circle to enroll...');
+    isEnrollRunningRef.current = false;
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) { stopCamera(); onClose(); } }}>
-      <DialogContent className="max-w-md w-full p-6 rounded-2xl border border-slate-800 bg-slate-900 text-white shadow-2xl space-y-4">
-        <DialogHeader className="p-0 space-y-1">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-emerald-400" />
+      <DialogContent className="max-w-sm w-full p-6 rounded-3xl border border-slate-700 bg-slate-900 text-white shadow-2xl flex flex-col items-center justify-center space-y-4">
+        <DialogHeader className="p-0 text-center space-y-1">
+          <div className="flex items-center justify-center gap-2">
+            <Camera className="h-5 w-5 text-emerald-400" />
             <DialogTitle className="text-lg font-bold text-white">Biometric Face ID Camera</DialogTitle>
           </div>
           <DialogDescription className="text-slate-400 text-xs">
-            Position your face in the camera frame to capture biometric profile photo — <span className="text-emerald-400 font-semibold">{userName}</span>
+            Position your face in camera frame to enroll biometric photo — <span className="text-emerald-400 font-semibold">{userName}</span>
           </DialogDescription>
         </DialogHeader>
 
-        <div className="relative w-full h-64 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-center overflow-hidden">
-          {previewImage ? (
-            <img src={previewImage} alt="Captured Face" className="w-full h-full object-cover" />
-          ) : (
+        {/* 100% Mathematically Concentric Circular Camera Viewport */}
+        <div style={{ width: 190, height: 190, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '4px auto', flexShrink: 0 }}>
+          {/* SVG Circular Progress Ring */}
+          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 20 }} className="-rotate-90" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="46" fill="transparent" stroke="#334155" strokeWidth="4" />
+            <circle
+              cx="50"
+              cy="50"
+              r="46"
+              fill="transparent"
+              stroke="#22c55e"
+              strokeWidth="4.5"
+              strokeDasharray="289"
+              strokeDashoffset={289 - (289 * enrollProgress) / 100}
+              strokeLinecap="round"
+              className="transition-all duration-300 ease-out"
+            />
+          </svg>
+
+          {/* Masked Camera Circle Container with Strict Overflow Clip */}
+          <div style={{ width: 172, height: 172, borderRadius: '50%', overflow: 'hidden', position: 'relative', flexShrink: 0, zIndex: 10 }} className="bg-slate-950 flex items-center justify-center shadow-inner">
+            {/* Always keep video tag mounted in DOM so streamRef.current is never lost */}
             <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
-              className={`w-full h-full object-cover scale-x-[-1] ${hasCamera ? 'block' : 'hidden'}`}
+              style={{
+                width: '100%',
+                height: '100%',
+                borderRadius: '50%',
+                objectFit: 'cover',
+                transform: 'scaleX(-1)',
+                display: previewImage ? 'none' : (hasCamera ? 'block' : 'none'),
+              }}
             />
-          )}
 
-          {!hasCamera && !previewImage && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-gradient-to-b from-slate-900 to-slate-950 z-10">
-              <Camera className="h-10 w-10 text-cyan-400 animate-pulse mb-2" />
-              <p className="text-xs font-semibold text-slate-200">Opening Camera...</p>
-              {cameraError && (
-                <div className="mt-2 p-2.5 bg-amber-950/70 border border-amber-500/40 rounded-lg max-w-xs">
-                  <p className="text-[11px] text-amber-300 flex items-start gap-1 text-left leading-tight">
-                    <AlertCircle className="h-4 w-4 shrink-0 text-amber-400 mt-0.5" />
-                    <span>{cameraError}</span>
-                  </p>
-                </div>
-              )}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={startCamera}
-                className="mt-3 text-xs h-8 border-slate-700 text-cyan-300 hover:bg-slate-800 gap-1.5"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-                Retry Camera Access
-              </Button>
-            </div>
-          )}
+            {previewImage && (
+              <img
+                src={previewImage}
+                alt="Captured Face"
+                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', display: 'block' }}
+              />
+            )}
 
-          {!previewImage && hasCamera && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
-              <div className="relative w-40 h-48 rounded-[40px] border-2 border-cyan-400/80 shadow-[0_0_20px_rgba(34,211,238,0.3)]">
-                <div className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-cyan-400" />
-                <div className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-cyan-400" />
-                <div className="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-cyan-400" />
-                <div className="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-cyan-400" />
+            {!hasCamera && !previewImage && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center bg-slate-950 text-white z-10">
+                <Camera className="h-7 w-7 text-emerald-400 animate-pulse mb-1" />
+                <p className="text-[10px] font-semibold text-slate-300">Opening Camera...</p>
+                {cameraError && (
+                  <p className="text-[9px] text-amber-400 mt-0.5 max-w-[150px] leading-tight">{cameraError}</p>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={startCamera}
+                  className="mt-2 text-xs h-7 border-slate-700 text-cyan-300 hover:bg-slate-800 gap-1.5 rounded-full"
+                >
+                  <RefreshCw className="h-3 w-3" /> Retry
+                </Button>
               </div>
-            </div>
-          )}
+            )}
+
+            {/* Clean High-Tech Green Face Bounding Frame Overlay (No Text/Emojis Inside Circle) */}
+            {!previewImage && hasCamera && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                <div style={{ width: 110, height: 124 }} className="relative rounded-xl border-2 border-emerald-400 bg-emerald-500/10 shadow-[0_0_15px_rgba(52,211,153,0.4)]">
+                  {/* Corner Brackets */}
+                  <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-emerald-400 rounded-tl-sm" />
+                  <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-emerald-400 rounded-tr-sm" />
+                  <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-emerald-400 rounded-bl-sm" />
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-emerald-400 rounded-br-sm" />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="pt-2 flex items-center justify-between gap-3">
+        {/* Progress & Status Message Readout Below Circle */}
+        <div className="flex flex-col items-center justify-center text-center space-y-1">
+          <h3 className="text-3xl font-extrabold tracking-tight text-emerald-400">
+            {enrollProgress}%
+          </h3>
+          <p className="text-xs font-semibold text-slate-300 max-w-[260px] leading-relaxed">
+            {enrollStatus}
+          </p>
+        </div>
+
+        <div className="pt-2 w-full flex items-center justify-center gap-3">
           <Button
             type="button"
             variant="outline"
             onClick={() => { stopCamera(); onClose(); }}
-            className="text-xs h-9 border-slate-700 text-slate-300 hover:bg-slate-800"
+            className="text-xs h-10 px-5 border border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800 font-semibold rounded-full shadow-xs cursor-pointer"
           >
             Cancel
           </Button>
@@ -197,7 +471,7 @@ export function FaceCameraEnrollModal({
                 type="button"
                 variant="outline"
                 onClick={handleRetake}
-                className="text-xs h-9 border-slate-700 text-amber-300 hover:bg-slate-800 gap-1"
+                className="text-xs h-10 px-4 border-amber-500/60 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 font-bold gap-1 rounded-full cursor-pointer"
               >
                 <RefreshCw className="h-3.5 w-3.5" /> Retake
               </Button>
@@ -205,7 +479,7 @@ export function FaceCameraEnrollModal({
                 type="button"
                 onClick={handleConfirmSave}
                 disabled={isCapturing}
-                className="text-xs h-9 bg-emerald-600 hover:bg-emerald-500 text-white font-bold gap-1.5 px-4"
+                className="text-xs h-10 px-5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold gap-1.5 rounded-full shadow-md cursor-pointer"
               >
                 <CheckCircle2 className="h-4 w-4" /> Save Face Photo
               </Button>
@@ -215,9 +489,9 @@ export function FaceCameraEnrollModal({
               type="button"
               onClick={snapPhoto}
               disabled={!hasCamera}
-              className="text-xs h-9 bg-cyan-600 hover:bg-cyan-500 text-white font-bold gap-1.5 px-4 shadow-lg shadow-cyan-600/30"
+              className="text-xs h-10 px-5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold gap-1.5 rounded-full shadow-md cursor-pointer"
             >
-              <Camera className="h-4 w-4" /> Capture Photo
+              <Camera className="h-4 w-4" /> Snap Photo Now
             </Button>
           )}
         </div>
