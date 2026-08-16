@@ -11,27 +11,12 @@ import { EmployeeManagement } from './components/EmployeeManagement';
 import { Settings } from './components/Settings';
 
 import { Toaster } from './components/ui/sonner';
-import { Button } from './components/ui/button';
 import { updatePreferences, getEmployees } from './services/api';
-import {
-  Menu,
-  Home,
-  Clock,
-  Users,
-  Calendar,
-  DollarSign,
-  Settings as SettingsIcon,
-  Sun,
-  Moon,
-  BarChart3
-} from 'lucide-react';
-import logoImage from './assets/60ace96c513e5568730553.png';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<{ name: string; role: 'admin' | 'employee' | 'superadmin' | 'hr'; position?: string; token?: string } | null>(null);
   const userRole = currentUser?.role || null;
   const [activeSection, setActiveSection] = useState('dashboard');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currency, setCurrency] = useState(() => {
     try {
       const storedUser = localStorage.getItem('user');
@@ -192,141 +177,17 @@ export default function App() {
     }
   };
 
-  const getSectionTitle = () => {
-    switch (activeSection) {
-      case 'dashboard': return 'Dashboard';
-      case 'attendance': return 'Attendance';
-      case 'salary': return 'Salary & Payroll';
-      case 'leave': return 'Leave Requests';
-      case 'reports': return 'Reports';
-      case 'employees': return 'Employees';
-      case 'settings': return 'Settings';
-      default: return 'Dashboard';
-    }
-  };
-
-  const isHR = ['admin', 'superadmin', 'hr'].includes(userRole);
-
-  const mobileNavItems = isHR ? [
-    { id: 'dashboard', label: 'Home', icon: Home },
-    { id: 'attendance', label: 'Attendance', icon: Clock },
-    { id: 'employees', label: 'Employees', icon: Users },
-    { id: 'salary', label: 'Salary', icon: DollarSign },
-    { id: 'more', label: 'Menu', icon: Menu, isAction: true },
-  ] : [
-    { id: 'dashboard', label: 'Home', icon: Home },
-    { id: 'attendance', label: 'Attendance', icon: Clock },
-    { id: 'leave', label: 'Leave', icon: Calendar },
-    { id: 'settings', label: 'Settings', icon: SettingsIcon },
-    { id: 'more', label: 'Menu', icon: Menu, isAction: true },
-  ];
-
   return (
-    <div className="flex h-screen w-full bg-background overflow-hidden">
-      {/* Responsive Sidebar (Persistent on Desktop, Drawer on Mobile) */}
-      <Sidebar
-        activeSection={activeSection}
-        onSectionChange={setActiveSection}
-        userRole={userRole!}
-        userName={currentUser?.name || 'User'}
-        userPosition={currentUser?.position || ''}
-        darkMode={darkMode}
-        onDarkModeChange={setDarkMode}
-        isMobileOpen={isMobileMenuOpen}
-        onMobileClose={() => setIsMobileMenuOpen(false)}
-        onLogout={() => {
-          localStorage.removeItem('user');
-          localStorage.removeItem('token');
-          setCurrentUser(null);
-          setDarkMode(false);
-        }}
-      />
-
-      {/* Main Content Area */}
-      <div className="flex flex-col flex-1 min-w-0 h-screen overflow-hidden">
-        {/* Mobile Top Navbar Header */}
-        <header className="md:hidden flex items-center justify-between px-4 py-2.5 bg-card/95 backdrop-blur-md border-b border-border sticky top-0 z-30 shrink-0 shadow-xs">
-          <div className="flex items-center gap-2.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="h-9 w-9 p-0 text-foreground hover:bg-secondary rounded-lg"
-              aria-label="Open Navigation Menu"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-9 flex items-center justify-center overflow-hidden">
-                <img src={logoImage} alt="Logo" className="h-7 w-auto object-contain" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-xs sm:text-sm text-foreground leading-tight">{getSectionTitle()}</span>
-                <span className="text-[10px] text-muted-foreground leading-none">{isHR ? 'HR System' : 'Employee Portal'}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-foreground"
-              onClick={() => setDarkMode(!darkMode)}
-              title={darkMode ? 'Light Mode' : 'Dark Mode'}
-            >
-              {darkMode ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}
-            </Button>
-            <div
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="h-7 w-7 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-[10px] font-bold cursor-pointer shrink-0"
-              title={currentUser?.name || 'Profile'}
-            >
-              {currentUser?.name ? currentUser.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : 'U'}
-            </div>
-          </div>
-        </header>
-
-        {/* Scrollable Page Body with padding bottom for mobile navigation bar */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background pb-20 md:pb-0">
-          {renderContent()}
-        </main>
-
-        {/* Mobile Sticky Bottom Navigation Bar for rapid thumb access */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-card/95 backdrop-blur-lg border-t border-border flex items-center justify-around py-1.5 px-1 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
-          {mobileNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = !item.isAction && activeSection === item.id;
-
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => {
-                  if (item.isAction) {
-                    setIsMobileMenuOpen(true);
-                  } else {
-                    setActiveSection(item.id);
-                  }
-                }}
-                className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-xl transition-all duration-150 ${
-                  isActive
-                    ? 'text-primary font-bold scale-105'
-                    : 'text-muted-foreground hover:text-foreground active:scale-95'
-                }`}
-              >
-                <div className={`p-1 rounded-full ${isActive ? 'bg-primary/10' : ''}`}>
-                  <Icon className={`h-5 w-5 ${isActive ? 'text-primary' : ''}`} />
-                </div>
-                <span className="text-[10px] tracking-tight mt-0.5 font-medium leading-none">
-                  {item.label}
-                </span>
-              </button>
-            );
-          })}
-        </nav>
-      </div>
-
+    <div className="flex h-screen bg-background">
+      <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} userRole={userRole!} userName={currentUser?.name || 'User'} userPosition={currentUser?.position || ''} darkMode={darkMode} onDarkModeChange={setDarkMode} onLogout={() => {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        setCurrentUser(null);
+        setDarkMode(false); // Reset dark mode on logout
+      }} />
+      <main className="flex-1 overflow-auto bg-background">
+        {renderContent()}
+      </main>
       <Toaster />
     </div>
   );

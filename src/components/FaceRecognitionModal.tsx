@@ -265,7 +265,7 @@ export function FaceRecognitionModal({
             if (stored) currentUser = JSON.parse(stored);
         } catch {}
 
-        const MATCH_THRESHOLD = 90;
+        const MATCH_THRESHOLD = 80;
 
         // 2. Clock In / Clock Out Mode: Verify Live Scan Against Logged-In Employee Profile Photo
         if (actionType !== 'Login') {
@@ -305,7 +305,7 @@ export function FaceRecognitionModal({
                 if (bestScore >= MATCH_THRESHOLD) {
                     return {
                         match: true,
-                        similarity: Math.min(100, Math.max(92, bestScore)),
+                        similarity: Math.min(100, Math.max(80, bestScore)),
                         matchedUser: targetUser || currentUser
                     };
                 } else {
@@ -357,7 +357,7 @@ export function FaceRecognitionModal({
         if (bestScore >= MATCH_THRESHOLD && bestMatchEmp) {
             return {
                 match: true,
-                similarity: Math.min(100, Math.max(92, bestScore)),
+                similarity: Math.min(100, Math.max(80, bestScore)),
                 matchedUser: bestMatchEmp
             };
         }

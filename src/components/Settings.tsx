@@ -159,21 +159,21 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
   };
 
   return (
-    <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Settings</h2>
-          <p className="text-xs sm:text-sm text-muted-foreground">Manage your system preferences and configurations</p>
+          <h2>Settings</h2>
+          <p className="text-muted-foreground">Manage your system preferences and configurations</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex gap-2">
           {userRole === 'superadmin' && (
-            <Button variant="outline" className="gap-2 text-xs sm:text-sm h-9">
+            <Button variant="outline" className="gap-2">
               <Download className="h-4 w-4" />
               Export Settings
             </Button>
           )}
           <Button
-            className="gap-2 text-xs sm:text-sm h-9 font-semibold"
+            className="gap-2"
             onClick={handleGlobalSave}
             disabled={companySaving || appSettingsSaving}
           >
@@ -184,31 +184,29 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
       </div>
 
       <Tabs defaultValue="general" className="w-full" onValueChange={setActiveSettingsTab}>
-        <div className="overflow-x-auto pb-1 -mx-3.5 sm:mx-0 px-3.5 sm:px-0 scrollbar-none">
-          <TabsList className="inline-flex w-full sm:w-auto min-w-full sm:min-w-0 h-auto p-1 gap-1 flex-wrap sm:flex-nowrap bg-muted/80 rounded-xl">
-            <TabsTrigger value="general" className="flex-1 sm:flex-initial text-xs sm:text-sm py-1.5 px-3">General</TabsTrigger>
-            <TabsTrigger value="notifications" className="flex-1 sm:flex-initial text-xs sm:text-sm py-1.5 px-3">Notifications</TabsTrigger>
-            <TabsTrigger value="security" className="flex-1 sm:flex-initial text-xs sm:text-sm py-1.5 px-3">Security</TabsTrigger>
-            <TabsTrigger value="appUpdate" className="flex-1 sm:flex-initial text-xs sm:text-sm py-1.5 px-3">📲 App Update</TabsTrigger>
-            {userRole === 'superadmin' && (
-              <>
-                <TabsTrigger value="company" className="flex-1 sm:flex-initial text-xs sm:text-sm py-1.5 px-3">Company</TabsTrigger>
-                <TabsTrigger value="integrations" className="flex-1 sm:flex-initial text-xs sm:text-sm py-1.5 px-3">Integrations</TabsTrigger>
-                <TabsTrigger value="backup" className="flex-1 sm:flex-initial text-xs sm:text-sm py-1.5 px-3">Backup</TabsTrigger>
-              </>
-            )}
-          </TabsList>
-        </div>
+        <TabsList className="flex w-full flex-wrap h-auto gap-1 p-1">
+          <TabsTrigger value="general" className="flex-1 min-w-fit">General</TabsTrigger>
+          <TabsTrigger value="notifications" className="flex-1 min-w-fit">Notifications</TabsTrigger>
+          <TabsTrigger value="security" className="flex-1 min-w-fit">Security</TabsTrigger>
+          <TabsTrigger value="appUpdate" className="flex-1 min-w-fit">📲 App Update</TabsTrigger>
+          {userRole === 'superadmin' && (
+            <>
+              <TabsTrigger value="company" className="flex-1 min-w-fit">Company</TabsTrigger>
+              <TabsTrigger value="integrations" className="flex-1 min-w-fit">Integrations</TabsTrigger>
+              <TabsTrigger value="backup" className="flex-1 min-w-fit">Backup</TabsTrigger>
+            </>
+          )}
+        </TabsList>
 
         {/* General Settings */}
-        <TabsContent value="general" className="space-y-4 sm:space-y-6">
-          <Card className="p-4 sm:p-6">
-            <h3 className="mb-4 flex items-center gap-2 text-base sm:text-lg font-bold">
+        <TabsContent value="general" className="space-y-6">
+          <Card className="p-6">
+            <h3 className="mb-4 flex items-center gap-2">
               <SettingsIcon className="h-5 w-5" />
               System Preferences
             </h3>
-            <div className="space-y-4 sm:space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="timezone">Timezone</Label>
                   <Select defaultValue="america/new_york">
