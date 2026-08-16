@@ -63,15 +63,7 @@ export const fetchWithPortFallback = async (endpoint: string, options: RequestIn
 
     // 3. Regular Web Production Environment
     if (import.meta.env.PROD && !isCapacitor && !isLocalNativeHost) {
-        try {
-            const res = await fetch(`/api${path}`, options);
-            if (res.ok || res.status < 500) return res;
-        } catch {}
-
-        try {
-            const res = await fetch(`https://attendance.louisbella.store/api${path}`, options);
-            if (res.ok || res.status < 500) return res;
-        } catch {}
+        return fetch(`/api${path}`, options);
     }
 
     // 4. Fast path: try active port first
@@ -507,20 +499,3 @@ export const saveCompanySettings = async (settingsData: any) => {
     }
     return response.json();
 };
-
-// Email API
-export const sendPayslipEmail = async (payload: any) => {
-    const response = await fetchWithPortFallback('/email/send-payslip', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(payload),
-    });
-    const contentType = response.headers.get('content-type');
-    const isJson = contentType && contentType.includes('application/json');
-    const data = isJson ? await response.json() : null;
-    if (!response.ok) {
-        throw new Error(data?.message || 'Failed to send payslip email');
-    }
-    return data || { success: true };
-};
-

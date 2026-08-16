@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
 import { Download, Send, Calculator, Search, Calendar as CalendarIcon, Loader2, ChevronRight, X, Edit2, Save, Mail, CheckSquare } from 'lucide-react';
-import { getEmployees, getPayroll, createPayroll, updateEmployee, sendPayslipEmail } from '../services/api';
+import { getEmployees, getPayroll, createPayroll, updateEmployee } from '../services/api';
 import { toast } from 'sonner';
 import { ModernSpinner } from './ui/ModernSpinner';
 import jsPDF from 'jspdf';
@@ -465,29 +465,37 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
     if (!selectedRecord) return;
     try {
       setEmailLoading(true);
-      const data = await sendPayslipEmail({
-        employeeId: selectedRecord.employeeId,
-        month: selectedMonth,
-        salaryDetails: {
-          basicSalary: formatCurrency(selectedRecord.basicSalary || 0),
-          hra: formatCurrency(selectedRecord.hra || 0),
-          otherAllowances: formatCurrency(selectedRecord.otherAllowances || 0),
-          overtime: formatCurrency(selectedRecord.overtime || 0),
-          bonus: formatCurrency(selectedRecord.bonus || 0),
-          deductions: formatCurrency(selectedRecord.deductions || 0),
-          advance: formatCurrency(selectedRecord.advance || 0),
-          netSalary: formatCurrency(selectedRecord.netSalary || 0),
-        }
+      const response = await fetch('http://localhost:5002/api/email/send-payslip', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          employeeId: selectedRecord.employeeId,
+          month: selectedMonth,
+          salaryDetails: {
+            basicSalary: formatCurrency(selectedRecord.basicSalary || 0),
+            hra: formatCurrency(selectedRecord.hra || 0),
+            otherAllowances: formatCurrency(selectedRecord.otherAllowances || 0),
+            overtime: formatCurrency(selectedRecord.overtime || 0),
+            bonus: formatCurrency(selectedRecord.bonus || 0),
+            deductions: formatCurrency(selectedRecord.deductions || 0),
+            advance: formatCurrency(selectedRecord.advance || 0),
+            netSalary: formatCurrency(selectedRecord.netSalary || 0),
+          }
+        }),
       });
 
-      if (data.success !== false) {
-        toast.success(`Payslip emailed successfully${data.sentTo ? ` to ${data.sentTo}` : ''}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Payslip emailed successfully');
       } else {
         toast.error(data.message || 'Failed to send email');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error sending email:', error);
-      toast.error(error.message || 'Failed to connect to email server');
+      toast.error('Failed to connect to email server');
     } finally {
       setEmailLoading(false);
     }
