@@ -1908,7 +1908,7 @@ function AppContent() {
         <Modal visible={isFaceModalOpen} transparent animationType="fade" onRequestClose={() => setIsFaceModalOpen(false)}>
 
           <View style={{ flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.90)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
-            <View style={{ width: '100%', maxWidth: 360, backgroundColor: '#0f172a', borderRadius: 32, borderWidth: 1, borderColor: '#1e293b', padding: 24, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 15 }}>
+            <View style={{ width: '100%', maxWidth: 380, backgroundColor: '#0f172a', borderRadius: 32, borderWidth: 1, borderColor: '#1e293b', padding: 24, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 15 }}>
               
               <View style={{ alignItems: 'center', marginBottom: 20 }}>
                 <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: 'bold', marginBottom: 4 }}>Biometric Face Recognition</Text>
@@ -1919,8 +1919,8 @@ function AppContent() {
                 </Text>
               </View>
 
-              {/* Small Compact Circular Camera Scanner View */}
-              <View style={{ width: 190, height: 190, borderRadius: 95, borderWidth: 4, borderColor: faceScanState === 'failed' ? '#f43f5e' : '#22c55e', overflow: 'hidden', justifyContent: 'center', alignItems: 'center', position: 'relative', backgroundColor: '#020617', marginBottom: 16 }}>
+              {/* Large Circular Camera Scanner View */}
+              <View style={{ width: 240, height: 240, borderRadius: 120, borderWidth: 4, borderColor: faceScanState === 'failed' ? '#f43f5e' : '#22c55e', overflow: 'hidden', justifyContent: 'center', alignItems: 'center', position: 'relative', backgroundColor: '#020617', marginBottom: 16 }}>
                 
                 {/* Live Front Camera Feed */}
                 <CameraView
@@ -1931,7 +1931,7 @@ function AppContent() {
 
                 {/* Concentric Biometric Target Reticle */}
                 {faceScanState !== 'verified' && (
-                  <View pointerEvents="none" style={{ position: 'absolute', width: 140, height: 140, borderRadius: 70, borderWidth: 2, borderStyle: 'dashed', borderColor: faceScanState === 'failed' ? '#f43f5e' : '#34d399', backgroundColor: 'transparent' }} />
+                  <View pointerEvents="none" style={{ position: 'absolute', width: 180, height: 180, borderRadius: 90, borderWidth: 2, borderStyle: 'dashed', borderColor: faceScanState === 'failed' ? '#f43f5e' : '#34d399', backgroundColor: 'transparent' }} />
                 )}
 
                 {/* Failed Overlay Only */}

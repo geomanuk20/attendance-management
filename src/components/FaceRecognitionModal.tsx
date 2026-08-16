@@ -718,7 +718,7 @@ export function FaceRecognitionModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => { if (!open) { stopCamera(); onClose(); } }}>
-            <DialogContent className="max-w-sm w-full p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xl flex flex-col items-center justify-center space-y-4">
+            <DialogContent className="max-w-md w-full p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xl flex flex-col items-center justify-center space-y-4">
                 <DialogHeader className="p-0 text-center space-y-1">
                     <div className="flex items-center justify-center gap-2">
                         <ShieldCheck className="h-5 w-5 text-emerald-500" />
@@ -730,7 +730,7 @@ export function FaceRecognitionModal({
                 </DialogHeader>
 
                 {/* 100% Mathematically Concentric Circular Camera Viewport */}
-                <div style={{ width: 190, height: 190, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '4px auto', flexShrink: 0 }}>
+                <div style={{ width: 250, height: 250, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '4px auto', flexShrink: 0 }}>
                     {/* SVG Circular Progress Ring */}
                     <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 20 }} className="-rotate-90" viewBox="0 0 100 100">
                         <circle
@@ -739,7 +739,7 @@ export function FaceRecognitionModal({
                             r="46"
                             fill="transparent"
                             stroke={scanState === 'failed' ? '#f43f5e' : '#334155'}
-                            strokeWidth="4"
+                            strokeWidth="3.5"
                             className="dark:stroke-slate-800 transition-all duration-300"
                         />
                         <circle
@@ -748,7 +748,7 @@ export function FaceRecognitionModal({
                             r="46"
                             fill="transparent"
                             stroke={scanState === 'failed' ? '#f43f5e' : '#22c55e'}
-                            strokeWidth="4.5"
+                            strokeWidth="4"
                             strokeDasharray="289"
                             strokeDashoffset={289 - (289 * scanProgress) / 100}
                             strokeLinecap="round"
@@ -757,7 +757,7 @@ export function FaceRecognitionModal({
                     </svg>
 
                     {/* Masked Camera Circle Container with Strict Overflow Clip */}
-                    <div style={{ width: 172, height: 172, borderRadius: '50%', overflow: 'hidden', position: 'relative', flexShrink: 0, zIndex: 10 }} className="bg-slate-950 flex items-center justify-center shadow-inner">
+                    <div style={{ width: 228, height: 228, borderRadius: '50%', overflow: 'hidden', position: 'relative', flexShrink: 0, zIndex: 10 }} className="bg-slate-950 flex items-center justify-center shadow-inner">
                         <video
                             ref={videoRef}
                             autoPlay
@@ -769,10 +769,10 @@ export function FaceRecognitionModal({
 
                         {!hasCamera && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center bg-slate-950 text-white z-0">
-                                <Camera className="h-7 w-7 text-emerald-400 animate-pulse mb-1" />
-                                <p className="text-[10px] font-semibold text-slate-300">Camera Active</p>
+                                <Camera className="h-8 w-8 text-emerald-400 animate-pulse mb-1" />
+                                <p className="text-xs font-semibold text-slate-300">Camera Active</p>
                                 {cameraError && (
-                                    <p className="text-[9px] text-amber-400 mt-0.5 max-w-[150px] leading-tight">{cameraError}</p>
+                                    <p className="text-[10px] text-amber-400 mt-0.5 max-w-[180px] leading-tight">{cameraError}</p>
                                 )}
                             </div>
                         )}
@@ -780,7 +780,7 @@ export function FaceRecognitionModal({
                         {/* High-Tech Circular Biometric Reticle & Laser Sweep Overlay */}
                         {hasCamera && scanState !== 'verified' && (
                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                                <div style={{ width: 148, height: 148 }} className={`relative rounded-full border border-dashed transition-all duration-300 ${
+                                <div style={{ width: 196, height: 196 }} className={`relative rounded-full border border-dashed transition-all duration-300 ${
                                     scanState === 'failed'
                                         ? 'border-rose-500/80 bg-rose-500/10 shadow-[0_0_20px_rgba(244,63,94,0.5)]'
                                         : 'border-emerald-400/80 bg-emerald-500/5 shadow-[0_0_15px_rgba(52,211,153,0.3)]'
@@ -805,7 +805,7 @@ export function FaceRecognitionModal({
                         {/* Failed Overlay Only */}
                         {scanState === 'failed' && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-rose-950/80 backdrop-blur-xs p-3 text-center z-30 animate-in fade-in zoom-in duration-200">
-                                <XCircle className="h-10 w-10 text-rose-500 animate-bounce mb-1" />
+                                <XCircle className="h-12 w-12 text-rose-500 animate-bounce mb-1" />
                                 <span className="text-xs font-semibold text-rose-200">Unrecognized Face</span>
                             </div>
                         )}
@@ -825,7 +825,7 @@ export function FaceRecognitionModal({
                             <span>Welcome, {matchedUserResult?.name || (userName && userName !== 'Employee' ? userName : 'Akhil')}!</span>
                         </div>
                     ) : (
-                        <p className={`text-xs font-medium max-w-[250px] leading-relaxed ${scanState === 'failed' ? 'text-rose-500 font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>
+                        <p className={`text-xs font-medium max-w-[280px] leading-relaxed ${scanState === 'failed' ? 'text-rose-500 font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>
                             {statusMessage}
                         </p>
                     )}

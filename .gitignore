@@ -6,4 +6,8 @@ dist/
 *.log
 *.apk
 *.bundle
+.expo/
+**/.expo/
+**/android/build/
+**/android/.gradle/
 
