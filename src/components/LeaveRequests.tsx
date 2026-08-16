@@ -160,35 +160,35 @@ export function LeaveRequests({ userRole = 'admin' }: LeaveRequestsProps) {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2>Leave Requests</h2>
-          <p className="text-muted-foreground">Manage employee leave requests and approvals</p>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Leave Requests</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground">Manage employee leave requests and approvals</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button className="gap-2 text-xs sm:text-sm h-9 font-semibold">
               <Plus className="h-4 w-4" />
               New Request
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl w-[90vw] max-h-[85vh] overflow-y-auto p-4 sm:p-6 rounded-2xl shadow-2xl border border-border bg-background">
+          <DialogContent className="max-w-2xl w-[95vw] sm:w-[90vw] max-h-[88vh] overflow-y-auto p-4 sm:p-6 rounded-2xl shadow-2xl border border-border bg-background">
             <DialogHeader>
-              <DialogTitle>Submit Leave Request</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-lg sm:text-xl font-bold">Submit Leave Request</DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm">
                 Fill out the form below to submit a new leave request.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="leave-type">Leave Type</Label>
+            <div className="grid gap-3 sm:gap-4 py-2 sm:py-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="leave-type" className="text-xs sm:text-sm">Leave Type</Label>
                   <Select
                     value={newRequest.leaveType}
                     onValueChange={(val) => setNewRequest({ ...newRequest, leaveType: val })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9">
                       <SelectValue placeholder="Select leave type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -201,21 +201,21 @@ export function LeaveRequests({ userRole = 'admin' }: LeaveRequestsProps) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="employee">Employee</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="employee" className="text-xs sm:text-sm">Employee</Label>
                   {userRole === 'employee' ? (
                     <Input
                       id="employee"
                       value={currentUser?.name || ''}
                       readOnly
-                      className="bg-muted cursor-not-allowed"
+                      className="bg-muted cursor-not-allowed h-9"
                     />
                   ) : (
                     <Select
                       value={newRequest.employeeId}
                       onValueChange={(val) => setNewRequest({ ...newRequest, employeeId: val })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-9">
                         <SelectValue placeholder="Select employee" />
                       </SelectTrigger>
                       <SelectContent>
@@ -227,39 +227,41 @@ export function LeaveRequests({ userRole = 'admin' }: LeaveRequestsProps) {
                   )}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="start-date">Start Date</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="start-date" className="text-xs sm:text-sm">Start Date</Label>
                   <Input
                     type="date"
                     id="start-date"
+                    className="h-9 text-xs sm:text-sm"
                     value={newRequest.startDate}
                     onChange={(e) => setNewRequest({ ...newRequest, startDate: e.target.value })}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="end-date">End Date</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="end-date" className="text-xs sm:text-sm">End Date</Label>
                   <Input
                     type="date"
                     id="end-date"
+                    className="h-9 text-xs sm:text-sm"
                     value={newRequest.endDate}
                     onChange={(e) => setNewRequest({ ...newRequest, endDate: e.target.value })}
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="reason">Reason</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="reason" className="text-xs sm:text-sm">Reason</Label>
                 <Textarea
                   id="reason"
                   placeholder="Please provide a reason for your leave request..."
-                  className="min-h-[100px]"
+                  className="min-h-[80px] sm:min-h-[100px] text-xs sm:text-sm"
                   value={newRequest.reason}
                   onChange={(e) => setNewRequest({ ...newRequest, reason: e.target.value })}
                 />
               </div>
-              <div className="flex gap-2 pt-4">
-                <Button className="flex-1" onClick={handleCreateRequest}>Submit Request</Button>
-                <Button variant="outline" className="flex-1" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+              <div className="flex gap-2 pt-2 sm:pt-4">
+                <Button className="flex-1 text-xs sm:text-sm h-9" onClick={handleCreateRequest}>Submit Request</Button>
+                <Button variant="outline" className="flex-1 text-xs sm:text-sm h-9" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
               </div>
             </div>
           </DialogContent>
@@ -267,62 +269,62 @@ export function LeaveRequests({ userRole = 'admin' }: LeaveRequestsProps) {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <Card className="p-3.5 sm:p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Pending Requests</p>
-              <p className="text-2xl font-semibold text-yellow-600">{pendingCount}</p>
-              <p className="text-xs text-muted-foreground mt-1">Awaiting approval</p>
+              <p className="text-xs sm:text-sm text-muted-foreground font-medium">Pending Requests</p>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight mt-0.5 text-yellow-600 dark:text-yellow-400">{pendingCount}</p>
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 font-medium">Awaiting approval</p>
             </div>
-            <div className="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-              <Clock className="h-6 w-6 text-yellow-600" />
+            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-yellow-100 dark:bg-yellow-950/60 rounded-xl flex items-center justify-center shrink-0">
+              <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600 dark:text-yellow-400" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-3.5 sm:p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Approved</p>
-              <p className="text-2xl font-semibold text-green-600">{approvedCount}</p>
-              <p className="text-xs text-muted-foreground mt-1">Total approved</p>
+              <p className="text-xs sm:text-sm text-muted-foreground font-medium">Approved</p>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight mt-0.5 text-green-600 dark:text-green-400">{approvedCount}</p>
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 font-medium">Total approved</p>
             </div>
-            <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <Check className="h-6 w-6 text-green-600" />
+            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-green-100 dark:bg-green-950/60 rounded-xl flex items-center justify-center shrink-0">
+              <Check className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-3.5 sm:p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Rejected</p>
-              <p className="text-2xl font-semibold text-red-600">{rejectedCount}</p>
-              <p className="text-xs text-muted-foreground mt-1">Total rejected</p>
+              <p className="text-xs sm:text-sm text-muted-foreground font-medium">Rejected</p>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight mt-0.5 text-red-600 dark:text-red-400">{rejectedCount}</p>
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 font-medium">Total rejected</p>
             </div>
-            <div className="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
-              <X className="h-6 w-6 text-red-600" />
+            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-red-100 dark:bg-red-950/60 rounded-xl flex items-center justify-center shrink-0">
+              <X className="h-5 w-5 sm:h-6 sm:w-6 text-red-600 dark:text-red-400" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-3.5 sm:p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Total Requests</p>
-              <p className="text-2xl font-semibold text-blue-600">{leaveRequests.length}</p>
-              <p className="text-xs text-muted-foreground mt-1">All time</p>
+              <p className="text-xs sm:text-sm text-muted-foreground font-medium">Total Requests</p>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight mt-0.5 text-blue-600 dark:text-blue-400">{leaveRequests.length}</p>
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 font-medium">All time</p>
             </div>
-            <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Calendar className="h-6 w-6 text-blue-600" />
+            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-blue-100 dark:bg-blue-950/60 rounded-xl flex items-center justify-center shrink-0">
+              <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card className="p-6">
+      <Card className="p-4 sm:p-6">
         <div className="flex flex-wrap gap-4 items-center">
           <div className="relative flex items-center flex-1 sm:flex-initial min-w-[200px] sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />

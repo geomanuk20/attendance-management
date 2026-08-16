@@ -607,27 +607,27 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2>Employee Management</h2>
-          <p className="text-muted-foreground">Manage employee profiles, information, and status</p>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Employee Management</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground">Manage employee profiles, information, and status</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2 text-xs sm:text-sm h-9">
             <Download className="h-4 w-4" />
             Export
           </Button>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2" onClick={resetForm}>
+              <Button className="gap-2 text-xs sm:text-sm h-9 font-semibold" onClick={resetForm}>
                 <UserPlus className="h-4 w-4" />
                 Add Employee
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-3xl w-[90vw] max-h-[88vh] flex flex-col p-0 rounded-2xl shadow-2xl border border-border bg-background overflow-hidden">
-              <DialogHeader className="p-6 pb-4 border-b border-border shrink-0 bg-slate-50/50 dark:bg-slate-900/50">
-                <DialogTitle className="text-xl font-bold">Add New Employee</DialogTitle>
+            <DialogContent className="max-w-3xl w-[95vw] sm:w-[90vw] max-h-[90vh] flex flex-col p-0 rounded-2xl shadow-2xl border border-border bg-background overflow-hidden">
+              <DialogHeader className="p-4 sm:p-6 pb-3 sm:pb-4 border-b border-border shrink-0 bg-slate-50/50 dark:bg-slate-900/50">
+                <DialogTitle className="text-lg sm:text-xl font-bold">Add New Employee</DialogTitle>
                 <DialogDescription>
                   Enter the details of the new employee to add them to the system.
                 </DialogDescription>
@@ -889,70 +889,70 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <Card className="p-3.5 sm:p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Total Employees</p>
-              <p className="text-2xl font-semibold">{employees.length}</p>
-              <p className="text-xs text-green-600 mt-1">+3 this month</p>
+              <p className="text-xs sm:text-sm text-muted-foreground font-medium">Total Employees</p>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight mt-0.5">{employees.length}</p>
+              <p className="text-[11px] sm:text-xs text-green-600 mt-1 font-medium">+3 this month</p>
             </div>
-            <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Users className="h-6 w-6 text-blue-600" />
+            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-blue-100 dark:bg-blue-950/60 rounded-xl flex items-center justify-center shrink-0">
+              <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-3.5 sm:p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Active</p>
-              <p className="text-2xl font-semibold text-green-600">
+              <p className="text-xs sm:text-sm text-muted-foreground font-medium">Active</p>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight mt-0.5 text-green-600 dark:text-green-400">
                 {employees.filter(e => e.status === 'Active').length}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 font-medium">
                 {employees.length > 0 ? Math.round((employees.filter(e => e.status === 'Active').length / employees.length) * 100) : 0}% of total
               </p>
             </div>
-            <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <Users className="h-6 w-6 text-green-600" />
+            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-green-100 dark:bg-green-950/60 rounded-xl flex items-center justify-center shrink-0">
+              <Users className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-3.5 sm:p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">On Leave</p>
-              <p className="text-2xl font-semibold text-yellow-600">
+              <p className="text-xs sm:text-sm text-muted-foreground font-medium">On Leave</p>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight mt-0.5 text-yellow-600 dark:text-yellow-400">
                 {employees.filter(e => e.status === 'On Leave').length}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">Temporary absence</p>
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 font-medium">Temporary absence</p>
             </div>
-            <div className="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-              <Calendar className="h-6 w-6 text-yellow-600" />
+            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-yellow-100 dark:bg-yellow-950/60 rounded-xl flex items-center justify-center shrink-0">
+              <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600 dark:text-yellow-400" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-3.5 sm:p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Avg Salary</p>
-              <p className="text-2xl font-semibold text-purple-600">
+              <p className="text-xs sm:text-sm text-muted-foreground font-medium">Avg Salary</p>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight mt-0.5 text-purple-600 dark:text-purple-400">
                 {employees.length > 0 ? formatCurrency(employees.reduce((sum, e) => sum + e.salary, 0) / employees.length) : formatCurrency(0)}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">Across all departments</p>
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 font-medium">Across all dept.</p>
             </div>
-            <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <Briefcase className="h-6 w-6 text-purple-600" />
+            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-purple-100 dark:bg-purple-950/60 rounded-xl flex items-center justify-center shrink-0">
+              <Briefcase className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600 dark:text-purple-400" />
             </div>
           </div>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card className="p-6">
+      <Card className="p-4 sm:p-6">
         <div className="flex flex-wrap gap-4 items-center">
           <div className="relative flex items-center flex-1 sm:flex-initial min-w-[200px] sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />

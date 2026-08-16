@@ -189,23 +189,19 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2>Reports & Analytics</h2>
-          <p className="text-muted-foreground">Comprehensive insights into your HR metrics and performance</p>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Reports & Analytics</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground">Comprehensive insights into your HR metrics and performance</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" className="gap-2">
-            <Filter className="h-4 w-4" />
-            Filters
-          </Button>
-          <Button variant="outline" className="gap-2" onClick={handleExportReports}>
+          <Button variant="outline" className="gap-2 text-xs sm:text-sm h-9" onClick={handleExportReports}>
             <Download className="h-4 w-4" />
             Export Reports
           </Button>
-          <Button className="gap-2" onClick={handleExportReports}>
+          <Button className="gap-2 text-xs sm:text-sm h-9 font-semibold" onClick={handleExportReports}>
             <FileText className="h-4 w-4" />
             Generate Report
           </Button>
@@ -213,7 +209,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       </div>
 
       {/* Report Filters */}
-      <Card className="p-6">
+      <Card className="p-4 sm:p-6">
         <div className="flex flex-wrap gap-4 items-center">
           <Select value={selectedDateRange} onValueChange={setSelectedDateRange}>
             <SelectTrigger className="w-48">

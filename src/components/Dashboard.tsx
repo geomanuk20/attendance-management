@@ -173,14 +173,14 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2>Dashboard Overview</h2>
-          <p className="text-muted-foreground">Welcome back! Here's what's happening today.</p>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Dashboard Overview</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground">Welcome back! Here's what's happening today.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Badge variant="secondary" className="flex items-center gap-2">
+          <Badge variant="secondary" className="flex items-center gap-2 text-xs py-1 px-3 w-fit">
             <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
             System Online
           </Badge>
@@ -188,70 +188,70 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+        <Card className="p-4 sm:p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Total Employees</p>
-              <p className="text-2xl font-semibold">{stats.totalEmployees}</p>
-              <p className="text-xs flex items-center gap-1 mt-1" style={{ color: '#10B981' }}>
+              <p className="text-xs sm:text-sm text-muted-foreground font-medium">Total Employees</p>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight mt-0.5">{stats.totalEmployees}</p>
+              <p className="text-[11px] sm:text-xs flex items-center gap-1 mt-1 font-medium" style={{ color: '#10B981' }}>
                 <TrendingUp className="h-3 w-3" /> Real-time data
               </p>
             </div>
-            <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#3BAFDA20' }}>
-              <Users className="h-6 w-6" style={{ color: '#3BAFDA' }} />
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#3BAFDA20' }}>
+              <Users className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: '#3BAFDA' }} />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-4 sm:p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Present Today</p>
-              <p className="text-2xl font-semibold">{stats.presentToday}</p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs sm:text-sm text-muted-foreground font-medium">Present Today</p>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight mt-0.5">{stats.presentToday}</p>
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 font-medium">
                 {stats.totalEmployees > 0 ? Math.round((stats.presentToday / stats.totalEmployees) * 100) : 0}% attendance rate
               </p>
             </div>
-            <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#10B98120' }}>
-              <Clock className="h-6 w-6" style={{ color: '#10B981' }} />
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#10B98120' }}>
+              <Clock className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: '#10B981' }} />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-4 sm:p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Monthly Payroll</p>
-              <p className="text-2xl font-semibold">{formatCurrency(stats.monthlyPayroll)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Estimated</p>
+              <p className="text-xs sm:text-sm text-muted-foreground font-medium">Monthly Payroll</p>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight mt-0.5">{formatCurrency(stats.monthlyPayroll)}</p>
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 font-medium">Estimated</p>
             </div>
-            <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F9A82520' }}>
-              <DollarSign className="h-6 w-6" style={{ color: '#F9A825' }} />
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#F9A82520' }}>
+              <DollarSign className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: '#F9A825' }} />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-4 sm:p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Pending Requests</p>
-              <p className="text-2xl font-semibold">{stats.pendingRequests}</p>
-              <p className="text-xs flex items-center gap-1 mt-1" style={{ color: '#F9A825' }}>
+              <p className="text-xs sm:text-sm text-muted-foreground font-medium">Pending Requests</p>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight mt-0.5">{stats.pendingRequests}</p>
+              <p className="text-[11px] sm:text-xs flex items-center gap-1 mt-1 font-medium" style={{ color: '#F9A825' }}>
                 <AlertCircle className="h-3 w-3" /> Needs approval
               </p>
             </div>
-            <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F9A82520' }}>
-              <Calendar className="h-6 w-6" style={{ color: '#F9A825' }} />
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#F9A82520' }}>
+              <Calendar className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: '#F9A825' }} />
             </div>
           </div>
         </Card>
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Weekly Attendance Bar Chart */}
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6">
           <h3 className="mb-4">Weekly Attendance</h3>
           {weeklyData.some(d => d.Present > 0 || d.Absent > 0) ? (
             <ResponsiveContainer width="100%" height={250}>

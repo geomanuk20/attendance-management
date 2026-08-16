@@ -1027,14 +1027,14 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
 
   if (userRole === 'employee') {
     return (
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2>My Attendance</h2>
-            <p className="text-muted-foreground">Manage your daily attendance</p>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight">My Attendance</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground">Manage your daily attendance</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="gap-2" onClick={exportToExcel}>
+            <Button variant="outline" className="gap-2 text-xs sm:text-sm h-9" onClick={exportToExcel}>
               <Download className="h-4 w-4" />
               Export History
             </Button>
@@ -1237,14 +1237,14 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2>Attendance Management</h2>
-          <p className="text-muted-foreground">Track and manage employee attendance records</p>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Attendance Management</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground">Track and manage employee attendance records</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" className="gap-2" onClick={exportToExcel}>
+          <Button variant="outline" className="gap-2 text-xs sm:text-sm h-9" onClick={exportToExcel}>
             <Download className="h-4 w-4" />
             Export
           </Button>
@@ -1252,47 +1252,47 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
       </div>
 
       {/* Quick Stats — reactive to active filters */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <Card className="p-3.5 sm:p-4">
           <div className="text-center">
-            <p className="text-2xl font-semibold" style={{ color: '#10B981' }}>
+            <p className="text-xl sm:text-2xl font-bold" style={{ color: '#10B981' }}>
               {filteredRecords.filter(r => r.status === 'Present' || r.status === 'Attendance').length}
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               {dateFilterMode === 'date' ? `Present on ${format(selectedDate, 'MMM d')}` : dateFilterMode === 'month' ? `Present in ${format(selectedDate, 'MMM yyyy')}` : 'Total Present'}
             </p>
           </div>
         </Card>
-        <Card className="p-4">
+        <Card className="p-3.5 sm:p-4">
           <div className="text-center">
-            <p className="text-2xl font-semibold" style={{ color: '#F9A825' }}>
+            <p className="text-xl sm:text-2xl font-bold" style={{ color: '#F9A825' }}>
               {filteredRecords.filter(r => r.status === 'Vacation' || r.status === 'Leave').length}
             </p>
-            <p className="text-sm text-muted-foreground">On Leave</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">On Leave</p>
           </div>
         </Card>
-        <Card className="p-4">
+        <Card className="p-3.5 sm:p-4">
           <div className="text-center">
-            <p className="text-2xl font-semibold" style={{ color: '#3BAFDA' }}>
+            <p className="text-xl sm:text-2xl font-bold" style={{ color: '#3BAFDA' }}>
               {filteredRecords.filter(r => r.status === 'Half-Day' || r.status === 'Half Day').length}
             </p>
-            <p className="text-sm text-muted-foreground">Half-Day</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Half-Day</p>
           </div>
         </Card>
-        <Card className="p-4">
+        <Card className="p-3.5 sm:p-4">
           <div className="text-center">
-            <p className="text-2xl font-semibold text-blue-600">
+            <p className="text-xl sm:text-2xl font-bold text-blue-600">
               {filteredRecords.length > 0
                 ? Math.round((filteredRecords.filter(r => r.status === 'Present' || r.status === 'Attendance').length / filteredRecords.length) * 100)
                 : 0}%
             </p>
-            <p className="text-sm text-muted-foreground">Attendance Rate</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Attendance Rate</p>
           </div>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card className="p-6">
+      <Card className="p-4 sm:p-6">
         <div className="flex flex-wrap gap-4 items-center">
           <div className="relative flex items-center flex-1 sm:flex-initial min-w-[200px] sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />

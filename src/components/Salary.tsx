@@ -664,14 +664,14 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2>Salary Management</h2>
-          <p className="text-muted-foreground">Manage employee salaries and payroll processing</p>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Salary Management</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground">Manage employee salaries and payroll processing</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" className="gap-2" onClick={exportToExcel}>
+          <Button variant="outline" className="gap-2 text-xs sm:text-sm h-9" onClick={exportToExcel}>
             <Download className="h-4 w-4" />
             Export
           </Button>
