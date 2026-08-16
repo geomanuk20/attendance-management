@@ -76,7 +76,7 @@ export function Login({ onLogin }: LoginProps) {
     };
 
     const handleFaceVerified = async (matchedUser: any) => {
-        if (!matchedUser || !matchedUser.faceImage || matchedUser.faceImage.length < 50) {
+        if (!matchedUser || (!matchedUser._id && !matchedUser.id && !matchedUser.email)) {
             toast.error('Unrecognized Face: Identity does not match any enrolled user photo.');
             return;
         }

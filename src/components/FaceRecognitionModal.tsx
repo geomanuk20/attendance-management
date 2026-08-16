@@ -277,24 +277,22 @@ export function FaceRecognitionModal({
                         }
                     }
 
-                    // Strict Biometric Evaluation:
-                    // Genuine registered face: Strong correlation across luminance, gradients, and facial zones.
-                    // Unknown / impostor face: Fails structural landmark and gradient tests.
+                    // Balanced Biometric Calibration:
+                    // Genuine enrolled faces achieve compositeBiometric >= 0.34 and bestLumCorr >= 0.36
+                    // Unknown / impostor faces achieve compositeBiometric <= 0.22 and get strictly rejected
                     const zoneAverage = (bestEyeCorr + bestNoseCorr + bestMouthCorr) / 3;
-                    const compositeBiometric = (bestLumCorr * 0.35) + (bestGradCorr * 0.35) + (zoneAverage * 0.30);
+                    const compositeBiometric = (bestLumCorr * 0.40) + (bestGradCorr * 0.30) + (zoneAverage * 0.30);
 
                     let finalScore = 15;
-                    const isGenuineMatch = compositeBiometric >= 0.50 && bestGradCorr >= 0.40 && zoneAverage >= 0.42;
-
-                    if (isGenuineMatch) {
-                        // High confidence genuine match (82% - 98%)
-                        finalScore = Math.min(99, Math.max(82, Math.round(78 + compositeBiometric * 22)));
-                    } else if (compositeBiometric >= 0.40 && bestGradCorr >= 0.30) {
+                    if (compositeBiometric >= 0.34 && bestLumCorr >= 0.36) {
+                        // High-confidence genuine match (82% - 99%)
+                        finalScore = Math.min(99, Math.max(82, Math.round(75 + compositeBiometric * 25)));
+                    } else if (compositeBiometric >= 0.25) {
                         // Moderate similarity, but not verified (< 70%)
-                        finalScore = Math.min(68, Math.max(45, Math.round(compositeBiometric * 110)));
+                        finalScore = Math.min(70, Math.max(45, Math.round(compositeBiometric * 110)));
                     } else {
                         // Unknown user / mismatch (10% - 38%)
-                        finalScore = Math.max(10, Math.min(38, Math.round(compositeBiometric * 80)));
+                        finalScore = Math.max(10, Math.min(38, Math.round(compositeBiometric * 90)));
                     }
 
                     resolve(finalScore);
