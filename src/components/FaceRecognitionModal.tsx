@@ -136,31 +136,52 @@ export function FaceRecognitionModal({
                     const ctx2 = c2.getContext('2d');
                     if (!ctx1 || !ctx2) { resolve(0); return; }
 
-                    // Draw image 1 (live frame centered)
+                    // Draw image 1 (live camera frame)
                     ctx1.drawImage(i1, 0, 0, i1.width, i1.height, 0, 0, grid, grid);
                     const d1 = ctx1.getImageData(0, 0, grid, grid).data;
 
                     const numPixels = grid * grid;
                     const l1 = new Float32Array(numPixels);
-                    let sum1 = 0;
+                    const grad1 = new Float32Array(numPixels);
+                    let sumLum1 = 0, sumGrad1 = 0;
+
                     for (let i = 0, p = 0; i < d1.length; i += 4, p++) {
                         const lum = 0.299 * d1[i] + 0.587 * d1[i + 1] + 0.114 * d1[i + 2];
                         l1[p] = lum;
-                        sum1 += lum;
+                        sumLum1 += lum;
                     }
-                    const mean1 = sum1 / numPixels;
-                    let var1 = 0;
+                    const meanLum1 = sumLum1 / numPixels;
+
+                    // Calculate spatial gradient map for image 1
+                    for (let y = 1; y < grid - 1; y++) {
+                        for (let x = 1; x < grid - 1; x++) {
+                            const p = y * grid + x;
+                            const gx = l1[p + 1] - l1[p - 1];
+                            const gy = l1[p + grid] - l1[p - grid];
+                            const mag = Math.sqrt(gx * gx + gy * gy);
+                            grad1[p] = mag;
+                            sumGrad1 += mag;
+                        }
+                    }
+                    const meanGrad1 = sumGrad1 / numPixels;
+
+                    let varLum1 = 0, varGrad1 = 0;
                     for (let p = 0; p < numPixels; p++) {
-                        var1 += (l1[p] - mean1) * (l1[p] - mean1);
+                        varLum1 += (l1[p] - meanLum1) * (l1[p] - meanLum1);
+                        varGrad1 += (grad1[p] - meanGrad1) * (grad1[p] - meanGrad1);
                     }
-                    const std1 = Math.sqrt(var1 / numPixels) || 1;
+                    const stdLum1 = Math.sqrt(varLum1 / numPixels) || 1;
+                    const stdGrad1 = Math.sqrt(varGrad1 / numPixels) || 1;
 
-                    // Evaluate multiple orientations (normal & mirrored) and slight scales to account for mobile camera differences
-                    let bestCorr = 0;
-                    let bestDiffScore = 0;
+                    let bestLumCorr = 0;
+                    let bestGradCorr = 0;
+                    let bestEyeCorr = 0;
+                    let bestNoseCorr = 0;
+                    let bestMouthCorr = 0;
 
+                    // Test normal and mirrored orientations + scale alignments
                     for (const mirror of [false, true]) {
-                        for (const scale of [1.0, 0.92, 1.08]) {
+                        for (const scale of [1.0, 0.94, 1.06]) {
                             ctx2.clearRect(0, 0, grid, grid);
                             ctx2.save();
                             if (mirror) {
@@ -176,45 +197,104 @@ export function FaceRecognitionModal({
 
                             const d2 = ctx2.getImageData(0, 0, grid, grid).data;
                             const l2 = new Float32Array(numPixels);
-                            let sum2 = 0;
+                            const grad2 = new Float32Array(numPixels);
+                            let sumLum2 = 0, sumGrad2 = 0;
+
                             for (let i = 0, p = 0; i < d2.length; i += 4, p++) {
                                 const lum = 0.299 * d2[i] + 0.587 * d2[i + 1] + 0.114 * d2[i + 2];
                                 l2[p] = lum;
-                                sum2 += lum;
+                                sumLum2 += lum;
                             }
-                            const mean2 = sum2 / numPixels;
-                            let var2 = 0;
-                            for (let p = 0; p < numPixels; p++) {
-                                var2 += (l2[p] - mean2) * (l2[p] - mean2);
-                            }
-                            const std2 = Math.sqrt(var2 / numPixels) || 1;
+                            const meanLum2 = sumLum2 / numPixels;
 
-                            // Normalized Pearson cross-correlation on standardized luminance
-                            let cov = 0;
-                            let absDiff = 0;
-                            for (let p = 0; p < numPixels; p++) {
-                                const z1 = (l1[p] - mean1) / std1;
-                                const z2 = (l2[p] - mean2) / std2;
-                                cov += z1 * z2;
-                                absDiff += Math.abs(z1 - z2);
+                            for (let y = 1; y < grid - 1; y++) {
+                                for (let x = 1; x < grid - 1; x++) {
+                                    const p = y * grid + x;
+                                    const gx = l2[p + 1] - l2[p - 1];
+                                    const gy = l2[p + grid] - l2[p - grid];
+                                    const mag = Math.sqrt(gx * gx + gy * gy);
+                                    grad2[p] = mag;
+                                    sumGrad2 += mag;
+                                }
                             }
-                            const corr = Math.max(0, cov / numPixels);
-                            const diffScore = Math.max(0, 100 - ((absDiff / numPixels) * 35));
+                            const meanGrad2 = sumGrad2 / numPixels;
 
-                            if (corr > bestCorr) bestCorr = corr;
-                            if (diffScore > bestDiffScore) bestDiffScore = diffScore;
+                            let varLum2 = 0, varGrad2 = 0;
+                            for (let p = 0; p < numPixels; p++) {
+                                varLum2 += (l2[p] - meanLum2) * (l2[p] - meanLum2);
+                                varGrad2 += (grad2[p] - meanGrad2) * (grad2[p] - meanGrad2);
+                            }
+                            const stdLum2 = Math.sqrt(varLum2 / numPixels) || 1;
+                            const stdGrad2 = Math.sqrt(varGrad2 / numPixels) || 1;
+
+                            // Global Luminance & Gradient Pearson Correlations
+                            let covLum = 0, covGrad = 0;
+                            for (let p = 0; p < numPixels; p++) {
+                                covLum += ((l1[p] - meanLum1) / stdLum1) * ((l2[p] - meanLum2) / stdLum2);
+                                covGrad += ((grad1[p] - meanGrad1) / stdGrad1) * ((grad2[p] - meanGrad2) / stdGrad2);
+                            }
+                            const corrLum = Math.max(0, covLum / numPixels);
+                            const corrGrad = Math.max(0, covGrad / numPixels);
+
+                            // Zone 1: Eyes & Eyebrows Region (y: 8 to 22)
+                            let eyeCov = 0, eyeCount = 0;
+                            for (let y = 8; y < 22; y++) {
+                                for (let x = 6; x < grid - 6; x++) {
+                                    const p = y * grid + x;
+                                    eyeCov += ((l1[p] - meanLum1) / stdLum1) * ((l2[p] - meanLum2) / stdLum2);
+                                    eyeCount++;
+                                }
+                            }
+                            const eyeCorr = Math.max(0, eyeCov / (eyeCount || 1));
+
+                            // Zone 2: Nose Bridge & Cheeks (y: 20 to 34)
+                            let noseCov = 0, noseCount = 0;
+                            for (let y = 20; y < 34; y++) {
+                                for (let x = 8; x < grid - 8; x++) {
+                                    const p = y * grid + x;
+                                    noseCov += ((l1[p] - meanLum1) / stdLum1) * ((l2[p] - meanLum2) / stdLum2);
+                                    noseCount++;
+                                }
+                            }
+                            const noseCorr = Math.max(0, noseCov / (noseCount || 1));
+
+                            // Zone 3: Mouth & Chin (y: 32 to 44)
+                            let mouthCov = 0, mouthCount = 0;
+                            for (let y = 32; y < 44; y++) {
+                                for (let x = 8; x < grid - 8; x++) {
+                                    const p = y * grid + x;
+                                    mouthCov += ((l1[p] - meanLum1) / stdLum1) * ((l2[p] - meanLum2) / stdLum2);
+                                    mouthCount++;
+                                }
+                            }
+                            const mouthCorr = Math.max(0, mouthCov / (mouthCount || 1));
+
+                            if (corrLum > bestLumCorr) bestLumCorr = corrLum;
+                            if (corrGrad > bestGradCorr) bestGradCorr = corrGrad;
+                            if (eyeCorr > bestEyeCorr) bestEyeCorr = eyeCorr;
+                            if (noseCorr > bestNoseCorr) bestNoseCorr = noseCorr;
+                            if (mouthCorr > bestMouthCorr) bestMouthCorr = mouthCorr;
                         }
                     }
 
-                    // Biometric composite score
-                    // corr >= 0.32 or composite >= 50 indicates same person match
+                    // Strict Biometric Evaluation:
+                    // Genuine registered face: Strong correlation across luminance, gradients, and facial zones.
+                    // Unknown / impostor face: Fails structural landmark and gradient tests.
+                    const zoneAverage = (bestEyeCorr + bestNoseCorr + bestMouthCorr) / 3;
+                    const compositeBiometric = (bestLumCorr * 0.35) + (bestGradCorr * 0.35) + (zoneAverage * 0.30);
+
                     let finalScore = 15;
-                    if (bestCorr >= 0.30) {
-                        finalScore = Math.min(100, Math.max(82, Math.round(75 + bestCorr * 30)));
-                    } else if (bestCorr >= 0.22) {
-                        finalScore = Math.min(78, Math.max(50, Math.round(50 + bestCorr * 60)));
+                    const isGenuineMatch = compositeBiometric >= 0.50 && bestGradCorr >= 0.40 && zoneAverage >= 0.42;
+
+                    if (isGenuineMatch) {
+                        // High confidence genuine match (82% - 98%)
+                        finalScore = Math.min(99, Math.max(82, Math.round(78 + compositeBiometric * 22)));
+                    } else if (compositeBiometric >= 0.40 && bestGradCorr >= 0.30) {
+                        // Moderate similarity, but not verified (< 70%)
+                        finalScore = Math.min(68, Math.max(45, Math.round(compositeBiometric * 110)));
                     } else {
-                        finalScore = Math.max(10, Math.min(45, Math.round(bestCorr * 100)));
+                        // Unknown user / mismatch (10% - 38%)
+                        finalScore = Math.max(10, Math.min(38, Math.round(compositeBiometric * 80)));
                     }
 
                     resolve(finalScore);
