@@ -453,21 +453,17 @@ export function FaceRecognitionModal({
             })
         );
 
-        let bestScore = 0;
-        let bestMatchEmp: any = null;
+        // Sort candidates by match score descending
+        results.sort((a, b) => b.score - a.score);
 
-        for (const r of results) {
-            if (r.score > bestScore) {
-                bestScore = r.score;
-                bestMatchEmp = r.emp;
-            }
-        }
+        const bestCandidate = results[0] || null;
+        const bestScore = bestCandidate ? bestCandidate.score : 0;
 
-        if (bestScore >= MATCH_THRESHOLD && bestMatchEmp) {
+        if (bestScore >= MATCH_THRESHOLD && bestCandidate) {
             return {
                 match: true,
                 similarity: Math.min(100, Math.max(80, bestScore)),
-                matchedUser: bestMatchEmp
+                matchedUser: bestCandidate.emp
             };
         }
 
