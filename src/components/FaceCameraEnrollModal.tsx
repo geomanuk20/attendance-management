@@ -41,25 +41,57 @@ export function FaceCameraEnrollModal({
     setCameraError(null);
     try {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-        });
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {});
+        let stream: MediaStream | null = null;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: 'user',
+              width: { ideal: 640 },
+              height: { ideal: 480 }
+            },
+            audio: false
+          });
+        } catch {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: 'user' },
+              audio: false
+            });
+          } catch {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: true,
+              audio: false
+            });
+          }
         }
+
+        streamRef.current = stream;
         setHasCamera(true);
+
+        let attempts = 0;
+        const attachStream = () => {
+          if (videoRef.current && stream) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.setAttribute('playsinline', 'true');
+            (videoRef.current as any).playsInline = true;
+            videoRef.current.muted = true;
+            videoRef.current.play().catch(() => {});
+          } else if (attempts < 30) {
+            attempts++;
+            setTimeout(attachStream, 50);
+          }
+        };
+        attachStream();
       } else {
-        setCameraError('Webcam is not supported in this browser.');
+        setCameraError('Camera access not supported in this browser.');
       }
     } catch (err: any) {
       console.warn('Webcam permission or device error:', err);
       setHasCamera(false);
       if (err?.name === 'NotAllowedError' || err?.message?.includes('Permission denied')) {
-        setCameraError('Camera access blocked. Please click the lock 🔒 icon in your browser URL bar and set Camera to Allow.');
+        setCameraError('Camera access blocked. Tap the lock or site settings icon in your browser URL bar and enable Camera access.');
       } else {
-        setCameraError('No webcam detected on this device. Please connect a camera and try again.');
+        setCameraError('No camera detected on this device. Live camera required for enrollment.');
       }
     }
   };
@@ -86,35 +118,34 @@ export function FaceCameraEnrollModal({
     if (!video || video.readyState < 2 || !video.videoWidth || !video.videoHeight) return false;
     try {
       const canvas = document.createElement('canvas');
-      canvas.width = 120;
-      canvas.height = 120;
+      canvas.width = 80;
+      canvas.height = 80;
       const ctx = canvas.getContext('2d');
       if (!ctx) return false;
 
       const cw = video.videoWidth;
       const ch = video.videoHeight;
-      const cropW = cw * 0.6;
-      const cropH = ch * 0.6;
-      const cropX = (cw - cropW) / 2;
-      const cropY = (ch - cropH) / 2;
+      const size = Math.min(cw, ch);
+      const cropX = (cw - size) / 2;
+      const cropY = (ch - size) / 2;
 
-      ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 120, 120);
-      const imgData = ctx.getImageData(0, 0, 120, 120);
+      ctx.drawImage(video, cropX, cropY, size, size, 0, 0, 80, 80);
+      const imgData = ctx.getImageData(0, 0, 80, 80);
       const pixels = imgData.data;
       let skinPixelCount = 0;
       let sumX = 0;
       let sumY = 0;
       let totalLuminance = 0;
-      const rowLuminances: number[] = new Array(120).fill(0);
+      const rowLuminances: number[] = new Array(80).fill(0);
 
-      for (let y = 0; y < 120; y++) {
-        for (let x = 0; x < 120; x++) {
-          const idx = (y * 120 + x) * 4;
+      for (let y = 0; y < 80; y++) {
+        for (let x = 0; x < 80; x++) {
+          const idx = (y * 80 + x) * 4;
           const r = pixels[idx];
           const g = pixels[idx + 1];
           const b = pixels[idx + 2];
 
-          const isSkin = (r > 40) && (g > 20) && (b > 15) && (r > g) && (r > b) && (Math.abs(r - g) >= 10);
+          const isSkin = (r > 35) && (g > 20) && (b > 10) && (r >= b - 5);
           if (isSkin) {
             skinPixelCount++;
             sumX += x;
@@ -123,78 +154,28 @@ export function FaceCameraEnrollModal({
 
           const lum = 0.299 * r + 0.587 * g + 0.114 * b;
           totalLuminance += lum;
-          rowLuminances[y] += lum / 120;
+          rowLuminances[y] += lum / 80;
         }
       }
 
-      const numPixels = 120 * 120;
+      const numPixels = 80 * 80;
       const skinRatio = skinPixelCount / numPixels;
       const meanLuminance = totalLuminance / numPixels;
 
-      if (meanLuminance < 20 || skinRatio < 0.22) return false;
+      if (meanLuminance < 8 || skinRatio < 0.04) return false;
 
-      // 1. Strict centroid centering inside circle
-      const centroidX = sumX / skinPixelCount;
-      const centroidY = sumY / skinPixelCount;
-      const isProperlyCentered = centroidX >= 42 && centroidX <= 78 && centroidY >= 40 && centroidY <= 80;
+      const centroidX = sumX / (skinPixelCount || 1);
+      const centroidY = sumY / (skinPixelCount || 1);
+      const isProperlyCentered = centroidX >= 15 && centroidX <= 65 && centroidY >= 15 && centroidY <= 65;
       if (!isProperlyCentered) return false;
 
-      let leftEyeLum = 0, rightEyeLum = 0, noseBridgeLum = 0;
-      for (let y = 20; y < 50; y++) {
-        for (let x = 20; x < 50; x++) {
-          const idx = (y * 120 + x) * 4;
-          leftEyeLum += (0.299 * pixels[idx] + 0.587 * pixels[idx + 1] + 0.114 * pixels[idx + 2]);
-        }
-        for (let x = 70; x < 100; x++) {
-          const idx = (y * 120 + x) * 4;
-          rightEyeLum += (0.299 * pixels[idx] + 0.587 * pixels[idx + 1] + 0.114 * pixels[idx + 2]);
-        }
-        for (let x = 50; x < 70; x++) {
-          const idx = (y * 120 + x) * 4;
-          noseBridgeLum += (0.299 * pixels[idx] + 0.587 * pixels[idx + 1] + 0.114 * pixels[idx + 2]);
-        }
-      }
-      const avgLeftEye = leftEyeLum / (30 * 30);
-      const avgRightEye = rightEyeLum / (30 * 30);
-      const avgBridge = noseBridgeLum / (30 * 20);
-
-      const hasFacialStructure = Math.abs(avgLeftEye - avgRightEye) < 45 && (avgBridge >= avgLeftEye - 15);
-
-      // Occlusion Check: Detect hand/mask covering mouth, nose, or lower face
-      let minLowerLum = 255;
-      let maxLowerLum = 0;
-      let sumLowerLum = 0;
-      let lowerCount = 0;
-
-      for (let y = 55; y < 98; y++) {
-        for (let x = 35; x < 85; x++) {
-          const idx = (y * 120 + x) * 4;
-          const r = pixels[idx];
-          const g = pixels[idx + 1];
-          const b = pixels[idx + 2];
-          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-          if (lum < minLowerLum) minLowerLum = lum;
-          if (lum > maxLowerLum) maxLowerLum = lum;
-          sumLowerLum += lum;
-          lowerCount++;
-        }
-      }
-
-      const avgLowerLum = sumLowerLum / lowerCount;
-      const lowerContrast = maxLowerLum - minLowerLum;
-
-      const isOccludedByHand = lowerContrast < 18 || minLowerLum > (avgLowerLum - 12);
-      if (isOccludedByHand) {
-        return false;
-      }
-
       let varianceSum = 0;
-      for (let y = 0; y < 120; y++) {
+      for (let y = 0; y < 80; y++) {
         varianceSum += Math.pow(rowLuminances[y] - meanLuminance, 2);
       }
-      const stdDev = Math.sqrt(varianceSum / 120);
+      const stdDev = Math.sqrt(varianceSum / 80);
 
-      return hasFacialStructure && stdDev >= 5.0 && skinRatio >= 0.22;
+      return stdDev >= 2.0;
     } catch {
       return false;
     }
