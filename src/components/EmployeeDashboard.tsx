@@ -244,15 +244,25 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
         <div className="flex flex-wrap items-center gap-3">
 
           {status === 'Checked Out' && (
-            <Button onClick={handleClockIn} disabled={loading} className="gap-2 bg-green-600 hover:bg-green-700 text-white cursor-pointer">
+            <Button
+              onClick={handleClockIn}
+              disabled={loading}
+              style={{ backgroundColor: '#16a34a', color: '#ffffff' }}
+              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl shadow-md cursor-pointer shrink-0"
+            >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
-              Clock In
+              <span className="font-bold text-white">Clock In</span>
             </Button>
           )}
           {status === 'Checked In' && (
-            <Button onClick={handleClockOut} disabled={loading} className="gap-2 bg-red-600 hover:bg-red-700 text-white cursor-pointer">
+            <Button
+              onClick={handleClockOut}
+              disabled={loading}
+              style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
+              className="gap-2 bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl shadow-md cursor-pointer shrink-0"
+            >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
-              Clock Out
+              <span className="font-bold text-white">Clock Out</span>
             </Button>
           )}
 

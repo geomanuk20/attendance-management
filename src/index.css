@@ -3014,6 +3014,17 @@ html {
   box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(56, 189, 248, 0.3) !important;
 }
 
+/* Button & Badge Color Utilities */
+.bg-green-600 { background-color: #16a34a !important; }
+.hover\:bg-green-700:hover { background-color: #15803d !important; }
+.bg-emerald-600 { background-color: #059669 !important; }
+.hover\:bg-emerald-700:hover { background-color: #047857 !important; }
+.bg-red-600 { background-color: #dc2626 !important; }
+.hover\:bg-red-700:hover { background-color: #b91c1c !important; }
+.bg-rose-600 { background-color: #e11d48 !important; }
+.hover\:bg-rose-700:hover { background-color: #be123c !important; }
+.text-white { color: #ffffff !important; }
+
 
 
 
