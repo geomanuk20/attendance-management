@@ -464,7 +464,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       </div>
 
       {/* Analytics Charts Grid Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 pt-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-2">
         {/* Chart 1: Attendance Trend Area Chart */}
         <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
           <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
@@ -515,28 +515,26 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
             </Badge>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 items-center gap-6">
-            <div className="w-full h-[240px] flex items-center justify-center">
-              <ResponsiveContainer width="100%" height={240}>
-                <PieChart>
-                  <Pie
-                    data={leaveTypesData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={85}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
-                    {leaveTypesData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value: any, name: any) => [`${value} requests`, name]}
-                    contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="flex items-center justify-center min-h-[220px]">
+              <PieChart width={220} height={220}>
+                <Pie
+                  data={leaveTypesData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={88}
+                  paddingAngle={4}
+                  dataKey="value"
+                >
+                  {leaveTypesData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value: any, name: any) => [`${value} requests`, name]}
+                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
+                />
+              </PieChart>
             </div>
             <div className="flex flex-col gap-2.5 bg-muted/40 p-4 rounded-xl border border-border/40 w-full">
               {leaveTypesData.map((item, index) => (
@@ -565,7 +563,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       </div>
 
       {/* Analytics Charts Grid Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 pt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
         {/* Chart 3: Department Attendance Rates */}
         <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
           <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
@@ -622,7 +620,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       </div>
 
       {/* Department Summary & Benchmarks Table */}
-      <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card mt-8">
+      <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card mt-8 sm:mt-10">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-3 border-b border-border/40">
           <div>
             <h3 className="text-base font-bold text-foreground">Department Summary & Benchmarks</h3>
@@ -675,8 +673,8 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
                     </td>
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold w-10">{dept.attendance}%</span>
-                        <div className="w-28 h-2 bg-muted rounded-full overflow-hidden">
+                        <span className="text-xs font-bold w-10 shrink-0">{dept.attendance}%</span>
+                        <div className="w-24 sm:w-28 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden shrink-0 border border-slate-300/40 dark:border-slate-600">
                           <div
                             className={`h-full rounded-full transition-all ${
                               dept.attendance >= 95 ? 'bg-emerald-500' :
