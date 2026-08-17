@@ -382,34 +382,28 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
       </div>
 
       {/* Recent Activities */}
-      <div className="pt-4 sm:pt-5">
-        <Card className="p-5 sm:p-6 border border-border/80 shadow-xs rounded-2xl bg-card">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-border/40">
+      <div className="pt-4 sm:pt-6">
+        <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
+          <div className="flex items-center justify-between pb-4 mb-4 border-b border-border/40">
             <div>
               <h3 className="text-base font-bold text-foreground">Recent Activities</h3>
               <p className="text-xs text-muted-foreground mt-0.5">Real-time biometric attendance and leave workflow updates</p>
             </div>
-            <Badge variant="outline" className="text-xs font-semibold px-3 py-1">
+            <Badge variant="outline" className="text-xs font-semibold px-3 py-1 bg-muted/30">
               {recentActivities.length} Recent Logs
             </Badge>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {recentActivities.length > 0 ? (
               recentActivities.map((activity) => (
                 <div
                   key={activity.id}
-                  className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/40 transition-colors border-b border-border/30 last:border-0"
+                  className="flex items-center justify-between p-3 sm:p-3.5 rounded-xl hover:bg-muted/50 transition-all border border-border/20 hover:border-border/60"
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
                     <div
-                      className="flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-xs"
+                      className="h-10 w-10 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-xs"
                       style={{
-                        width: '36px',
-                        height: '36px',
-                        minWidth: '36px',
-                        minHeight: '36px',
-                        borderRadius: '9999px',
-                        aspectRatio: '1/1',
                         backgroundColor: activity.type === 'attendance' ? '#0D2B52' : '#F9A825',
                       }}
                     >
@@ -420,7 +414,7 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
                       <p className="text-xs text-muted-foreground truncate">{activity.action}</p>
                     </div>
                   </div>
-                  <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap ml-4 shrink-0 bg-muted/60 px-3 py-1 rounded-lg border border-border/30">
+                  <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap ml-4 shrink-0 bg-muted/60 px-3 py-1.5 rounded-lg border border-border/40">
                     {activity.time}
                   </span>
                 </div>
