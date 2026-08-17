@@ -343,11 +343,28 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
   const pendingCount = combinedData.filter(r => r.status === 'Pending').length;
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-      maximumFractionDigits: 0
-    }).format(amount);
+    const locales: { [key: string]: string } = {
+      'USD': 'en-US',
+      'INR': 'en-IN',
+      'EUR': 'de-DE',
+      'GBP': 'en-GB',
+      'AED': 'en-AE',
+      'SAR': 'en-SA',
+      'EGP': 'en-EG',
+      'CAD': 'en-CA',
+      'AUD': 'en-AU',
+      'SGD': 'en-SG',
+      'JPY': 'ja-JP'
+    };
+    try {
+      return new Intl.NumberFormat(locales[currency] || 'en-US', {
+        style: 'currency',
+        currency: currency,
+        maximumFractionDigits: 0
+      }).format(amount || 0);
+    } catch {
+      return `${currency} ${(amount || 0).toLocaleString()}`;
+    }
   };
 
   const getStatusBadge = (status: string) => {

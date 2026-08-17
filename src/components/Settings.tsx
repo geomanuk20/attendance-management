@@ -274,23 +274,29 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
                     </SelectContent>
                   </Select>
                 </div>
-                {userRole === 'superadmin' && (
+                {['admin', 'superadmin', 'hr'].includes(userRole) && (
                   <div className="space-y-2 col-span-2 sm:col-span-1">
                     <Label htmlFor="currency">Currency</Label>
                     <Select value={currency} onValueChange={(val) => {
                       localStorage.setItem('currency', val);
                       if (onCurrencyChange) onCurrencyChange(val);
+                      toast.success(`Currency set to ${val}`);
                     }}>
-                      <SelectTrigger>
+                      <SelectTrigger id="currency">
                         <SelectValue placeholder="Select currency" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="EGP">EGP (ج.م)</SelectItem>
-                        <SelectItem value="USD">USD ($)</SelectItem>
-                        <SelectItem value="EUR">EUR (€)</SelectItem>
-                        <SelectItem value="GBP">GBP (£)</SelectItem>
-                        <SelectItem value="JPY">JPY (¥)</SelectItem>
-                        <SelectItem value="INR">INR (₹)</SelectItem>
+                        <SelectItem value="USD">USD ($ - US Dollar)</SelectItem>
+                        <SelectItem value="INR">INR (₹ - Indian Rupee)</SelectItem>
+                        <SelectItem value="EUR">EUR (€ - Euro)</SelectItem>
+                        <SelectItem value="GBP">GBP (£ - British Pound)</SelectItem>
+                        <SelectItem value="AED">AED (د.إ - UAE Dirham)</SelectItem>
+                        <SelectItem value="SAR">SAR (﷼ - Saudi Riyal)</SelectItem>
+                        <SelectItem value="EGP">EGP (ج.م - Egyptian Pound)</SelectItem>
+                        <SelectItem value="CAD">CAD (C$ - Canadian Dollar)</SelectItem>
+                        <SelectItem value="AUD">AUD (A$ - Australian Dollar)</SelectItem>
+                        <SelectItem value="SGD">SGD (S$ - Singapore Dollar)</SelectItem>
+                        <SelectItem value="JPY">JPY (¥ - Japanese Yen)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

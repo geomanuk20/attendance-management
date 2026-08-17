@@ -161,10 +161,27 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
   }, []);
 
   const formatCurrency = (amount: number) => {
+    const locales: { [key: string]: string } = {
+      'USD': 'en-US',
+      'INR': 'en-IN',
+      'EUR': 'de-DE',
+      'GBP': 'en-GB',
+      'AED': 'en-AE',
+      'SAR': 'en-SA',
+      'EGP': 'en-EG',
+      'CAD': 'en-CA',
+      'AUD': 'en-AU',
+      'SGD': 'en-SG',
+      'JPY': 'ja-JP'
+    };
     try {
-      return new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount);
+      return new Intl.NumberFormat(locales[currency] || 'en-US', {
+        style: 'currency',
+        currency: currency,
+        maximumFractionDigits: 0
+      }).format(amount || 0);
     } catch {
-      return `${currency} ${amount.toLocaleString()}`;
+      return `${currency} ${(amount || 0).toLocaleString()}`;
     }
   };
 

@@ -110,13 +110,13 @@ export default function App() {
 
   // Sync currency changes to Backend and LocalStorage
   useEffect(() => {
+    localStorage.setItem('currency', currency);
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
         const { id } = JSON.parse(storedUser);
         if (id) {
           localStorage.setItem(`currency_${id}`, currency);
-          localStorage.setItem('currency', currency);
           updatePreferences(id, { currency }).catch(() => { });
         }
       } catch {}
@@ -144,8 +144,9 @@ export default function App() {
     setDarkMode(dbDark !== null ? dbDark : localDark);
 
     const dbCurr = user.currency || null;
-    const localCurr = userId ? localStorage.getItem(`currency_${userId}`) : null;
-    setCurrency(dbCurr || localCurr || 'USD');
+    const localUserCurr = userId ? localStorage.getItem(`currency_${userId}`) : null;
+    const globalCurr = localStorage.getItem('currency');
+    setCurrency(dbCurr || localUserCurr || globalCurr || 'USD');
   };
 
   if (!userRole) {
