@@ -1156,25 +1156,23 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
 
           {status === 'Checked Out' && (
             <Button
-              className="px-8 py-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95 bg-[#0D2B52] hover:bg-[#081d38] text-white flex flex-col items-center justify-center gap-1 cursor-pointer min-w-[150px] border border-white/10"
+              className="px-6 py-3.5 h-auto rounded-full shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95 bg-[#0D2B52] hover:bg-[#081d38] text-white flex items-center justify-center gap-2.5 cursor-pointer font-bold border border-white/10 text-base"
               style={{ backgroundColor: '#0D2B52', color: '#ffffff' }}
               onClick={handleClockIn}
             >
-              <ShieldCheck className="h-5 w-5 text-white" />
-              <span className="text-sm font-semibold tracking-wide text-white leading-none">Face Scan</span>
-              <span className="text-xs font-bold text-white/90 leading-none mt-0.5">Clock In</span>
+              <ShieldCheck className="h-5 w-5 text-white shrink-0" />
+              <span className="font-bold text-white whitespace-nowrap">Face Scan Clock In</span>
             </Button>
           )}
 
           {status === 'Checked In' && (
             <Button
-              className="px-8 py-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95 bg-rose-600 hover:bg-rose-700 text-white flex flex-col items-center justify-center gap-1 cursor-pointer min-w-[150px] border border-white/10"
+              className="px-6 py-3.5 h-auto rounded-full shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95 bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center gap-2.5 cursor-pointer font-bold border border-white/10 text-base"
               style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
               onClick={handleClockOut}
             >
-              <ShieldCheck className="h-5 w-5 text-white" />
-              <span className="text-sm font-semibold tracking-wide text-white leading-none">Face Scan</span>
-              <span className="text-xs font-bold text-white/90 leading-none mt-0.5">Clock Out</span>
+              <ShieldCheck className="h-5 w-5 text-white shrink-0" />
+              <span className="font-bold text-white whitespace-nowrap">Face Scan Clock Out</span>
             </Button>
           )}
 
