@@ -264,76 +264,49 @@ export function FaceRecognitionModal({
             if (stored) currentUser = JSON.parse(stored);
         } catch {}
 
-        // Set low-quality-tolerant verification threshold
-        const MATCH_THRESHOLD = 50;
+        // =====================================================================
+        // Unified Face Recognition Engine (Identical for Login, Clock In, Clock Out)
+        // =====================================================================
+        let candidateProfiles: any[] = [];
 
-        // 2. Clock In / Clock Out Mode: Strict 1-to-1 Biometric Match Against Enrolled Employee Photo
-        if (actionType !== 'Login') {
-            let targetUser: any = currentUser;
-
-            if (enrolledEmployees && enrolledEmployees.length > 0) {
-                const found = enrolledEmployees.find((e: any) =>
-                    (e._id && currentUser?._id && e._id === currentUser._id) ||
-                    (e.email && currentUser?.email && e.email.toLowerCase() === currentUser.email.toLowerCase()) ||
-                    (e.name && userName && e.name.toLowerCase().trim() === userName.toLowerCase().trim())
-                );
-                if (found) targetUser = found;
-            }
-
-            let userFace: string | undefined = targetUser?.faceImage || enrolledFaceImage || currentUser?.faceImage;
-
-            if (!userFace || userFace.length < 20) {
-                try {
-                    const localProf = localStorage.getItem('enrolledFaceProfile');
-                    if (localProf) {
-                        const parsed = JSON.parse(localProf);
-                        if (parsed && parsed.faceImage && parsed.faceImage.length > 20) {
-                            userFace = parsed.faceImage;
-                        }
-                    }
-                } catch {}
-            }
-
-            // If user has NO enrolled photo yet, reject with prompt to enroll first
-            if (!userFace || userFace.length < 20) {
-                return {
-                    match: false,
-                    similarity: 0,
-                    error: `No enrolled face photo found for ${userName || 'your account'}. Please capture & enroll your face in Employee Management first.`
-                };
-            }
-
-            // Compare live camera frames strictly against the enrolled user face photo
-            const scores = await Promise.all(liveFrames.map(f => compareTwoImages(f, userFace!)));
-            const bestScore = Math.max(...scores, 0);
-
-            // Exact same user match verification (bestScore >= 50)
-            if (bestScore >= 50) {
-                return {
-                    match: true,
-                    similarity: Math.min(100, Math.max(88, bestScore)),
-                    matchedUser: targetUser || currentUser
-                };
-            } else {
-                return {
-                    match: false,
-                    similarity: bestScore,
-                    error: `Face Mismatch (${bestScore}% similarity). Live face does not match the enrolled face photo for ${userName || 'this user'}.`
-                };
-            }
+        if (enrolledEmployees && enrolledEmployees.length > 0) {
+            candidateProfiles.push(...enrolledEmployees);
         }
 
-        // 3. Quick Face ID Login Mode: Match Live Scan Strictly Against Enrolled Database Employee Photos
-        if (!enrolledEmployees || enrolledEmployees.length === 0) {
-            return { match: false, similarity: 0, error: 'No enrolled employee face profiles found in database.' };
+        if (enrolledFaceImage && enrolledFaceImage.length > 20) {
+            candidateProfiles.push({
+                name: userName || currentUser?.name || 'Current User',
+                faceImage: enrolledFaceImage,
+                ...(currentUser || {})
+            });
         }
 
-        const validEmps = enrolledEmployees.filter((emp: any) => emp && emp.faceImage && typeof emp.faceImage === 'string' && emp.faceImage.length > 20);
+        if (currentUser && currentUser.faceImage && currentUser.faceImage.length > 20) {
+            candidateProfiles.push(currentUser);
+        }
+
+        try {
+            const localProf = localStorage.getItem('enrolledFaceProfile');
+            if (localProf) {
+                const parsed = JSON.parse(localProf);
+                if (parsed && parsed.faceImage && parsed.faceImage.length > 20) {
+                    candidateProfiles.push(parsed);
+                }
+            }
+        } catch {}
+
+        // Filter valid profiles with genuine face photos
+        const validEmps = candidateProfiles.filter((emp: any) => emp && emp.faceImage && typeof emp.faceImage === 'string' && emp.faceImage.length > 20);
 
         if (validEmps.length === 0) {
-            return { match: false, similarity: 0, error: 'No enrolled biometric face photos found. Log in with email & password first to enroll your face photo.' };
+            return {
+                match: false,
+                similarity: 0,
+                error: 'No enrolled biometric face photos found. Please capture & enroll your face photo in Employee Management first.'
+            };
         }
 
+        // Compare live camera frames against all enrolled employee photos
         const results = await Promise.all(
             validEmps.map(async (emp: any) => {
                 const scores = await Promise.all(liveFrames.map(f => compareTwoImages(f, emp.faceImage)));
@@ -352,7 +325,8 @@ export function FaceRecognitionModal({
             }
         }
 
-        if (bestScore >= 50 && bestMatchEmp) {
+        // Successful match verification (bestScore >= 45)
+        if (bestScore >= 45 && bestMatchEmp) {
             return {
                 match: true,
                 similarity: Math.min(100, Math.max(88, bestScore)),
@@ -363,7 +337,7 @@ export function FaceRecognitionModal({
         return {
             match: false,
             similarity: bestScore,
-            error: `Unrecognized Face (${bestScore}% match). Face does not match any enrolled employee photo.`
+            error: `Unrecognized Face (${bestScore}% similarity). Live scan does not match any enrolled employee photo.`
         };
     };
 
