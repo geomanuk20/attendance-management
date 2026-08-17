@@ -3,9 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Eye, EyeOff, Loader2, Lock, Mail, Scan, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Lock, Mail, Scan } from 'lucide-react';
 import { toast } from 'sonner';
-import { loginUser, getEnrolledFaceProfiles, loginWithFace, getAttendance, clockIn, clockOut } from '../services/api';
+import { loginUser, getEnrolledFaceProfiles, loginWithFace } from '../services/api';
 import { FaceRecognitionModal } from './FaceRecognitionModal';
 
 interface LoginProps {
@@ -85,31 +85,6 @@ export function Login({ onLogin }: LoginProps) {
             const data = await loginWithFace(matchedUser);
             const empId = data._id || data.id || matchedUser._id || matchedUser.id;
 
-            let clockStatusMessage = '';
-            if (empId) {
-                try {
-                    const attendanceLogs = await getAttendance(empId);
-                    const today = new Date().toISOString().split('T')[0];
-                    const todayRec = Array.isArray(attendanceLogs) ? attendanceLogs.find((r: any) => String(r.date).split('T')[0] === today) : null;
-
-                    if (!todayRec || !todayRec.clockIn) {
-                        const clockRes = await clockIn(empId);
-                        const timeStr = clockRes.clockIn || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        clockStatusMessage = ` & Clocked In at ${timeStr}`;
-                    } else if (todayRec.clockIn && (!todayRec.clockOut || todayRec.clockOut === '-')) {
-                        const clockRes = await clockOut(empId);
-                        const timeStr = clockRes.clockOut || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        const totalHours = clockRes.workHours || 0;
-                        const h = Math.floor(totalHours);
-                        const m = Math.round((totalHours - h) * 60);
-                        const duration = h > 0 ? `${h}h ${m}m` : `${m}m`;
-                        clockStatusMessage = ` & Clocked Out at ${timeStr} (Worked: ${duration})`;
-                    }
-                } catch (clockErr) {
-                    console.warn('Auto clock in/out on face login error:', clockErr);
-                }
-            }
-
             localStorage.setItem('enrolledFaceProfile', JSON.stringify({
                 _id: empId,
                 name: data.name || matchedUser.name,
@@ -121,7 +96,7 @@ export function Login({ onLogin }: LoginProps) {
             }));
 
             onLogin(data);
-            toast.success(`✓ Biometric Face Verified! Welcome, ${data.name || matchedUser.name}${clockStatusMessage}!`);
+            toast.success(`✓ Biometric Face Verified! Welcome, ${data.name || matchedUser.name}!`);
         } catch (err: any) {
             toast.error(err.message || 'Biometric Face Login failed');
         } finally {
