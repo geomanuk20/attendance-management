@@ -390,10 +390,8 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
             <span className="font-bold text-foreground">{filteredEmployees.length} Active Staff</span>
           </div>
         </div>
-      </Card>
-
-      {/* 4 Modern Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-2">
+      </Card>      {/* 4 Modern Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-2 mb-2">
         {/* Card 1: Attendance Rate */}
         <Card className="p-6 border border-border/80 border-t-4 border-t-emerald-500 shadow-xs hover:shadow-lg transition-all duration-300 rounded-2xl bg-card">
           <div className="flex items-start justify-between gap-4">
@@ -466,7 +464,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       </div>
 
       {/* Analytics Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-2">
         {/* Chart 1: Attendance Trend Area Chart */}
         <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
           <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
@@ -517,27 +515,29 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
             </Badge>
           </div>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-            <ResponsiveContainer width="100%" height={240}>
-              <PieChart>
-                <Pie
-                  data={leaveTypesData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={95}
-                  paddingAngle={4}
-                  dataKey="value"
-                >
-                  {leaveTypesData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value: any, name: any) => [`${value} requests`, name]}
-                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="w-full sm:w-[240px] h-[240px] shrink-0 flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={leaveTypesData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={90}
+                    paddingAngle={4}
+                    dataKey="value"
+                  >
+                    {leaveTypesData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: any, name: any) => [`${value} requests`, name]}
+                    contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
             <div className="flex flex-col gap-2.5 shrink-0 sm:min-w-[190px] bg-muted/40 p-4 rounded-xl border border-border/40 w-full sm:w-auto">
               {leaveTypesData.map((item, index) => (
                 <div key={index} className="space-y-1">
