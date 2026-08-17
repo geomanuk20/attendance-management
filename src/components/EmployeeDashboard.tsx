@@ -97,6 +97,9 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
 
   const [allEmployees, setAllEmployees] = useState<any[]>([]);
 
+  const [isTodayWeekOff, setIsTodayWeekOff] = useState(false);
+  const [monthlyWeekOffCount, setMonthlyWeekOffCount] = useState(0);
+
   const fetchLeaveStats = async (employeeId?: string, userEmail?: string) => {
     try {
       const leaves = await getLeaveRequests(employeeId);
@@ -111,14 +114,35 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
         let casualUsed = 0;
         let sickUsed = 0;
         let annualUsed = 2;
+        let weekOffCount = 0;
+
+        const currentMonthStr = todayDateStr.substring(0, 7);
+        let offToday = false;
 
         myApprovedLeaves.forEach((l: any) => {
           const type = (l.type || l.leaveType || '').toLowerCase();
           const days = Number(l.days || l.duration || 1);
-          if (type.includes('casual')) casualUsed += days;
-          else if (type.includes('sick') || type.includes('medical')) sickUsed += days;
-          else annualUsed += days;
+          const sDate = String(l.startDate || l.date || '').split('T')[0];
+          const eDate = String(l.endDate || l.startDate || l.date || '').split('T')[0];
+
+          if (type.includes('casual')) {
+            casualUsed += days;
+          } else if (type.includes('sick') || type.includes('medical')) {
+            sickUsed += days;
+          } else if (type.includes('week')) {
+            if (sDate.startsWith(currentMonthStr)) {
+              weekOffCount += days;
+            }
+            if (todayDateStr >= sDate && todayDateStr <= eDate) {
+              offToday = true;
+            }
+          } else {
+            annualUsed += days;
+          }
         });
+
+        setIsTodayWeekOff(offToday);
+        setMonthlyWeekOffCount(weekOffCount);
 
         const casualLeft = Math.max(0, 6 - casualUsed);
         const sickLeft = Math.max(0, 6 - sickUsed);
@@ -377,18 +401,38 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
             </Button>
           )}
 
-          <Badge variant="secondary" className={`flex items-center gap-2 px-3 py-1.5 font-medium ${status === 'Checked In' ? 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-400' :
+          <Badge variant="secondary" className={`flex items-center gap-2 px-3 py-1.5 font-medium ${isTodayWeekOff ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700' :
+            status === 'Checked In' ? 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-400' :
             status === 'Checked Out' ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' :
               'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400'
             }`}>
-            <div className={`h-2 w-2 rounded-full ${status === 'Checked In' ? 'bg-green-500 animate-pulse' :
+            <div className={`h-2 w-2 rounded-full ${isTodayWeekOff ? 'bg-slate-500' :
+              status === 'Checked In' ? 'bg-green-500 animate-pulse' :
               status === 'Checked Out' ? 'bg-slate-400' :
                 'bg-blue-500'
               }`}></div>
-            {status === 'Checked In' ? 'Working Now' : status === 'Checked Out' ? 'Not Checked In' : 'Completed Today'}
+            {isTodayWeekOff ? '🏖️ Week Off (Today)' : status === 'Checked In' ? 'Working Now' : status === 'Checked Out' ? 'Not Checked In' : 'Completed Today'}
           </Badge>
         </div>
       </div>
+
+      {/* Week Off Alert Banner */}
+      {isTodayWeekOff && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-500/10 via-indigo-500/10 to-slate-500/10 border border-slate-500/30 flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-slate-500/20 flex items-center justify-center text-xl shrink-0">
+              🏖️
+            </div>
+            <div>
+              <p className="text-sm font-bold text-foreground">Today is your Scheduled Week Off</p>
+              <p className="text-xs text-muted-foreground">Enjoy your rest day! You are not required to clock in today.</p>
+            </div>
+          </div>
+          <Badge variant="outline" className="bg-slate-500/20 text-slate-700 dark:text-slate-300 border-slate-500/30 text-xs font-bold shrink-0">
+            Off Duty
+          </Badge>
+        </div>
+      )}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -559,14 +603,20 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
             {/* Week Off Policy */}
             <div className="flex items-center justify-between p-4 rounded-xl bg-muted/40 border border-border/70 hover:bg-muted/60 transition-colors">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">⚪</span>
+                <span className="text-2xl">🏖️</span>
                 <div>
                   <p className="text-sm font-semibold text-foreground">Week Off Policy</p>
-                  <p className="text-xs text-muted-foreground">User Chooses Up to 4 Dates / Month</p>
+                  <p className="text-xs text-muted-foreground">
+                    {monthlyWeekOffCount} of 4 Scheduled This Month • {isTodayWeekOff ? '🏖️ Today is Week Off' : '💼 Regular Work Day'}
+                  </p>
                 </div>
               </div>
-              <span className="px-3.5 py-1.5 rounded-lg bg-slate-500/10 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-500/20 whitespace-nowrap">
-                4 / Month
+              <span className={`px-3.5 py-1.5 rounded-lg font-bold text-xs border whitespace-nowrap ${
+                isTodayWeekOff
+                  ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
+                  : 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20'
+              }`}>
+                {Math.max(0, 4 - monthlyWeekOffCount)} Left
               </span>
             </div>
           </div>
