@@ -2977,6 +2977,43 @@ html {
   scrollbar-width: none !important;
 }
 
+/* ==========================================================================
+   Radix UI Tabs - High Visibility Active Tab States
+   ========================================================================== */
+
+[data-slot="tabs-trigger"] {
+  color: #64748b;
+  background-color: transparent;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+}
+
+[data-slot="tabs-trigger"]:hover {
+  color: #0f172a;
+}
+
+.dark [data-slot="tabs-trigger"] {
+  color: #94a3b8;
+}
+
+.dark [data-slot="tabs-trigger"]:hover {
+  color: #f8fafc;
+}
+
+[data-slot="tabs-trigger"][data-state="active"] {
+  background-color: #ffffff !important;
+  color: #0284c7 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+}
+
+.dark [data-slot="tabs-trigger"][data-state="active"] {
+  background-color: #0f172a !important;
+  color: #38bdf8 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(56, 189, 248, 0.3) !important;
+}
+
 
 
 
