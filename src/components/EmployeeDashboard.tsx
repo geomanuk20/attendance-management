@@ -4,7 +4,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
-import { Clock, Calendar, AlertCircle, LogIn, LogOut, Loader2 } from 'lucide-react';
+import { Clock, Calendar, AlertCircle, LogIn, LogOut, Loader2, ShieldCheck } from 'lucide-react';
 import { getAttendance, clockIn, clockOut, getEmployees, getLeaveRequests } from '../services/api';
 import { toast } from 'sonner';
 import { FaceRecognitionModal } from './FaceRecognitionModal';
@@ -382,11 +382,11 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
             <Button
               onClick={handleClockIn}
               disabled={loading}
-              style={{ backgroundColor: '#16a34a', color: '#ffffff' }}
-              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl shadow-md cursor-pointer shrink-0"
+              style={{ backgroundColor: '#0D2B52', color: '#ffffff' }}
+              className="gap-2 bg-[#0D2B52] hover:bg-[#081d38] text-white font-bold px-5 py-2.5 rounded-full shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
-              <span className="font-bold text-white">Clock In</span>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4 text-white" />}
+              <span className="font-bold text-white text-sm">Face Scan Clock In</span>
             </Button>
           )}
           {status === 'Checked In' && (
@@ -394,10 +394,10 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
               onClick={handleClockOut}
               disabled={loading}
               style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
-              className="gap-2 bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl shadow-md cursor-pointer shrink-0"
+              className="gap-2 bg-rose-600 hover:bg-rose-700 text-white font-bold px-5 py-2.5 rounded-full shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
-              <span className="font-bold text-white">Clock Out</span>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4 text-white" />}
+              <span className="font-bold text-white text-sm">Face Scan Clock Out</span>
             </Button>
           )}
 

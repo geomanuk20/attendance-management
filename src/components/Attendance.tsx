@@ -1156,25 +1156,25 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
 
           {status === 'Checked Out' && (
             <Button
-              size="lg"
-              className="h-32 w-32 rounded-full text-base font-bold shadow-xl transition-all duration-200 active:scale-95 bg-primary hover:bg-primary/90 text-primary-foreground flex flex-col items-center justify-center gap-1 p-2 text-center cursor-pointer"
+              className="px-8 py-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95 bg-[#0D2B52] hover:bg-[#081d38] text-white flex flex-col items-center justify-center gap-1 cursor-pointer min-w-[150px] border border-white/10"
+              style={{ backgroundColor: '#0D2B52', color: '#ffffff' }}
               onClick={handleClockIn}
             >
-              <ShieldCheck className="h-6 w-6 text-emerald-400" />
-              <span>Face Scan</span>
-              <span className="text-xs font-semibold opacity-90">Clock In</span>
+              <ShieldCheck className="h-5 w-5 text-white" />
+              <span className="text-sm font-semibold tracking-wide text-white leading-none">Face Scan</span>
+              <span className="text-xs font-bold text-white/90 leading-none mt-0.5">Clock In</span>
             </Button>
           )}
 
           {status === 'Checked In' && (
             <Button
-              size="lg"
-              className="h-32 w-32 rounded-full text-base font-bold shadow-xl transition-all duration-200 active:scale-95 bg-destructive hover:bg-destructive/90 text-destructive-foreground flex flex-col items-center justify-center gap-1 p-2 text-center cursor-pointer"
+              className="px-8 py-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95 bg-rose-600 hover:bg-rose-700 text-white flex flex-col items-center justify-center gap-1 cursor-pointer min-w-[150px] border border-white/10"
+              style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
               onClick={handleClockOut}
             >
-              <ShieldCheck className="h-6 w-6 text-white" />
-              <span>Face Scan</span>
-              <span className="text-xs font-semibold opacity-90">Clock Out</span>
+              <ShieldCheck className="h-5 w-5 text-white" />
+              <span className="text-sm font-semibold tracking-wide text-white leading-none">Face Scan</span>
+              <span className="text-xs font-bold text-white/90 leading-none mt-0.5">Clock Out</span>
             </Button>
           )}
 
