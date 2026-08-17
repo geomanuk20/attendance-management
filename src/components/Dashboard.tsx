@@ -30,9 +30,9 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
         setLoading(true);
 
         const [employees, attendance, leaveRequests] = await Promise.all([
-          getEmployees(),
-          getAttendance(),
-          getLeaveRequests(),
+          getEmployees().catch(() => []),
+          getAttendance().catch(() => []),
+          getLeaveRequests().catch(() => []),
         ]);
 
         const totalEmployees = employees.length;
@@ -56,18 +56,17 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
           const dayLabel = format(day, 'EEE'); // Mon, Tue, ...
 
           let presentCount = 0;
-          // Count unique employees present on this day
           const presentEmployees = new Set();
 
           attendance.forEach((a: any) => {
-            if (a.date && (a.status === 'Present' || a.status === 'Attendance' || a.status === 'Half-Day' || a.status === 'Half Day')) {
+            if (a.date && (a.status === 'Present' || a.status === 'Attendance' || a.status === 'Half-Day' || a.status === 'Half Day' || a.status === 'On Time' || a.status === 'Late')) {
               const recordDate = new Date(a.date);
               recordDate.setHours(0, 0, 0, 0);
               const compareDay = new Date(day);
               compareDay.setHours(0, 0, 0, 0);
 
               if (recordDate.getTime() === compareDay.getTime()) {
-                const empId = a.employeeId?._id || a.employeeId;
+                const empId = a.employeeId?._id || a.employeeId?.id || a.employeeId;
                 if (empId) presentEmployees.add(empId.toString());
               }
             }
@@ -82,34 +81,37 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
         // --- Leave Distribution (from all leave requests) ---
         const leaveTypes: Record<string, number> = {};
         leaveRequests.forEach((r: any) => {
-          const type = r.leaveType || 'Other';
+          const type = r.leaveType || 'Casual Leave';
           leaveTypes[type] = (leaveTypes[type] || 0) + 1;
         });
         const leaveColors: Record<string, string> = {
-          Vacation: '#3BAFDA',
-          'Sick Leave': '#F9A825',
-          Personal: '#8B5CF6',
-          Maternity: '#EC4899',
-          Other: '#6B7280',
+          'Casual Leave': '#0D2B52',
+          'Sick Leave': '#3BAFDA',
+          'Annual Leave': '#F9A825',
+          'Emergency Leave': '#E11D48',
+          'Vacation': '#3BAFDA',
+          'Personal': '#8B5CF6',
+          'Maternity': '#EC4899',
+          'Other': '#64748B',
         };
         const distData = Object.entries(leaveTypes).map(([name, value]) => ({
           name,
           value,
-          color: leaveColors[name] || '#6B7280',
+          color: leaveColors[name] || '#64748B',
         }));
         setLeaveDistribution(distData);
 
-        // --- Recent Activities (from attendance clock-ins/outs + leave requests) ---
+        // --- Recent Activities ---
         const activityList: any[] = [];
 
-        // Attendance events (most recent 10)
+        // Attendance events
         attendance
           .filter((a: any) => a.clockIn)
           .sort((a: any, b: any) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime())
           .slice(0, 8)
           .forEach((a: any) => {
-            const name = a.employeeId?.name || 'Unknown';
-            const dateStr = a.date ? String(a.date).split('T')[0] : 'Unknown date';
+            const name = a.employeeId?.name || 'Employee';
+            const dateStr = a.date ? String(a.date).split('T')[0] : 'Today';
             if (a.clockIn) {
               activityList.push({
                 id: `ci-${a._id}`,
@@ -130,23 +132,21 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
             }
           });
 
-        // Leave request events (most recent 5)
+        // Leave request events
         leaveRequests
           .sort((a: any, b: any) => new Date(b.createdAt || b.startDate).getTime() - new Date(a.createdAt || a.startDate).getTime())
           .slice(0, 5)
           .forEach((l: any) => {
-            const name = l.employeeId?.name || 'Unknown';
+            const name = l.employeeId?.name || 'Employee';
             activityList.push({
               id: `lr-${l._id}`,
               type: 'leave',
               user: name,
-              action: `${l.leaveType} request — ${l.status}`,
-              time: l.startDate ? String(l.startDate).split('T')[0] : 'Unknown date',
+              action: `Requested ${l.leaveType || 'Leave'} (${l.days || 1} day${(l.days || 1) > 1 ? 's' : ''})`,
+              time: l.startDate ? String(l.startDate).split('T')[0] : 'Pending',
             });
           });
 
-        // Sort combined list by recency
-        activityList.sort((a, b) => b.time.localeCompare(a.time));
         setRecentActivities(activityList.slice(0, 8));
 
       } catch (error) {
@@ -190,162 +190,218 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold">Dashboard Overview</h2>
-          <p className="text-sm text-muted-foreground">Welcome back! Here's what's happening today.</p>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Dashboard Overview</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">Welcome back! Real-time workforce management & attendance insights.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Badge variant="secondary" className="flex items-center gap-2">
-            <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-            System Online
+        <div className="flex items-center gap-3">
+          <Badge variant="secondary" className="flex items-center gap-2 px-3 py-1.5 font-medium border border-border shadow-xs">
+            <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+            <span>System Online</span>
           </Badge>
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Total Employees</p>
-              <p className="text-2xl font-semibold">{stats.totalEmployees}</p>
-              <p className="text-xs flex items-center gap-1 mt-1" style={{ color: '#10B981' }}>
-                <TrendingUp className="h-3 w-3" /> Real-time data
+      {/* Key Metrics Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        <Card className="p-5 border border-border shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Employees</p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground mt-1 leading-tight">{stats.totalEmployees}</p>
+              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-1.5">
+                <TrendingUp className="h-3.5 w-3.5 shrink-0" />
+                <span>Real-time database</span>
               </p>
             </div>
-            <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#3BAFDA20' }}>
-              <Users className="h-6 w-6" style={{ color: '#3BAFDA' }} />
+            <div className="h-12 w-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0 text-sky-600 dark:text-sky-400">
+              <Users className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Present Today</p>
-              <p className="text-2xl font-semibold">{stats.presentToday}</p>
-              <p className="text-xs text-muted-foreground mt-1">
+        <Card className="p-5 border border-border shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Present Today</p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground mt-1 leading-tight">{stats.presentToday}</p>
+              <p className="text-xs font-medium text-muted-foreground mt-1.5">
                 {stats.totalEmployees > 0 ? Math.round((stats.presentToday / stats.totalEmployees) * 100) : 0}% attendance rate
               </p>
             </div>
-            <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#10B98120' }}>
-              <Clock className="h-6 w-6" style={{ color: '#10B981' }} />
+            <div className="h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-600 dark:text-emerald-400">
+              <Clock className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Monthly Payroll</p>
-              <p className="text-2xl font-semibold">{formatCurrency(stats.monthlyPayroll)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Estimated</p>
-            </div>
-            <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F9A82520' }}>
-              <DollarSign className="h-6 w-6" style={{ color: '#F9A825' }} />
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Pending Requests</p>
-              <p className="text-2xl font-semibold">{stats.pendingRequests}</p>
-              <p className="text-xs flex items-center gap-1 mt-1" style={{ color: '#F9A825' }}>
-                <AlertCircle className="h-3 w-3" /> Needs approval
+        <Card className="p-5 border border-border shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Monthly Payroll</p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground mt-1 leading-tight">{formatCurrency(stats.monthlyPayroll)}</p>
+              <p className="text-xs font-medium text-muted-foreground mt-1.5">
+                Active compensation sum
               </p>
             </div>
-            <div className="h-12 w-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F9A82520' }}>
-              <Calendar className="h-6 w-6" style={{ color: '#F9A825' }} />
+            <div className="h-12 w-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 text-amber-600 dark:text-amber-400">
+              <DollarSign className="h-6 w-6" />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-5 border border-border shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pending Requests</p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground mt-1 leading-tight">{stats.pendingRequests}</p>
+              <p className="text-xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1 mt-1.5">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                <span>Needs HR review</span>
+              </p>
+            </div>
+            <div className="h-12 w-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0 text-purple-600 dark:text-purple-400">
+              <Calendar className="h-6 w-6" />
             </div>
           </div>
         </Card>
       </div>
 
-      {/* Charts Row */}
+      {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Weekly Attendance Bar Chart */}
-        <Card className="p-6">
-          <h3 className="mb-4">Weekly Attendance</h3>
+        <Card className="p-5 sm:p-6 border border-border shadow-xs">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-bold text-foreground">Weekly Attendance Trend</h3>
+            <div className="flex items-center gap-3 text-xs font-medium">
+              <div className="flex items-center gap-1.5">
+                <div className="h-2.5 w-2.5 rounded-full bg-[#10B981]" />
+                <span className="text-muted-foreground">Present</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="h-2.5 w-2.5 rounded-full bg-[#F9A825]" />
+                <span className="text-muted-foreground">Absent</span>
+              </div>
+            </div>
+          </div>
           {weeklyData.some(d => d.Present > 0 || d.Absent > 0) ? (
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={weeklyData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
-                <Tooltip />
-                <Legend />
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
+                <XAxis dataKey="name" fontSize={12} stroke="#64748b" />
+                <YAxis fontSize={12} stroke="#64748b" allowDecimals={false} />
+                <Tooltip
+                  formatter={(value: any, name: any) => [`${value} employees`, name]}
+                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
+                />
                 <Bar dataKey="Present" fill="#10B981" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Absent" fill="#F9A825" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-[250px] text-muted-foreground text-sm">
-              No attendance data for this week yet
+            <div className="flex items-center justify-center h-[260px] text-muted-foreground text-sm">
+              No attendance data recorded for this week yet
             </div>
           )}
         </Card>
 
         {/* Leave Distribution Pie Chart */}
-        <Card className="p-6">
-          <h3 className="mb-4">Leave Distribution</h3>
+        <Card className="p-5 sm:p-6 border border-border shadow-xs">
+          <h3 className="text-base font-bold text-foreground mb-4">Leave Distribution</h3>
           {leaveDistribution.length > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={leaveDistribution}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={95}
-                  paddingAngle={4}
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  labelLine={false}
-                >
-                  {leaveDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value: any) => [`${value} requests`, '']} />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <ResponsiveContainer width="100%" height={240}>
+                <PieChart>
+                  <Pie
+                    data={leaveDistribution}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={95}
+                    paddingAngle={4}
+                    dataKey="value"
+                  >
+                    {leaveDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: any, name: any) => [`${value} requests`, name]}
+                    contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex flex-col gap-2 shrink-0 sm:min-w-[150px]">
+                {leaveDistribution.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-3 w-3 rounded-md shrink-0"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="text-muted-foreground font-medium truncate">{item.name}</span>
+                    </div>
+                    <span className="font-bold text-foreground">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : (
-            <div className="flex items-center justify-center h-[250px] text-muted-foreground text-sm">
-              No leave requests found
+            <div className="flex items-center justify-center h-[260px] text-muted-foreground text-sm">
+              No leave requests found in database
             </div>
           )}
         </Card>
       </div>
 
-
       {/* Recent Activities */}
-      <Card className="p-6">
-        <h3 className="mb-4">Recent Activities</h3>
-        <div className="space-y-3">
+      <Card className="p-5 sm:p-6 border border-border shadow-xs">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-base font-bold text-foreground">Recent Activities</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Real-time biometric attendance and leave workflow updates</p>
+          </div>
+          <Badge variant="outline" className="text-xs font-semibold">
+            {recentActivities.length} Recent Logs
+          </Badge>
+        </div>
+        <div className="space-y-1.5">
           {recentActivities.length > 0 ? (
             recentActivities.map((activity) => (
-              <div key={activity.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                <div className="flex items-center gap-3">
+              <div
+                key={activity.id}
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/40 transition-colors border-b border-border/40 last:border-0"
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
                   <div
-                    className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold text-white flex-shrink-0"
-                    style={{ backgroundColor: activity.type === 'attendance' ? '#3BAFDA' : '#F9A825' }}
+                    className="flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-xs"
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      minWidth: '36px',
+                      minHeight: '36px',
+                      borderRadius: '9999px',
+                      aspectRatio: '1/1',
+                      backgroundColor: activity.type === 'attendance' ? '#0D2B52' : '#F9A825',
+                    }}
                   >
-                    {activity.user.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                    {activity.user.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">{activity.user}</p>
-                    <p className="text-xs text-muted-foreground">{activity.action}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{activity.user}</p>
+                    <p className="text-xs text-muted-foreground truncate">{activity.action}</p>
                   </div>
                 </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap ml-4">{activity.time}</span>
+                <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap ml-4 shrink-0 bg-muted/60 px-2.5 py-1 rounded-lg">
+                  {activity.time}
+                </span>
               </div>
             ))
           ) : (
-            <p className="text-sm text-muted-foreground">No recent activities found.</p>
+            <p className="text-sm text-muted-foreground py-4 text-center">No recent activities found.</p>
           )}
         </div>
       </Card>
