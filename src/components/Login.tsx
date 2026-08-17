@@ -7,6 +7,7 @@ import { Eye, EyeOff, Loader2, Lock, Mail, Scan } from 'lucide-react';
 import { toast } from 'sonner';
 import { loginUser, getEnrolledFaceProfiles, loginWithFace } from '../services/api';
 import { FaceRecognitionModal } from './FaceRecognitionModal';
+import logoImage from '../assets/60ace96c513e5568730553.png';
 
 interface LoginProps {
     onLogin: (user: any) => void;
@@ -116,9 +117,20 @@ export function Login({ onLogin }: LoginProps) {
     return (
         <div className="min-h-screen w-full flex items-center justify-center bg-slate-50 p-4 sm:p-6">
             <Card className="w-full max-w-sm shadow-md border border-slate-200/80 bg-white rounded-xl">
-                <CardHeader className="space-y-1">
-                    <CardTitle className="text-xl font-bold tracking-tight text-slate-900">Welcome to Attendance System</CardTitle>
-                    <CardDescription className="text-slate-500 text-sm">Sign in to your account to continue</CardDescription>
+                <CardHeader className="space-y-3 text-center pb-2">
+                    <div className="flex justify-center">
+                        <div className="h-11 w-auto px-3.5 py-1 rounded-xl bg-slate-900 flex items-center justify-center shadow-md">
+                            <img
+                                src={logoImage}
+                                alt="Company Logo"
+                                className="h-7 w-auto max-w-[110px] object-contain brightness-110"
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <CardTitle className="text-xl font-bold tracking-tight text-slate-900">Welcome to Attendance System</CardTitle>
+                        <CardDescription className="text-slate-500 text-sm mt-1">Sign in to your account to continue</CardDescription>
+                    </div>
                 </CardHeader>
                 <form onSubmit={handleSubmit}>
                     <CardContent className="space-y-4 pt-2 pb-6">
