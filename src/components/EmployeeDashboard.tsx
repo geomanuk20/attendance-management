@@ -236,29 +236,29 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
 
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2>My Dashboard</h2>
-          <p className="text-muted-foreground">Welcome back, {user?.name?.split(' ')[0] || 'Employee'}! Here's your overview.</p>
+          <h2 className="text-2xl sm:text-3xl font-bold">My Dashboard</h2>
+          <p className="text-sm text-muted-foreground">Welcome back, {user?.name?.split(' ')[0] || 'Employee'}! Here's your overview.</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
 
           {status === 'Checked Out' && (
-            <Button onClick={handleClockIn} disabled={loading} className="gap-2 bg-green-600 hover:bg-green-700 text-black dark:text-white">
+            <Button onClick={handleClockIn} disabled={loading} className="gap-2 bg-green-600 hover:bg-green-700 text-white cursor-pointer">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
               Clock In
             </Button>
           )}
           {status === 'Checked In' && (
-            <Button onClick={handleClockOut} disabled={loading} className="gap-2 bg-red-600 hover:bg-red-700 text-black dark:text-white">
+            <Button onClick={handleClockOut} disabled={loading} className="gap-2 bg-red-600 hover:bg-red-700 text-white cursor-pointer">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
               Clock Out
             </Button>
           )}
 
-          <Badge variant="secondary" className={`flex items-center gap-2 px-3 py-1 ${status === 'Checked In' ? 'bg-green-100 text-green-700' :
-            status === 'Checked Out' ? 'bg-slate-100 text-slate-700' :
-              'bg-blue-100 text-blue-700'
+          <Badge variant="secondary" className={`flex items-center gap-2 px-3 py-1.5 font-medium ${status === 'Checked In' ? 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-400' :
+            status === 'Checked Out' ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' :
+              'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400'
             }`}>
             <div className={`h-2 w-2 rounded-full ${status === 'Checked In' ? 'bg-green-500 animate-pulse' :
               status === 'Checked Out' ? 'bg-slate-400' :
@@ -269,8 +269,8 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
         </div>
       </div>
 
-      {/* Key Metrics - Enforce 2 Sections Per Row */}
-      <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>

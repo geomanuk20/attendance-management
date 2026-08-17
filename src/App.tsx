@@ -9,9 +9,6 @@ import { LeaveRequests } from './components/LeaveRequests';
 import { Reports } from './components/Reports';
 import { EmployeeManagement } from './components/EmployeeManagement';
 import { Settings } from './components/Settings';
-import { Menu, Home, Clock, Calendar, Users, Moon, Sun, MoreHorizontal } from 'lucide-react';
-import { Button } from './components/ui/button';
-import logoImage from './assets/60ace96c513e5568730553.png';
 
 import { Toaster } from './components/ui/sonner';
 import { updatePreferences, getEmployees } from './services/api';
@@ -151,13 +148,6 @@ export default function App() {
     setCurrency(dbCurr || localCurr || 'USD');
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    setCurrentUser(null);
-    setDarkMode(false);
-  };
-
   if (!userRole) {
     return (
       <>
@@ -182,7 +172,7 @@ export default function App() {
       case 'employees':
         return <EmployeeManagement currency={currency} />;
       case 'settings':
-        return <Settings userRole={userRole!} onLogout={handleLogout} currency={currency} onCurrencyChange={setCurrency} darkMode={darkMode} onDarkModeChange={setDarkMode} />;
+        return <Settings userRole={userRole!} onLogout={() => setCurrentUser(null)} currency={currency} onCurrencyChange={setCurrency} darkMode={darkMode} onDarkModeChange={setDarkMode} />;
       default:
         return ['admin', 'superadmin', 'hr'].includes(userRole!) ? <Dashboard currency={currency} /> : <EmployeeDashboard currency={currency} />;
     }
@@ -190,7 +180,6 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
-      {/* Sidebar (Desktop fixed on lg+, Mobile & Tablet slide-out drawer) */}
       <Sidebar
         activeSection={activeSection}
         onSectionChange={setActiveSection}
@@ -199,105 +188,18 @@ export default function App() {
         userPosition={currentUser?.position || ''}
         darkMode={darkMode}
         onDarkModeChange={setDarkMode}
-        onLogout={handleLogout}
         isMobileOpen={isMobileMenuOpen}
-        onMobileClose={() => setIsMobileMenuOpen(false)}
+        onMobileToggle={setIsMobileMenuOpen}
+        onLogout={() => {
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          setCurrentUser(null);
+          setDarkMode(false); // Reset dark mode on logout
+        }}
       />
-
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        {/* Mobile & Tablet Top Header (Visible on mobile/tablet, hidden on lg+) */}
-        <header className="lg:hidden flex items-center justify-between px-4 h-14 bg-card border-b border-border shrink-0 z-30 shadow-xs">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="h-9 w-9 text-foreground hover:bg-muted cursor-pointer"
-              aria-label="Open Navigation Menu"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-            <div className="flex items-center gap-2">
-              <img src={logoImage} alt="Logo" className="h-7 w-auto object-contain" />
-              <span className="font-bold text-sm text-foreground">Attendance System</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer"
-              onClick={() => setDarkMode(!darkMode)}
-              title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
-            <div className="h-8 w-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold shrink-0">
-              {currentUser?.name ? currentUser.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '??'}
-            </div>
-          </div>
-        </header>
-
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-auto bg-background pb-20 lg:pb-0">
-          {renderContent()}
-        </main>
-
-        {/* Mobile & Tablet Bottom Navigation Bar (Visible on mobile/tablet, hidden on lg+) */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-card/95 backdrop-blur-md border-t border-border z-40 flex items-center justify-around px-2 shadow-lg">
-          <button
-            onClick={() => setActiveSection('dashboard')}
-            className={`flex flex-col items-center justify-center flex-1 h-full py-1 gap-1 transition-colors cursor-pointer ${
-              activeSection === 'dashboard' ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Home className="h-4 w-4" />
-            <span className="text-[10px]">Dashboard</span>
-          </button>
-
-          <button
-            onClick={() => setActiveSection('attendance')}
-            className={`flex flex-col items-center justify-center flex-1 h-full py-1 gap-1 transition-colors cursor-pointer ${
-              activeSection === 'attendance' ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Clock className="h-4 w-4" />
-            <span className="text-[10px]">Attendance</span>
-          </button>
-
-          {['admin', 'superadmin', 'hr'].includes(userRole) ? (
-            <button
-              onClick={() => setActiveSection('employees')}
-              className={`flex flex-col items-center justify-center flex-1 h-full py-1 gap-1 transition-colors cursor-pointer ${
-                activeSection === 'employees' ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Users className="h-4 w-4" />
-              <span className="text-[10px]">Employees</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => setActiveSection('leave')}
-              className={`flex flex-col items-center justify-center flex-1 h-full py-1 gap-1 transition-colors cursor-pointer ${
-                activeSection === 'leave' ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Calendar className="h-4 w-4" />
-              <span className="text-[10px]">Leave</span>
-            </button>
-          )}
-
-          <button
-            onClick={() => setIsMobileMenuOpen(true)}
-            className="flex flex-col items-center justify-center flex-1 h-full py-1 gap-1 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-          >
-            <MoreHorizontal className="h-4 w-4" />
-            <span className="text-[10px]">More</span>
-          </button>
-        </nav>
-      </div>
-
+      <main className="flex-1 overflow-auto bg-background app-content-wrapper">
+        {renderContent()}
+      </main>
       <Toaster />
     </div>
   );

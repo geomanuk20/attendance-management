@@ -176,8 +176,8 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2>Dashboard Overview</h2>
-          <p className="text-muted-foreground">Welcome back! Here's what's happening today.</p>
+          <h2 className="text-2xl sm:text-3xl font-bold">Dashboard Overview</h2>
+          <p className="text-sm text-muted-foreground">Welcome back! Here's what's happening today.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <Badge variant="secondary" className="flex items-center gap-2">

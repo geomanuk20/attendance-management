@@ -1027,14 +1027,14 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
 
   if (userRole === 'employee') {
     return (
-      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
           <div>
             <h2>My Attendance</h2>
             <p className="text-muted-foreground">Manage your daily attendance</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="gap-2" onClick={exportToExcel}>
+            <Button variant="outline" className="gap-2" onClick={exportToExcel}>
               <Download className="h-4 w-4" />
               Export History
             </Button>
@@ -1237,14 +1237,14 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
+    <div className="p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2>Attendance Management</h2>
           <p className="text-muted-foreground">Track and manage employee attendance records</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-2" onClick={exportToExcel}>
+          <Button variant="outline" className="gap-2" onClick={exportToExcel}>
             <Download className="h-4 w-4" />
             Export
           </Button>
@@ -1534,11 +1534,14 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
 
       {/* Admin Edit Attendance Status & Times Modal - High Precision SaaS Design */}
       <Dialog open={!!editingRecord} onOpenChange={(open) => !open && setEditingRecord(null)}>
-        <DialogContent className="sm:max-w-[480px] p-0 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white overflow-hidden">
+        <DialogContent className="max-w-[480px] w-[95vw] p-0 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white overflow-hidden">
           {/* Header Banner */}
           <div className="px-6 pt-6 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-800/40">
+              <div
+                className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-800/40"
+                style={{ width: '40px', height: '40px', minWidth: '40px', minHeight: '40px' }}
+              >
                 <Pencil className="h-5 w-5" />
               </div>
               <div>
@@ -1551,23 +1554,28 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
           </div>
 
           {editingRecord && (
-            <div className="p-6 space-y-5">
+            <div className="p-6 space-y-4">
               {/* Employee & Date Information Card */}
-              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
-                    {(editingRecord.employeeId?.name || 'EM').substring(0, 2).toUpperCase()}
+              <div className="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className="w-9 h-9 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs"
+                    style={{ width: '36px', height: '36px', minWidth: '36px', minHeight: '36px', borderRadius: '9999px', aspectRatio: '1/1' }}
+                  >
+                    <span className="leading-none">
+                      {(editingRecord.employeeId?.name || 'EM').substring(0, 2).toUpperCase()}
+                    </span>
                   </div>
-                  <div>
-                    <p className="font-bold text-slate-900 dark:text-white text-sm leading-tight">
+                  <div className="min-w-0">
+                    <p className="font-bold text-slate-900 dark:text-white text-sm leading-tight truncate">
                       {editingRecord.employeeId?.name || 'Employee'}
                     </p>
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate">
                       {editingRecord.employeeId?.department || 'General Staff'}
                     </p>
                   </div>
                 </div>
-                <Badge variant="outline" className="text-xs font-mono font-bold bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs">
+                <Badge variant="outline" className="text-xs font-mono font-bold bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs shrink-0 whitespace-nowrap">
                   📅 {editingRecord.date}
                 </Badge>
               </div>
@@ -1592,7 +1600,7 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
               </div>
 
               {/* Clock In and Clock Out Grid */}
-              <div className="grid grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div className="space-y-1.5">
                   <Label htmlFor="editClockIn" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     Clock In Time
@@ -1604,7 +1612,7 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
                       placeholder="09:30:00 AM"
                       value={editClockIn}
                       onChange={(e) => setEditClockIn(e.target.value)}
-                      className="h-11 pl-10 pr-3 font-mono text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xs text-slate-900 dark:text-white"
+                      className="h-11 pl-10 pr-3 font-mono text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xs text-slate-900 dark:text-white w-full"
                     />
                   </div>
                 </div>
@@ -1619,7 +1627,7 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
                       placeholder="06:30:00 PM"
                       value={editClockOut}
                       onChange={(e) => setEditClockOut(e.target.value)}
-                      className="h-11 pl-10 pr-3 font-mono text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xs text-slate-900 dark:text-white"
+                      className="h-11 pl-10 pr-3 font-mono text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xs text-slate-900 dark:text-white w-full"
                     />
                   </div>
                 </div>
@@ -1634,7 +1642,8 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
               variant="outline"
               size="sm"
               onClick={() => setEditingRecord(null)}
-              className="h-10 px-5 rounded-xl font-semibold text-xs border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              className="h-10 px-5 rounded-xl font-semibold text-xs border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer shrink-0"
+              style={{ minWidth: '80px', width: 'auto' }}
             >
               Cancel
             </Button>
@@ -1643,7 +1652,8 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
               size="sm"
               onClick={handleSaveAttendanceEdit}
               disabled={isUpdating}
-              className="h-10 px-6 rounded-xl font-bold text-xs bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white shadow-md hover:shadow-lg transition-all cursor-pointer"
+              className="h-10 px-6 rounded-xl font-bold text-xs bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0"
+              style={{ minWidth: '120px', width: 'auto' }}
             >
               {isUpdating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Save Changes
