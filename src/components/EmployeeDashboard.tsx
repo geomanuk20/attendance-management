@@ -3,7 +3,7 @@ import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 import { Clock, Calendar, AlertCircle, LogIn, LogOut, Loader2 } from 'lucide-react';
 import { getAttendance, clockIn, clockOut, getEmployees } from '../services/api';
 import { toast } from 'sonner';
@@ -63,6 +63,23 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const d = String(date.getDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
+  };
+
+  const todayDateStr = toLocalDateStr(new Date());
+  const upcomingHolidays = COMPANY_HOLIDAYS.filter(h => h.date >= todayDateStr);
+  const nextHoliday = upcomingHolidays.length > 0 ? upcomingHolidays[0] : COMPANY_HOLIDAYS[COMPANY_HOLIDAYS.length - 1];
+
+  const formatHolidayDate = (dateStr: string) => {
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      }
+      return dateStr;
+    } catch {
+      return dateStr;
+    }
   };
 
   const [allEmployees, setAllEmployees] = useState<any[]>([]);
