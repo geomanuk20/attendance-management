@@ -108,7 +108,7 @@ export function Sidebar({
       {/* MOBILE ONLY: Top Header Bar                               */}
       {/* ========================================================= */}
       <header className="app-mobile-header fixed top-0 left-0 right-0 h-14 bg-card border-b border-border z-40 items-center justify-between px-3 sm:px-4 shadow-xs">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
           <Button
             variant="ghost"
             size="icon"
@@ -119,16 +119,48 @@ export function Sidebar({
             {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
 
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-12 flex items-center justify-center overflow-hidden rounded bg-black/5 dark:bg-white/5 p-1">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="h-8 w-11 flex items-center justify-center overflow-hidden rounded bg-black/5 dark:bg-white/5 p-1 shrink-0">
               <img
                 src={logoImage}
                 alt="Logo"
                 className="h-6 w-auto object-contain"
-                style={{ maxHeight: '24px', maxWidth: '44px' }}
+                style={{ maxHeight: '24px', maxWidth: '40px' }}
               />
             </div>
-            <span className="font-bold text-sm text-foreground">Attendance System</span>
+            <span className="font-bold text-sm text-foreground truncate">Attendance System</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer"
+            onClick={() => onDarkModeChange?.(!darkMode)}
+            title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive cursor-pointer"
+            onClick={onLogout}
+            title="Logout"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+
+          <div
+            className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-xs shrink-0 shadow-xs ml-0.5"
+            style={{ width: '32px', height: '32px', minWidth: '32px', minHeight: '32px', borderRadius: '9999px', aspectRatio: '1/1' }}
+            title={userName || 'User Profile'}
+          >
+            <span className="leading-none">
+              {userName ? userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '??'}
+            </span>
           </div>
         </div>
       </header>
