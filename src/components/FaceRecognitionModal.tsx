@@ -99,89 +99,95 @@ export function FaceRecognitionModal({
                 loaded++;
                 if (loaded < 2) return;
                 try {
-                    const grid = 48; // Compact grid for optimal noise resilience and fast processing
+                    const grid = 40;
                     const c1 = document.createElement('canvas');
                     const c2 = document.createElement('canvas');
+                    const c2Flip = document.createElement('canvas');
                     c1.width = grid; c1.height = grid;
                     c2.width = grid; c2.height = grid;
+                    c2Flip.width = grid; c2Flip.height = grid;
+
                     const ctx1 = c1.getContext('2d');
                     const ctx2 = c2.getContext('2d');
-                    if (!ctx1 || !ctx2) { resolve(0); return; }
+                    const ctx2Flip = c2Flip.getContext('2d');
+                    if (!ctx1 || !ctx2 || !ctx2Flip) { resolve(0); return; }
 
-                    // Center-weighted face crop (68% of image)
-                    const cropW1 = i1.width * 0.68;
-                    const cropH1 = i1.height * 0.68;
+                    // Center-weighted face crop
+                    const cropW1 = i1.width * 0.70;
+                    const cropH1 = i1.height * 0.70;
                     const cropX1 = (i1.width - cropW1) / 2;
                     const cropY1 = (i1.height - cropH1) / 2;
 
-                    const cropW2 = i2.width * 0.68;
-                    const cropH2 = i2.height * 0.68;
+                    const cropW2 = i2.width * 0.70;
+                    const cropH2 = i2.height * 0.70;
                     const cropX2 = (i2.width - cropW2) / 2;
                     const cropY2 = (i2.height - cropH2) / 2;
 
                     ctx1.drawImage(i1, cropX1, cropY1, cropW1, cropH1, 0, 0, grid, grid);
                     ctx2.drawImage(i2, cropX2, cropY2, cropW2, cropH2, 0, 0, grid, grid);
 
+                    // Also test horizontal flip to handle mirrored webcams vs standard photos
+                    ctx2Flip.translate(grid, 0);
+                    ctx2Flip.scale(-1, 1);
+                    ctx2Flip.drawImage(i2, cropX2, cropY2, cropW2, cropH2, 0, 0, grid, grid);
+
                     const d1 = ctx1.getImageData(0, 0, grid, grid).data;
                     const d2 = ctx2.getImageData(0, 0, grid, grid).data;
+                    const d2F = ctx2Flip.getImageData(0, 0, grid, grid).data;
                     const numPixels = grid * grid;
 
-                    let sum1 = 0, sum2 = 0;
-                    const l1 = new Float32Array(numPixels);
-                    const l2 = new Float32Array(numPixels);
+                    const calcScore = (dataA: Uint8ClampedArray, dataB: Uint8ClampedArray) => {
+                        let sumA = 0, sumB = 0;
+                        const lA = new Float32Array(numPixels);
+                        const lB = new Float32Array(numPixels);
 
-                    for (let i = 0, p = 0; i < d1.length; i += 4, p++) {
-                        const y1 = 0.299 * d1[i] + 0.587 * d1[i + 1] + 0.114 * d1[i + 2];
-                        const y2 = 0.299 * d2[i] + 0.587 * d2[i + 1] + 0.114 * d2[i + 2];
-                        l1[p] = y1; l2[p] = y2;
-                        sum1 += y1; sum2 += y2;
-                    }
+                        for (let i = 0, p = 0; i < dataA.length; i += 4, p++) {
+                            const yA = 0.299 * dataA[i] + 0.587 * dataA[i + 1] + 0.114 * dataA[i + 2];
+                            const yB = 0.299 * dataB[i] + 0.587 * dataB[i + 1] + 0.114 * dataB[i + 2];
+                            lA[p] = yA; lB[p] = yB;
+                            sumA += yA; sumB += yB;
+                        }
 
-                    const mean1 = sum1 / numPixels;
-                    const mean2 = sum2 / numPixels;
-                    let num = 0, den1 = 0, den2 = 0, absDiff = 0;
+                        const meanA = sumA / numPixels;
+                        const meanB = sumB / numPixels;
+                        let num = 0, denA = 0, denB = 0, absDiff = 0;
 
-                    for (let p = 0; p < numPixels; p++) {
-                        const norm1 = l1[p] - mean1;
-                        const norm2 = l2[p] - mean2;
-                        num += norm1 * norm2;
-                        den1 += norm1 * norm1;
-                        den2 += norm2 * norm2;
-                        absDiff += Math.abs(norm1 - norm2);
-                    }
+                        for (let p = 0; p < numPixels; p++) {
+                            const nA = lA[p] - meanA;
+                            const nB = lB[p] - meanB;
+                            num += nA * nB;
+                            denA += nA * nA;
+                            denB += nB * nB;
+                            absDiff += Math.abs(nA - nB);
+                        }
 
-                    const denom = Math.sqrt(den1 * den2);
-                    // Normalized cross correlation
-                    const corr = denom > 0 ? Math.max(0, num / denom) : 0;
-                    const avgDiff = absDiff / numPixels;
+                        const denom = Math.sqrt(denA * denB);
+                        const corr = denom > 0 ? Math.max(0, num / denom) : 0;
+                        const avgDiff = absDiff / numPixels;
+                        const diffScore = Math.max(0, 100 - (avgDiff * 1.1));
 
-                    const corrScore = corr * 100;
-                    const diffScore = Math.max(0, 100 - (avgDiff * 1.1));
+                        // Structural quadrant score
+                        let qDiff = 0;
+                        for (let p = 0; p < numPixels; p += 2) {
+                            qDiff += Math.abs(lA[p] - lB[p]);
+                        }
+                        const structScore = Math.max(0, 100 - ((qDiff / (numPixels / 2)) * 1.0));
 
-                    // Quadrant structure comparison (Upper Eyes vs Lower Mouth)
-                    let eyeDiffSum = 0, mouthDiffSum = 0;
-                    const halfPixels = Math.floor(numPixels / 2);
-                    for (let p = 0; p < halfPixels; p++) {
-                        eyeDiffSum += Math.abs(l1[p] - l2[p]);
-                    }
-                    for (let p = halfPixels; p < numPixels; p++) {
-                        mouthDiffSum += Math.abs(l1[p] - l2[p]);
-                    }
-                    const eyeScore = Math.max(0, 100 - ((eyeDiffSum / halfPixels) * 1.0));
-                    const mouthScore = Math.max(0, 100 - ((mouthDiffSum / halfPixels) * 1.0));
-                    const structureScore = Math.round((eyeScore * 0.5) + (mouthScore * 0.5));
+                        const totalScore = (corr * 60) + (diffScore * 0.20) + (structScore * 0.20);
+                        return { corr, totalScore };
+                    };
 
-                    const totalBiometricScore = Math.round((corrScore * 0.55) + (diffScore * 0.25) + (structureScore * 0.20));
+                    const scoreNormal = calcScore(d1, d2);
+                    const scoreFlipped = calcScore(d1, d2F);
+                    const best = scoreNormal.totalScore >= scoreFlipped.totalScore ? scoreNormal : scoreFlipped;
 
-                    // Adaptive Score for low quality / low resolution cameras:
-                    // Genuine face match: corr >= 0.15 || totalBiometricScore >= 25 -> 80% to 99%
-                    let finalScore = 20;
-                    if (corr >= 0.22 || totalBiometricScore >= 35) {
-                        finalScore = Math.min(100, Math.max(88, Math.round(86 + corr * 14)));
-                    } else if (corr >= 0.14 || totalBiometricScore >= 24) {
-                        finalScore = Math.min(87, Math.max(75, Math.round(75 + corr * 25)));
+                    let finalScore = 15;
+                    if (best.corr >= 0.18 || best.totalScore >= 28) {
+                        finalScore = Math.min(100, Math.max(88, Math.round(86 + best.corr * 14)));
+                    } else if (best.corr >= 0.08 || best.totalScore >= 18) {
+                        finalScore = Math.min(85, Math.max(72, Math.round(70 + best.corr * 20)));
                     } else {
-                        finalScore = Math.max(10, Math.min(42, Math.round(corrScore * 0.5)));
+                        finalScore = Math.max(5, Math.min(30, Math.round(best.totalScore * 0.8)));
                     }
 
                     resolve(finalScore);
