@@ -382,9 +382,9 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
       </div>
 
       {/* Recent Activities */}
-      <div className="pt-6 sm:pt-8">
-        <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
-          <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
+      <div className="pt-4 sm:pt-5">
+        <Card className="p-5 sm:p-6 border border-border/80 shadow-xs rounded-2xl bg-card">
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-border/40">
             <div>
               <h3 className="text-base font-bold text-foreground">Recent Activities</h3>
               <p className="text-xs text-muted-foreground mt-0.5">Real-time biometric attendance and leave workflow updates</p>
@@ -393,12 +393,12 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
               {recentActivities.length} Recent Logs
             </Badge>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {recentActivities.length > 0 ? (
               recentActivities.map((activity) => (
                 <div
                   key={activity.id}
-                  className="flex items-center justify-between p-3.5 rounded-xl hover:bg-muted/40 transition-colors border-b border-border/30 last:border-0"
+                  className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/40 transition-colors border-b border-border/30 last:border-0"
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
                     <div
