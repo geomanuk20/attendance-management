@@ -296,36 +296,36 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
   };
 
   return (
-    <div className="p-3 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto w-full">
+    <div className="p-6 sm:p-8 lg:p-10 space-y-8 max-w-7xl mx-auto">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 sm:pb-6 border-b border-border/60">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border/60">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
               <Sparkles className="h-3 w-3" />
               <span>Enterprise Intelligence</span>
             </Badge>
-            <span className="text-xs text-muted-foreground hidden sm:inline">• Live Telemetry</span>
+            <span className="text-xs text-muted-foreground">• Live Telemetry</span>
           </div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground">
             Reports & Analytics
           </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-2xl">
+          <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
             Real-time aggregate data on organizational attendance, departmental benchmarks, and compensation trends.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
           <Button
             variant="outline"
-            className="flex-1 sm:flex-initial gap-2 cursor-pointer shadow-xs hover:border-primary/40 hover:bg-primary/5 transition-all text-xs sm:text-sm h-9 sm:h-10"
+            className="gap-2 cursor-pointer shadow-xs hover:border-primary/40 hover:bg-primary/5 transition-all"
             onClick={handleExportReports}
           >
             <Download className="h-4 w-4 text-muted-foreground" />
             <span>Export Excel</span>
           </Button>
           <Button
-            className="flex-1 sm:flex-initial gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer shadow-sm hover:shadow transition-all text-xs sm:text-sm h-9 sm:h-10"
+            className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer shadow-sm hover:shadow transition-all"
             onClick={handleExportReports}
           >
             <FileText className="h-4 w-4" />
@@ -335,16 +335,16 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       </div>
 
       {/* Modern Filter Control Card */}
-      <Card className="p-4 sm:p-6 border border-border/80 shadow-xs bg-card/95 backdrop-blur-sm rounded-2xl">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full lg:w-auto">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground shrink-0">
+      <Card className="p-4 sm:p-5 border border-border/80 shadow-xs bg-card/95 backdrop-blur-sm rounded-2xl">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground mr-1">
               <Filter className="h-3.5 w-3.5 text-primary" />
               <span>Filter View</span>
             </div>
 
             {/* Quick Range Pill Buttons */}
-            <div className="flex overflow-x-auto bg-muted/60 p-1 rounded-xl border border-border/50 text-xs font-medium scrollbar-none w-full sm:w-auto">
+            <div className="inline-flex bg-muted/60 p-1 rounded-xl border border-border/50 text-xs font-medium">
               {[
                 { id: 'last-30-days', label: '30 Days' },
                 { id: 'last-3-months', label: '3 Months' },
@@ -354,7 +354,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
                 <button
                   key={range.id}
                   onClick={() => setSelectedDateRange(range.id)}
-                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-semibold whitespace-nowrap flex-1 sm:flex-initial text-center ${
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-semibold ${
                     selectedDateRange === range.id
                       ? 'bg-background text-foreground shadow-xs font-bold'
                       : 'text-muted-foreground hover:text-foreground'
@@ -367,7 +367,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
 
             {/* Department Selector */}
             <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-              <SelectTrigger className="w-full sm:w-56 h-9 text-xs font-semibold shadow-xs rounded-xl bg-background">
+              <SelectTrigger className="w-52 h-9 text-xs font-semibold shadow-xs rounded-xl bg-background">
                 <SelectValue placeholder="Department" />
               </SelectTrigger>
               <SelectContent className="rounded-xl shadow-lg border-border">
@@ -384,58 +384,56 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
             </Select>
           </div>
 
-          <div className="flex items-center justify-between sm:justify-start gap-2 text-xs text-muted-foreground font-medium bg-muted/40 px-3.5 py-1.5 rounded-xl border border-border/40 shrink-0">
-            <div className="flex items-center gap-1.5">
-              <Users className="h-3.5 w-3.5 text-primary" />
-              <span>Scope:</span>
-            </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium bg-muted/40 px-3.5 py-1.5 rounded-xl border border-border/40 shrink-0">
+            <Users className="h-3.5 w-3.5 text-primary" />
+            <span>Scope:</span>
             <span className="font-bold text-foreground">{filteredEmployees.length} Active Staff</span>
           </div>
         </div>
       </Card>
 
       {/* 4 Modern Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-2">
         {/* Card 1: Attendance Rate */}
-        <Card className="p-5 sm:p-6 border border-border/80 border-t-4 border-t-emerald-500 shadow-xs hover:shadow-lg transition-all duration-300 rounded-2xl bg-card">
+        <Card className="p-6 border border-border/80 border-t-4 border-t-emerald-500 shadow-xs hover:shadow-lg transition-all duration-300 rounded-2xl bg-card">
           <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1.5 sm:space-y-2 min-w-0">
+            <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Attendance Rate</p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-foreground leading-none">{keyMetrics.avgAttendance}%</p>
+              <p className="text-3xl font-extrabold text-foreground leading-none">{keyMetrics.avgAttendance}%</p>
               <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
                 <TrendingUp className="h-3 w-3" />
                 <span>+2.4% vs prev</span>
               </div>
             </div>
-            <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#10B98118', color: '#10B981' }}>
-              <Clock className="h-5 w-5 sm:h-6 sm:w-6" />
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#10B98118', color: '#10B981' }}>
+              <Clock className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
         {/* Card 2: Active Headcount */}
-        <Card className="p-5 sm:p-6 border border-border/80 border-t-4 border-t-sky-500 shadow-xs hover:shadow-lg transition-all duration-300 rounded-2xl bg-card">
+        <Card className="p-6 border border-border/80 border-t-4 border-t-sky-500 shadow-xs hover:shadow-lg transition-all duration-300 rounded-2xl bg-card">
           <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1.5 sm:space-y-2 min-w-0">
+            <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Staff</p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-foreground leading-none">{filteredEmployees.length}</p>
+              <p className="text-3xl font-extrabold text-foreground leading-none">{filteredEmployees.length}</p>
               <div className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-600 dark:text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded-md border border-sky-500/20">
                 <Building2 className="h-3 w-3" />
                 <span className="truncate max-w-[110px]">{selectedDepartment === 'all' ? 'All Depts' : selectedDepartment}</span>
               </div>
             </div>
-            <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#0284C718', color: '#0284C7' }}>
-              <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#0284C718', color: '#0284C7' }}>
+              <Users className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
         {/* Card 3: Avg Monthly Salary */}
-        <Card className="p-5 sm:p-6 border border-border/80 border-t-4 border-t-purple-500 shadow-xs hover:shadow-lg transition-all duration-300 rounded-2xl bg-card">
+        <Card className="p-6 border border-border/80 border-t-4 border-t-purple-500 shadow-xs hover:shadow-lg transition-all duration-300 rounded-2xl bg-card">
           <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1.5 sm:space-y-2 min-w-0">
+            <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Avg Monthly Comp</p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-foreground leading-none">
+              <p className="text-3xl font-extrabold text-foreground leading-none">
                 {formatCurrency(keyMetrics.avgSalary)}
               </p>
               <div className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-md border border-purple-500/20">
@@ -443,40 +441,40 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
                 <span>Total: {formatCurrency(keyMetrics.totalPayroll)}</span>
               </div>
             </div>
-            <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#8B5CF618', color: '#8B5CF6' }}>
-              <DollarSign className="h-5 w-5 sm:h-6 sm:w-6" />
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#8B5CF618', color: '#8B5CF6' }}>
+              <DollarSign className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
         {/* Card 4: Leave Approval Rate */}
-        <Card className="p-5 sm:p-6 border border-border/80 border-t-4 border-t-amber-500 shadow-xs hover:shadow-lg transition-all duration-300 rounded-2xl bg-card">
+        <Card className="p-6 border border-border/80 border-t-4 border-t-amber-500 shadow-xs hover:shadow-lg transition-all duration-300 rounded-2xl bg-card">
           <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1.5 sm:space-y-2 min-w-0">
+            <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leave Approval</p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-foreground leading-none">{keyMetrics.leaveUtilization}%</p>
+              <p className="text-3xl font-extrabold text-foreground leading-none">{keyMetrics.leaveUtilization}%</p>
               <div className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
                 <CalendarIcon className="h-3 w-3" />
                 <span>{rawLeaves.length} Total Requests</span>
               </div>
             </div>
-            <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#F59E0B18', color: '#F59E0B' }}>
-              <CalendarIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#F59E0B18', color: '#F59E0B' }}>
+              <CalendarIcon className="h-6 w-6" />
             </div>
           </div>
         </Card>
       </div>
 
       {/* Analytics Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Chart 1: Attendance Trend Area Chart */}
-        <Card className="p-5 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 sm:mb-6 pb-3 border-b border-border/40">
+        <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
+          <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
             <div>
               <h3 className="text-base font-bold text-foreground">Monthly Attendance Trend</h3>
               <p className="text-xs text-muted-foreground">Historical 6-month attendance performance against 95% target</p>
             </div>
-            <div className="flex items-center gap-3 text-xs font-semibold self-end sm:self-auto">
+            <div className="flex items-center gap-3 text-xs font-semibold">
               <div className="flex items-center gap-1.5">
                 <div className="h-2.5 w-2.5 rounded-full bg-[#0D2B52] dark:bg-sky-400" />
                 <span className="text-muted-foreground">Actual</span>
@@ -487,8 +485,8 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
               </div>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={260}>
-            <AreaChart data={monthlyAttendanceData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+          <ResponsiveContainer width="100%" height={270}>
+            <AreaChart data={monthlyAttendanceData} margin={{ top: 10, right: 15, left: -15, bottom: 5 }}>
               <defs>
                 <linearGradient id="attendanceGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#0D2B52" stopOpacity={0.25} />
@@ -496,8 +494,8 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
-              <XAxis dataKey="month" fontSize={11} stroke="#64748b" />
-              <YAxis domain={[60, 100]} ticks={[60, 70, 80, 90, 100]} fontSize={11} stroke="#64748b" />
+              <XAxis dataKey="month" fontSize={12} stroke="#64748b" />
+              <YAxis domain={[60, 100]} ticks={[60, 70, 80, 90, 100]} fontSize={12} stroke="#64748b" />
               <Tooltip
                 formatter={(value: any) => [`${value}%`, 'Attendance Rate']}
                 contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
@@ -508,25 +506,25 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
         </Card>
 
         {/* Chart 2: Leave Breakdown Donut */}
-        <Card className="p-5 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
-          <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6 pb-3 border-b border-border/40">
+        <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
+          <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
             <div>
               <h3 className="text-base font-bold text-foreground">Leave Types Breakdown</h3>
               <p className="text-xs text-muted-foreground">Categorical distribution of all requested time off</p>
             </div>
-            <Badge variant="outline" className="text-xs font-bold shrink-0">
+            <Badge variant="outline" className="text-xs font-bold">
               {rawLeaves.length} Total Logs
             </Badge>
           </div>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-            <ResponsiveContainer width="100%" height={230}>
+            <ResponsiveContainer width="100%" height={240}>
               <PieChart>
                 <Pie
                   data={leaveTypesData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={55}
-                  outerRadius={90}
+                  innerRadius={60}
+                  outerRadius={95}
                   paddingAngle={4}
                   dataKey="value"
                 >
@@ -540,7 +538,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
                 />
               </PieChart>
             </ResponsiveContainer>
-            <div className="flex flex-col gap-2.5 shrink-0 sm:min-w-[190px] bg-muted/40 p-3.5 sm:p-4 rounded-xl border border-border/40 w-full sm:w-auto">
+            <div className="flex flex-col gap-2.5 shrink-0 sm:min-w-[190px] bg-muted/40 p-4 rounded-xl border border-border/40 w-full sm:w-auto">
               {leaveTypesData.map((item, index) => (
                 <div key={index} className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
@@ -566,19 +564,19 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
         </Card>
 
         {/* Chart 3: Department Attendance Rates */}
-        <Card className="p-5 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
-          <div className="flex items-center justify-between mb-4 sm:mb-6 pb-3 border-b border-border/40">
+        <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
+          <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
             <div>
               <h3 className="text-base font-bold text-foreground">Department Attendance Rates</h3>
               <p className="text-xs text-muted-foreground">Comparative attendance scores across active divisions</p>
             </div>
             <span className="text-xs font-bold text-muted-foreground">Target: 95%</span>
           </div>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={departmentData} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={departmentData} margin={{ top: 10, right: 15, left: -15, bottom: 25 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
-              <XAxis dataKey="name" angle={-25} textAnchor="end" height={55} interval={0} fontSize={11} stroke="#64748b" />
-              <YAxis domain={[0, 100]} fontSize={11} stroke="#64748b" />
+              <XAxis dataKey="name" angle={-25} textAnchor="end" height={60} interval={0} fontSize={11} stroke="#64748b" />
+              <YAxis domain={[0, 100]} fontSize={12} stroke="#64748b" />
               <Tooltip
                 formatter={(value: any) => [`${value}%`, 'Attendance Rate']}
                 contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
@@ -589,8 +587,8 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
         </Card>
 
         {/* Chart 4: Monthly Payroll Expenditure */}
-        <Card className="p-5 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
-          <div className="flex items-center justify-between mb-4 sm:mb-6 pb-3 border-b border-border/40">
+        <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
+          <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
             <div>
               <h3 className="text-base font-bold text-foreground">Monthly Payroll Expenditure</h3>
               <p className="text-xs text-muted-foreground">Total salary budget allocated per active period</p>
@@ -599,8 +597,8 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
               {formatCurrency(keyMetrics.totalPayroll)}
             </Badge>
           </div>
-          <ResponsiveContainer width="100%" height={260}>
-            <AreaChart data={payrollTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={payrollTrendData} margin={{ top: 10, right: 15, left: -15, bottom: 5 }}>
               <defs>
                 <linearGradient id="payrollGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3} />
@@ -608,8 +606,8 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
-              <XAxis dataKey="month" fontSize={11} stroke="#64748b" />
-              <YAxis fontSize={11} stroke="#64748b" tickFormatter={(val) => `${val > 999 ? (val/1000).toFixed(0) + 'k' : val}`} />
+              <XAxis dataKey="month" fontSize={12} stroke="#64748b" />
+              <YAxis fontSize={12} stroke="#64748b" tickFormatter={(val) => `${val > 999 ? (val/1000).toFixed(0) + 'k' : val}`} />
               <Tooltip
                 formatter={(value: any) => [formatCurrency(Number(value)), 'Total Payroll']}
                 contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
@@ -621,19 +619,19 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       </div>
 
       {/* Department Summary & Benchmarks Table */}
-      <Card className="p-4 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6 pb-3 border-b border-border/40">
+      <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-3 border-b border-border/40">
           <div>
             <h3 className="text-base font-bold text-foreground">Department Summary & Benchmarks</h3>
             <p className="text-xs text-muted-foreground mt-0.5">Comprehensive overview of headcount, compensation averages, and attendance benchmarks</p>
           </div>
-          <Badge variant="outline" className="font-bold text-xs px-3 py-1 bg-muted/30 self-start sm:self-auto">
+          <Badge variant="outline" className="font-bold text-xs px-3 py-1 bg-muted/30">
             {departmentData.length} Active Departments
           </Badge>
         </div>
 
-        <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-          <table className="w-full text-sm min-w-[620px]">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-xs text-muted-foreground">
                 <th className="text-left py-3.5 px-4 font-bold uppercase tracking-wider">Department</th>
@@ -675,7 +673,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-3">
                         <span className="text-xs font-bold w-10">{dept.attendance}%</span>
-                        <div className="w-24 sm:w-28 h-2 bg-muted rounded-full overflow-hidden">
+                        <div className="w-28 h-2 bg-muted rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all ${
                               dept.attendance >= 95 ? 'bg-emerald-500' :
