@@ -184,19 +184,21 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
       </div>
 
       <Tabs defaultValue="general" className="w-full" onValueChange={setActiveSettingsTab}>
-        <TabsList className="flex w-full flex-wrap h-auto gap-1 p-1">
-          <TabsTrigger value="general" className="flex-1 min-w-fit">General</TabsTrigger>
-          <TabsTrigger value="notifications" className="flex-1 min-w-fit">Notifications</TabsTrigger>
-          <TabsTrigger value="security" className="flex-1 min-w-fit">Security</TabsTrigger>
-          <TabsTrigger value="appUpdate" className="flex-1 min-w-fit">📲 App Update</TabsTrigger>
-          {userRole === 'superadmin' && (
-            <>
-              <TabsTrigger value="company" className="flex-1 min-w-fit">Company</TabsTrigger>
-              <TabsTrigger value="integrations" className="flex-1 min-w-fit">Integrations</TabsTrigger>
-              <TabsTrigger value="backup" className="flex-1 min-w-fit">Backup</TabsTrigger>
-            </>
-          )}
-        </TabsList>
+        <div className="w-full overflow-x-auto no-scrollbar pb-1 mb-2">
+          <TabsList className="inline-flex w-auto min-w-full sm:w-full flex-nowrap justify-start sm:justify-center items-center p-1 bg-muted/60 rounded-xl gap-1">
+            <TabsTrigger value="general" className="whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm font-semibold shrink-0">General</TabsTrigger>
+            <TabsTrigger value="notifications" className="whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm font-semibold shrink-0">Notifications</TabsTrigger>
+            <TabsTrigger value="security" className="whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm font-semibold shrink-0">Security</TabsTrigger>
+            <TabsTrigger value="appUpdate" className="whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm font-semibold shrink-0">📲 App Update</TabsTrigger>
+            {userRole === 'superadmin' && (
+              <>
+                <TabsTrigger value="company" className="whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm font-semibold shrink-0">Company</TabsTrigger>
+                <TabsTrigger value="integrations" className="whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm font-semibold shrink-0">Integrations</TabsTrigger>
+                <TabsTrigger value="backup" className="whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm font-semibold shrink-0">Backup</TabsTrigger>
+              </>
+            )}
+          </TabsList>
+        </div>
 
         {/* General Settings */}
         <TabsContent value="general" className="space-y-6">
