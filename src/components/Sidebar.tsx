@@ -107,47 +107,55 @@ export function Sidebar({
       {/* ========================================================= */}
       {/* MOBILE ONLY: Top Header Bar                               */}
       {/* ========================================================= */}
-      <header className="app-mobile-header fixed top-0 left-0 right-0 h-14 bg-card border-b border-border z-40 items-center justify-between px-4">
-        <div className="flex items-center gap-3">
+      <header className="app-mobile-header fixed top-0 left-0 right-0 h-16 bg-card border-b border-border z-40 items-center justify-between px-3 sm:px-4 shadow-xs">
+        <div className="flex items-center gap-2.5 min-w-0">
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 text-foreground"
+            className="h-9 w-9 text-foreground shrink-0"
             onClick={() => onMobileToggle?.(!isMobileOpen)}
             aria-label="Toggle menu"
           >
             {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-12 flex items-center justify-center overflow-hidden">
-              <img
-                src={logoImage}
-                alt="Logo"
-                className="h-7 w-auto object-contain"
-                style={{ maxHeight: '28px', maxWidth: '48px' }}
-              />
+
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div
+              className="w-9 h-9 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-xs shrink-0 shadow-xs"
+              style={{ width: '36px', height: '36px', minWidth: '36px', minHeight: '36px', borderRadius: '9999px', aspectRatio: '1/1' }}
+            >
+              <span className="leading-none">
+                {userName ? userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '??'}
+              </span>
             </div>
-            <span className="font-semibold text-sm text-foreground">Attendance</span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-foreground leading-tight truncate">{userName || 'Admin'}</p>
+              <p className="text-xs text-muted-foreground leading-tight truncate capitalize mt-0.5">
+                {userPosition || (userRole === 'superadmin' ? 'Administrator' : (userRole === 'hr' ? 'HR Manager' : 'Employee'))}
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 shrink-0">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-9 w-9 text-muted-foreground hover:text-foreground"
             onClick={() => onDarkModeChange?.(!darkMode)}
+            title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
-            {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {darkMode ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
           </Button>
-          <div
-            className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold shrink-0 shadow-xs"
-            style={{ width: '32px', height: '32px', minWidth: '32px', minHeight: '32px', borderRadius: '9999px', aspectRatio: '1/1' }}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 text-muted-foreground hover:text-destructive"
+            onClick={onLogout}
+            title="Logout"
           >
-            <span className="leading-none">
-              {userName ? userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '??'}
-            </span>
-          </div>
+            <LogOut className="h-4.5 w-4.5" />
+          </Button>
         </div>
       </header>
 

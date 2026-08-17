@@ -2851,7 +2851,7 @@ html {
     display: flex !important;
   }
   .app-content-wrapper {
-    padding-top: 3.5rem !important;
+    padding-top: 4rem !important;
   }
   .md\:hidden {
     display: initial !important;
