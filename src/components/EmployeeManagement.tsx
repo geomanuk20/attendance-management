@@ -1129,10 +1129,10 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">
             <Tabs defaultValue="personal" className="w-full">
-              <TabsList className="grid grid-cols-1 sm:grid-cols-3 w-full h-auto p-1 bg-muted/60 rounded-xl gap-1 mb-4">
-                <TabsTrigger value="personal" className="py-2 text-xs sm:text-sm font-semibold">Personal Info</TabsTrigger>
-                <TabsTrigger value="employment" className="py-2 text-xs sm:text-sm font-semibold">Employment & Salary</TabsTrigger>
-                <TabsTrigger value="contact" className="py-2 text-xs sm:text-sm font-semibold">Contact</TabsTrigger>
+              <TabsList className="grid grid-cols-3 w-full h-auto p-1 bg-muted/60 rounded-xl gap-1 mb-4">
+                <TabsTrigger value="personal" className="py-2 text-xs sm:text-sm font-semibold whitespace-nowrap">Personal Info</TabsTrigger>
+                <TabsTrigger value="employment" className="py-2 text-xs sm:text-sm font-semibold whitespace-nowrap">Employment & Salary</TabsTrigger>
+                <TabsTrigger value="contact" className="py-2 text-xs sm:text-sm font-semibold whitespace-nowrap">Contact</TabsTrigger>
               </TabsList>
               <TabsContent value="personal" className="space-y-4 mt-0">
                 {/* Face ID Photo Upload Section */}
