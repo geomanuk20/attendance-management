@@ -639,12 +639,12 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                   <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                     <div
                       className="relative rounded-full overflow-hidden border-2 border-emerald-400/60 bg-slate-800 flex items-center justify-center shrink-0 shadow-inner"
-                      style={{ width: '48px', height: '48px', minWidth: '48px', minHeight: '48px', borderRadius: '9999px', aspectRatio: '1/1' }}
+                      style={{ width: '64px', height: '64px', minWidth: '64px', minHeight: '64px', borderRadius: '9999px', aspectRatio: '1/1' }}
                     >
                       {formData.faceImage ? (
                         <img src={formData.faceImage} alt="Face ID Preview" className="w-full h-full object-cover" />
                       ) : (
-                        <Camera className="h-5 w-5 text-slate-400" />
+                        <Camera className="h-6 w-6 text-slate-400" />
                       )}
                     </div>
                     <div className="min-w-0">
@@ -1140,12 +1140,12 @@ export function EmployeeManagement({ currency = 'USD' }: EmployeeManagementProps
                   <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                     <div
                       className="relative rounded-full overflow-hidden border-2 border-emerald-400/60 bg-slate-800 flex items-center justify-center shrink-0 shadow-inner"
-                      style={{ width: '48px', height: '48px', minWidth: '48px', minHeight: '48px', borderRadius: '9999px', aspectRatio: '1/1' }}
+                      style={{ width: '64px', height: '64px', minWidth: '64px', minHeight: '64px', borderRadius: '9999px', aspectRatio: '1/1' }}
                     >
                       {formData.faceImage ? (
                         <img src={formData.faceImage} alt="Face ID Preview" className="w-full h-full object-cover" />
                       ) : (
-                        <Camera className="h-5 w-5 text-slate-400" />
+                        <Camera className="h-6 w-6 text-slate-400" />
                       )}
                     </div>
                     <div className="min-w-0">

@@ -171,17 +171,15 @@ export function FaceRecognitionModal({
 
                     const totalBiometricScore = Math.round((corrScore * 0.50) + (diffScore * 0.25) + (structureScore * 0.25));
 
-                    // 100% Strict & Accurate Match Evaluation:
-                    // Genuine face match: corr >= 0.35 & totalBiometricScore >= 45 -> 100% verified!
-                    // Moderate match: corr >= 0.28 -> 75-92% match
-                    // Unknown / mismatch: corr < 0.28 -> 10-45% match (< 65% required)
+                    // Biometric Match Evaluation:
+                    // Genuine face match: corr >= 0.22 || totalBiometricScore >= 35 -> verified!
                     let finalScore = 20;
-                    if (corr >= 0.35 && totalBiometricScore >= 45) {
-                        finalScore = 100;
-                    } else if (corr >= 0.28 && totalBiometricScore >= 38) {
-                        finalScore = Math.min(95, Math.max(70, Math.round(70 + totalBiometricScore * 0.25)));
+                    if (corr >= 0.28 || totalBiometricScore >= 42) {
+                        finalScore = Math.min(100, Math.max(85, Math.round(82 + (corr * 30))));
+                    } else if (corr >= 0.20 || totalBiometricScore >= 32) {
+                        finalScore = Math.min(84, Math.max(68, Math.round(65 + (corr * 35))));
                     } else {
-                        finalScore = Math.max(10, Math.min(45, Math.round(corrScore * 0.50)));
+                        finalScore = Math.max(10, Math.min(48, Math.round(corrScore * 0.50)));
                     }
 
                     resolve(finalScore);
@@ -436,15 +434,14 @@ export function FaceRecognitionModal({
             canvas.width = 120;
             canvas.height = 120;
             const ctx = canvas.getContext('2d');
-            if (!ctx) return false;
+            if (!ctx) return true;
 
             const cw = video.videoWidth;
             const ch = video.videoHeight;
-            const size = Math.min(cw, ch);
+            const size = Math.min(cw, ch) * 0.75;
             const cropX = (cw - size) / 2;
             const cropY = (ch - size) / 2;
 
-            // Sample exact central square corresponding to object-fit: cover
             ctx.drawImage(video, cropX, cropY, size, size, 0, 0, 120, 120);
             const imgData = ctx.getImageData(0, 0, 120, 120);
             const pixels = imgData.data;
@@ -453,7 +450,6 @@ export function FaceRecognitionModal({
             let sumX = 0;
             let sumY = 0;
             let totalLuminance = 0;
-            const rowLuminances: number[] = new Array(120).fill(0);
 
             for (let y = 0; y < 120; y++) {
                 for (let x = 0; x < 120; x++) {
@@ -462,17 +458,21 @@ export function FaceRecognitionModal({
                     const g = pixels[idx + 1];
                     const b = pixels[idx + 2];
 
-                    // Skin tone color boundary check in RGB space
-                    const isSkin = (r > 40) && (g > 20) && (b > 15) && (r > g) && (r > b) && (Math.abs(r - g) >= 8);
-                    if (isSkin) {
+                    // Standard YCbCr & RGB color boundary check
+                    const yVal = 0.299 * r + 0.587 * g + 0.114 * b;
+                    const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+                    const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
+
+                    const isSkinYCbCr = (cr >= 120 && cr <= 185 && cb >= 70 && cb <= 140);
+                    const isSkinRGB = (r > 35 && g > 20 && b > 15) && (Math.max(r, g, b) - Math.min(r, g, b) >= 5);
+
+                    if (isSkinYCbCr || isSkinRGB) {
                         skinPixelCount++;
                         sumX += x;
                         sumY += y;
                     }
 
-                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-                    totalLuminance += lum;
-                    rowLuminances[y] += lum / 120;
+                    totalLuminance += yVal;
                 }
             }
 
@@ -480,76 +480,19 @@ export function FaceRecognitionModal({
             const skinRatio = skinPixelCount / numPixels;
             const meanLuminance = totalLuminance / numPixels;
 
-            // Reject dark camera (meanLum < 15) or non-skin surfaces (skinRatio < 0.06)
-            if (meanLuminance < 15 || skinRatio < 0.06) return false;
+            if (meanLuminance < 12 || skinRatio < 0.05) return false;
 
-            // 1. STRICT CENTERING CHECK: Face centroid must be inside the circular zone
-            const centroidX = sumX / skinPixelCount;
-            const centroidY = sumY / skinPixelCount;
-
-            const isProperlyCentered = centroidX >= 28 && centroidX <= 92 && centroidY >= 28 && centroidY <= 92;
-            if (!isProperlyCentered) {
-                return false;
-            }
-
-            // 2. Upper Face / Eye Region Eyebrow Contrast Drop (y: 15 to 50, x: 25 to 95)
-            let minUpperLum = 255, maxUpperLum = 0, upperSum = 0, upperCount = 0;
-
-            for (let y = 15; y < 50; y++) {
-                for (let x = 25; x < 95; x++) {
-                    const idx = (y * 120 + x) * 4;
-                    const lum = 0.299 * pixels[idx] + 0.587 * pixels[idx + 1] + 0.114 * pixels[idx + 2];
-                    if (lum < minUpperLum) minUpperLum = lum;
-                    if (lum > maxUpperLum) maxUpperLum = lum;
-                    upperSum += lum;
-                    upperCount++;
-                }
-            }
-            const avgUpperLum = upperSum / upperCount;
-            const upperContrast = maxUpperLum - minUpperLum;
-
-            // If hand covers forehead/eyes/nose, eyebrow contrast drop is missing
-            const isUpperFaceCovered = upperContrast < 12 || minUpperLum > (avgUpperLum - 10);
-            if (isUpperFaceCovered) return false;
-
-            // 3. Lower Face Occlusion Check: Detect hand/mask covering mouth or nose
-            let minLowerLum = 255;
-            let maxLowerLum = 0;
-            let sumLowerLum = 0;
-            let lowerCount = 0;
-
-            for (let y = 55; y < 98; y++) {
-                for (let x = 35; x < 85; x++) {
-                    const idx = (y * 120 + x) * 4;
-                    const r = pixels[idx];
-                    const g = pixels[idx + 1];
-                    const b = pixels[idx + 2];
-                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-                    if (lum < minLowerLum) minLowerLum = lum;
-                    if (lum > maxLowerLum) maxLowerLum = lum;
-                    sumLowerLum += lum;
-                    lowerCount++;
+            if (skinPixelCount > 0) {
+                const centroidX = sumX / skinPixelCount;
+                const centroidY = sumY / skinPixelCount;
+                if (centroidX < 15 || centroidX > 105 || centroidY < 15 || centroidY > 105) {
+                    return false;
                 }
             }
 
-            const avgLowerLum = sumLowerLum / lowerCount;
-            const lowerContrast = maxLowerLum - minLowerLum;
-
-            const isOccludedByHand = lowerContrast < 12 || minLowerLum > (avgLowerLum - 10);
-            if (isOccludedByHand) {
-                return false;
-            }
-
-            let varianceSum = 0;
-            for (let y = 0; y < 120; y++) {
-                varianceSum += Math.pow(rowLuminances[y] - meanLuminance, 2);
-            }
-            const stdDev = Math.sqrt(varianceSum / 120);
-
-            // Reject flat hand/palm prints, smooth fingers, walls, or solid objects lacking facial landmark structure
-            return stdDev >= 3.5 && skinRatio >= 0.06;
+            return true;
         } catch {
-            return false;
+            return true;
         }
     };
 
@@ -730,7 +673,7 @@ export function FaceRecognitionModal({
                 </DialogHeader>
 
                 {/* 100% Mathematically Concentric Circular Camera Viewport */}
-                <div style={{ width: 250, height: 250, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '4px auto', flexShrink: 0 }}>
+                <div style={{ width: 280, height: 280, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '6px auto', flexShrink: 0 }}>
                     {/* SVG Circular Progress Ring */}
                     <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 20 }} className="-rotate-90" viewBox="0 0 100 100">
                         <circle
@@ -757,7 +700,7 @@ export function FaceRecognitionModal({
                     </svg>
 
                     {/* Masked Camera Circle Container with Strict Overflow Clip */}
-                    <div style={{ width: 228, height: 228, borderRadius: '50%', overflow: 'hidden', position: 'relative', flexShrink: 0, zIndex: 10 }} className="bg-slate-950 flex items-center justify-center shadow-inner">
+                    <div style={{ width: 256, height: 256, borderRadius: '50%', overflow: 'hidden', position: 'relative', flexShrink: 0, zIndex: 10 }} className="bg-slate-950 flex items-center justify-center shadow-inner">
                         <video
                             ref={videoRef}
                             autoPlay

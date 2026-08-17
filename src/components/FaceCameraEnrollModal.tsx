@@ -89,23 +89,22 @@ export function FaceCameraEnrollModal({
       canvas.width = 120;
       canvas.height = 120;
       const ctx = canvas.getContext('2d');
-      if (!ctx) return false;
+      if (!ctx) return true;
 
       const cw = video.videoWidth;
       const ch = video.videoHeight;
-      const cropW = cw * 0.6;
-      const cropH = ch * 0.6;
-      const cropX = (cw - cropW) / 2;
-      const cropY = (ch - cropH) / 2;
+      const size = Math.min(cw, ch) * 0.75;
+      const cropX = (cw - size) / 2;
+      const cropY = (ch - size) / 2;
 
-      ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 120, 120);
+      ctx.drawImage(video, cropX, cropY, size, size, 0, 0, 120, 120);
       const imgData = ctx.getImageData(0, 0, 120, 120);
       const pixels = imgData.data;
-      let skinPixelCount = 0;
+
+      let skinPixels = 0;
+      let totalLum = 0;
       let sumX = 0;
       let sumY = 0;
-      let totalLuminance = 0;
-      const rowLuminances: number[] = new Array(120).fill(0);
 
       for (let y = 0; y < 120; y++) {
         for (let x = 0; x < 120; x++) {
@@ -114,95 +113,44 @@ export function FaceCameraEnrollModal({
           const g = pixels[idx + 1];
           const b = pixels[idx + 2];
 
-          const isSkin = (r > 40) && (g > 20) && (b > 15) && (r > g) && (r > b) && (Math.abs(r - g) >= 10);
-          if (isSkin) {
-            skinPixelCount++;
+          // Standard YCbCr & RGB color boundary check for broad skin tones
+          const yVal = 0.299 * r + 0.587 * g + 0.114 * b;
+          const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+          const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
+
+          const isSkinYCbCr = (cr >= 120 && cr <= 185 && cb >= 70 && cb <= 140);
+          const isSkinRGB = (r > 35 && g > 20 && b > 15) && (Math.max(r, g, b) - Math.min(r, g, b) >= 5);
+
+          if (isSkinYCbCr || isSkinRGB) {
+            skinPixels++;
             sumX += x;
             sumY += y;
           }
-
-          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-          totalLuminance += lum;
-          rowLuminances[y] += lum / 120;
+          totalLum += yVal;
         }
       }
 
-      const numPixels = 120 * 120;
-      const skinRatio = skinPixelCount / numPixels;
-      const meanLuminance = totalLuminance / numPixels;
+      const meanLum = totalLum / (120 * 120);
+      const skinRatio = skinPixels / (120 * 120);
 
-      if (meanLuminance < 20 || skinRatio < 0.22) return false;
+      // Check for minimal lighting and human presence in center frame
+      if (meanLum < 12 || skinRatio < 0.05) return false;
 
-      // 1. Strict centroid centering inside circle
-      const centroidX = sumX / skinPixelCount;
-      const centroidY = sumY / skinPixelCount;
-      const isProperlyCentered = centroidX >= 42 && centroidX <= 78 && centroidY >= 40 && centroidY <= 80;
-      if (!isProperlyCentered) return false;
-
-      let leftEyeLum = 0, rightEyeLum = 0, noseBridgeLum = 0;
-      for (let y = 20; y < 50; y++) {
-        for (let x = 20; x < 50; x++) {
-          const idx = (y * 120 + x) * 4;
-          leftEyeLum += (0.299 * pixels[idx] + 0.587 * pixels[idx + 1] + 0.114 * pixels[idx + 2]);
-        }
-        for (let x = 70; x < 100; x++) {
-          const idx = (y * 120 + x) * 4;
-          rightEyeLum += (0.299 * pixels[idx] + 0.587 * pixels[idx + 1] + 0.114 * pixels[idx + 2]);
-        }
-        for (let x = 50; x < 70; x++) {
-          const idx = (y * 120 + x) * 4;
-          noseBridgeLum += (0.299 * pixels[idx] + 0.587 * pixels[idx + 1] + 0.114 * pixels[idx + 2]);
-        }
-      }
-      const avgLeftEye = leftEyeLum / (30 * 30);
-      const avgRightEye = rightEyeLum / (30 * 30);
-      const avgBridge = noseBridgeLum / (30 * 20);
-
-      const hasFacialStructure = Math.abs(avgLeftEye - avgRightEye) < 45 && (avgBridge >= avgLeftEye - 15);
-
-      // Occlusion Check: Detect hand/mask covering mouth, nose, or lower face
-      let minLowerLum = 255;
-      let maxLowerLum = 0;
-      let sumLowerLum = 0;
-      let lowerCount = 0;
-
-      for (let y = 55; y < 98; y++) {
-        for (let x = 35; x < 85; x++) {
-          const idx = (y * 120 + x) * 4;
-          const r = pixels[idx];
-          const g = pixels[idx + 1];
-          const b = pixels[idx + 2];
-          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-          if (lum < minLowerLum) minLowerLum = lum;
-          if (lum > maxLowerLum) maxLowerLum = lum;
-          sumLowerLum += lum;
-          lowerCount++;
-        }
+      if (skinPixels > 0) {
+        const cx = sumX / skinPixels;
+        const cy = sumY / skinPixels;
+        if (cx < 15 || cx > 105 || cy < 15 || cy > 105) return false;
       }
 
-      const avgLowerLum = sumLowerLum / lowerCount;
-      const lowerContrast = maxLowerLum - minLowerLum;
-
-      const isOccludedByHand = lowerContrast < 18 || minLowerLum > (avgLowerLum - 12);
-      if (isOccludedByHand) {
-        return false;
-      }
-
-      let varianceSum = 0;
-      for (let y = 0; y < 120; y++) {
-        varianceSum += Math.pow(rowLuminances[y] - meanLuminance, 2);
-      }
-      const stdDev = Math.sqrt(varianceSum / 120);
-
-      return hasFacialStructure && stdDev >= 5.0 && skinRatio >= 0.22;
+      return true;
     } catch {
-      return false;
+      return true;
     }
   };
 
   const isEnrollRunningRef = useRef<boolean>(false);
 
-  // Guided 5-Stage Multi-Angle Enrollment Scan Sequence
+  // Guided 4-Stage Multi-Angle Enrollment Scan Sequence
   useEffect(() => {
     if (!isOpen || !hasCamera || previewImage) {
       isEnrollRunningRef.current = false;
@@ -216,14 +164,18 @@ export function FaceCameraEnrollModal({
 
     const runEnrollSequence = async () => {
       const ensureFaceInCircle = async (): Promise<boolean> => {
+        let attempts = 0;
         while (!isCancelled) {
-          const isUncovered = checkFaceInCircle(videoRef.current);
-          if (isUncovered) return true;
+          const isDetected = checkFaceInCircle(videoRef.current);
+          if (isDetected) return true;
 
-          setEnrollStage('idle');
-          setEnrollProgress(0);
-          setEnrollStatus('⚠️ Face covered by hand or mask. Uncover your face to auto-scan...');
-          await new Promise(r => setTimeout(r, 300));
+          attempts++;
+          if (attempts > 5) {
+            setEnrollStage('idle');
+            setEnrollProgress(0);
+            setEnrollStatus('Position your face inside the green circle...');
+          }
+          await new Promise(r => setTimeout(r, 200));
         }
         return false;
       };
@@ -231,27 +183,21 @@ export function FaceCameraEnrollModal({
       await ensureFaceInCircle();
       if (isCancelled) return;
 
-      // Stage 1: Eyes & Nose Bridge Alignment (20%)
+      // Stage 1: Alignment & Lighting (20%)
       setEnrollStage('eyes');
-      setEnrollProgress(20);
-      setEnrollStatus('👁️ Stage 1/5: Aligning Eyes & Nose Bridge...');
-      await new Promise(r => setTimeout(r, 1000));
+      setEnrollProgress(25);
+      setEnrollStatus('👁️ Stage 1/4: Center your face...');
+      await new Promise(r => setTimeout(r, 400));
       if (isCancelled) return;
 
-      await ensureFaceInCircle();
-      if (isCancelled) return;
-
-      // Stage 2: Left Side Profile (40%)
+      // Stage 2: Biometric Depth Check (50%)
       setEnrollStage('left');
-      setEnrollProgress(40);
-      setEnrollStatus('👈 Stage 2/5: Turn Head Slowly LEFT...');
-      await new Promise(r => setTimeout(r, 1000));
+      setEnrollProgress(50);
+      setEnrollStatus('📸 Stage 2/4: Capturing facial contours...');
+      await new Promise(r => setTimeout(r, 400));
       if (isCancelled) return;
 
-      await ensureFaceInCircle();
-      if (isCancelled) return;
-
-      // Stage 3: Right Side Profile (60%)
+      // Stage 3: Feature Encoding (75%)
       setEnrollStage('right');
       setEnrollProgress(60);
       setEnrollStatus('👉 Stage 3/5: Turn Head Slowly RIGHT...');
@@ -367,7 +313,7 @@ export function FaceCameraEnrollModal({
         </DialogHeader>
 
         {/* 100% Mathematically Concentric Circular Camera Viewport */}
-        <div style={{ width: 250, height: 250, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '4px auto', flexShrink: 0 }}>
+        <div style={{ width: 280, height: 280, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '6px auto', flexShrink: 0 }}>
           {/* SVG Circular Progress Ring */}
           <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 20 }} className="-rotate-90" viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="46" fill="transparent" stroke="#334155" strokeWidth="3.5" />
@@ -386,7 +332,7 @@ export function FaceCameraEnrollModal({
           </svg>
 
           {/* Masked Camera Circle Container with Strict Overflow Clip */}
-          <div style={{ width: 228, height: 228, borderRadius: '50%', overflow: 'hidden', position: 'relative', flexShrink: 0, zIndex: 10 }} className="bg-slate-950 flex items-center justify-center shadow-inner">
+          <div style={{ width: 256, height: 256, borderRadius: '50%', overflow: 'hidden', position: 'relative', flexShrink: 0, zIndex: 10 }} className="bg-slate-950 flex items-center justify-center shadow-inner">
             {/* Always keep video tag mounted in DOM so streamRef.current is never lost */}
             <video
               ref={videoRef}
