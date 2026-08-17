@@ -116,14 +116,15 @@ export function Login({ onLogin }: LoginProps) {
 
     return (
         <div className="min-h-screen w-full flex items-center justify-center login-clean-bg p-4 sm:p-6 relative overflow-hidden">
-            {/* Soft Ambient Light Spotlights */}
-            <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-sky-500/15 rounded-full blur-[100px] pointer-events-none" />
-            <div className="absolute bottom-10 right-10 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
+            {/* Fluid Floating Ambient Light Spotlights */}
+            <div className="absolute top-1/4 left-1/3 w-[520px] h-[520px] bg-sky-500/20 rounded-full blur-[110px] pointer-events-none animate-float-slow" />
+            <div className="absolute bottom-1/4 right-1/4 w-[480px] h-[480px] bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none animate-float-reverse" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[130px] pointer-events-none animate-pulse-glow" />
 
-            <Card className="w-full max-w-sm login-card-modern rounded-2xl relative z-10">
+            <Card className="w-full max-w-sm login-card-modern login-card-entrance rounded-2xl relative z-10">
                 <CardHeader className="space-y-4 text-center pb-2 pt-6">
                     <div className="flex justify-center">
-                        <div className="h-12 w-auto px-4 py-1.5 rounded-xl bg-slate-950 flex items-center justify-center shadow-lg border border-slate-800">
+                        <div className="h-12 w-auto px-4 py-1.5 rounded-xl bg-slate-950 flex items-center justify-center shadow-lg border border-slate-800 transition-transform duration-300 hover:scale-105">
                             <img
                                 src={logoImage}
                                 alt="VOID Logo"

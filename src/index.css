@@ -3122,6 +3122,69 @@ html {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
 }
 
+/* Fluid Atmospheric Animation Keyframes */
+@keyframes floatSlow {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(45px, -35px) scale(1.1);
+  }
+  100% {
+    transform: translate(-30px, 25px) scale(0.95);
+  }
+}
+
+@keyframes floatReverse {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(-50px, 30px) scale(1.12);
+  }
+  100% {
+    transform: translate(35px, -40px) scale(0.92);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.2;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.38;
+    transform: translate(-50%, -50%) scale(1.12);
+  }
+}
+
+@keyframes cardEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-float-slow {
+  animation: floatSlow 16s ease-in-out infinite alternate;
+}
+
+.animate-float-reverse {
+  animation: floatReverse 18s ease-in-out infinite alternate;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 9s ease-in-out infinite;
+}
+
+.login-card-entrance {
+  animation: cardEntrance 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 
 
 
