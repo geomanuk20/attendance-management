@@ -22,6 +22,15 @@ export function Login({ onLogin }: LoginProps) {
     const [isFaceModalOpen, setIsFaceModalOpen] = useState(false);
     const [enrolledFaceProfiles, setEnrolledFaceProfiles] = useState<any[]>([]);
     const [loadingFaces, setLoadingFaces] = useState(false);
+    const [isQuickFaceEnabled, setIsQuickFaceEnabled] = useState<boolean>(() => {
+        const stored = localStorage.getItem('quickFaceScanLoginEnabled');
+        return stored !== null ? stored === 'true' : true;
+    });
+
+    useEffect(() => {
+        const stored = localStorage.getItem('quickFaceScanLoginEnabled');
+        setIsQuickFaceEnabled(stored !== null ? stored === 'true' : true);
+    }, []);
 
     const performLogin = async (targetEmail: string, targetPass: string) => {
         setLoading(true);
@@ -113,27 +122,31 @@ export function Login({ onLogin }: LoginProps) {
                 </CardHeader>
                 <form onSubmit={handleSubmit}>
                     <CardContent className="space-y-4 pt-2 pb-6">
-                        {/* Quick Face Scan Pill Button (Matching Uploaded Design) */}
-                        <Button
-                            type="button"
-                            onClick={handleStartFaceLogin}
-                            disabled={loading || loadingFaces}
-                            className="w-full h-12 bg-white hover:bg-slate-50 text-slate-900 border border-slate-200/90 shadow-md hover:shadow-lg rounded-full font-bold text-sm gap-3 transition-all cursor-pointer"
-                        >
-                            {loadingFaces ? (
-                                <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
-                            ) : (
-                                <div className="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-200/60">
-                                    <Scan className="h-4 w-4 text-emerald-600 animate-pulse" />
-                                </div>
-                            )}
-                            <span className="tracking-tight text-slate-800 font-bold">Quick Face Scan Login</span>
-                        </Button>
+                        {/* Quick Face Scan Pill Button (Configurable from Admin Settings) */}
+                        {isQuickFaceEnabled && (
+                            <>
+                                <Button
+                                    type="button"
+                                    onClick={handleStartFaceLogin}
+                                    disabled={loading || loadingFaces}
+                                    className="w-full h-12 bg-white hover:bg-slate-50 text-slate-900 border border-slate-200/90 shadow-md hover:shadow-lg rounded-full font-bold text-sm gap-3 transition-all cursor-pointer"
+                                >
+                                    {loadingFaces ? (
+                                        <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
+                                    ) : (
+                                        <div className="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-200/60">
+                                            <Scan className="h-4 w-4 text-emerald-600 animate-pulse" />
+                                        </div>
+                                    )}
+                                    <span className="tracking-tight text-slate-800 font-bold">Quick Face Scan Login</span>
+                                </Button>
 
-                        <div className="relative flex items-center justify-center my-2">
-                            <div className="border-t border-slate-200 w-full" />
-                            <span className="bg-white px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider absolute">or</span>
-                        </div>
+                                <div className="relative flex items-center justify-center my-2">
+                                    <div className="border-t border-slate-200 w-full" />
+                                    <span className="bg-white px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider absolute">or</span>
+                                </div>
+                            </>
+                        )}
 
                         <div className="space-y-2">
                             <Label htmlFor="email" className="text-sm font-medium text-slate-700">Email</Label>
