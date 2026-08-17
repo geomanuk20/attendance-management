@@ -163,30 +163,33 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       counts[type] = (counts[type] || 0) + 1;
     });
 
-    const defaultPalette: { [key: string]: string } = {
+    const distinctPalette: { [key: string]: string } = {
       'Casual Leave': '#0D2B52',
-      'Sick Leave': '#3BAFDA',
-      'Annual Leave': '#F9A825',
+      'Week Off': '#0284C7',
+      'Sick Leave': '#10B981',
+      'Annual Leave': '#F59E0B',
       'Emergency Leave': '#E11D48',
-      'Maternity Leave': '#9333EA',
+      'Maternity Leave': '#8B5CF6',
       'Paternity Leave': '#059669',
+      'Half Day': '#06B6D4',
       'Vacation': '#3B82F6',
       'Personal': '#64748B'
     };
 
-    const colorList = ['#0D2B52', '#3BAFDA', '#F9A825', '#10B981', '#E11D48', '#8B5CF6', '#64748B'];
-    const entries = Object.keys(counts).map((type, idx) => ({
+    const colorFallbacks = ['#0D2B52', '#0284C7', '#10B981', '#F59E0B', '#8B5CF6', '#E11D48', '#06B6D4', '#64748B'];
+    const keys = Object.keys(counts);
+    const entries = keys.map((type, idx) => ({
       name: type,
       value: counts[type],
-      color: defaultPalette[type] || colorList[idx % colorList.length]
+      color: distinctPalette[type] || colorFallbacks[idx % colorFallbacks.length]
     }));
 
     if (entries.length === 0) {
       return [
         { name: 'Casual Leave', value: 8, color: '#0D2B52' },
-        { name: 'Sick Leave', value: 4, color: '#3BAFDA' },
-        { name: 'Annual Leave', value: 6, color: '#F9A825' },
-        { name: 'Emergency Leave', value: 2, color: '#E11D48' }
+        { name: 'Week Off', value: 5, color: '#0284C7' },
+        { name: 'Sick Leave', value: 4, color: '#10B981' },
+        { name: 'Annual Leave', value: 6, color: '#F59E0B' }
       ];
     }
     return entries;
@@ -195,12 +198,14 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
   // Dynamic Monthly Trends (Last 6 Months)
   const { monthlyAttendanceData, payrollTrendData } = useMemo(() => {
     const months = ['Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
-    const baseRate = keyMetrics.avgAttendance;
+    const currentRate = keyMetrics.avgAttendance || 90;
     const basePayroll = keyMetrics.totalPayroll || 120000;
 
+    // Realistic monthly variance leading up to current rate
+    const trendOffsets = [-4, +2, -1, +3, -2, 0];
+
     const attendanceTrend = months.map((m, idx) => {
-      const variance = (idx % 2 === 0 ? 1 : -1) * (idx * 0.8);
-      const rate = Math.min(99, Math.max(85, Math.round(baseRate + variance)));
+      const rate = Math.min(99, Math.max(78, currentRate + trendOffsets[idx]));
       return {
         month: `${m} 2026`,
         attendance: rate,
@@ -208,9 +213,9 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       };
     });
 
+    const payrollOffsets = [-0.06, -0.04, -0.02, +0.01, -0.01, 0];
     const payrollTrend = months.map((m, idx) => {
-      const variance = (idx * 0.015) - 0.04;
-      const amount = Math.round(basePayroll * (1 + variance));
+      const amount = Math.round(basePayroll * (1 + payrollOffsets[idx]));
       return {
         month: `${m} 2026`,
         amount: Math.max(1000, amount)
@@ -350,67 +355,67 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       </Card>
 
       {/* Key Metrics Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-5 border border-border shadow-xs">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Avg Attendance Rate</p>
-              <p className="text-2xl font-bold text-emerald-600 mt-1">{keyMetrics.avgAttendance}%</p>
-              <p className="text-xs text-emerald-600 flex items-center gap-1 mt-1 font-medium">
-                <TrendingUp className="h-3 w-3" />
-                +2.4% vs last month
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        <Card className="p-5 border border-border shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Avg Attendance Rate</p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground mt-1 leading-tight">{keyMetrics.avgAttendance}%</p>
+              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-1.5">
+                <TrendingUp className="h-3.5 w-3.5 shrink-0" />
+                <span>+2.4% vs last month</span>
               </p>
             </div>
-            <div className="h-11 w-11 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-600">
-              <Clock className="h-5 w-5" />
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#10B98120', color: '#10B981' }}>
+              <Clock className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-5 border border-border shadow-xs">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Active Headcount</p>
-              <p className="text-2xl font-bold text-blue-600 mt-1">{filteredEmployees.length}</p>
-              <p className="text-xs text-blue-600 flex items-center gap-1 mt-1 font-medium">
-                <Users className="h-3 w-3" />
-                {selectedDepartment === 'all' ? 'Across all departments' : selectedDepartment}
+        <Card className="p-5 border border-border shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Active Headcount</p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground mt-1 leading-tight">{filteredEmployees.length}</p>
+              <p className="text-xs font-medium text-sky-600 dark:text-sky-400 flex items-center gap-1 mt-1.5">
+                <Users className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{selectedDepartment === 'all' ? 'All departments' : selectedDepartment}</span>
               </p>
             </div>
-            <div className="h-11 w-11 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center text-blue-600">
-              <Users className="h-5 w-5" />
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#0284C720', color: '#0284C7' }}>
+              <Users className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-5 border border-border shadow-xs">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Avg Monthly Salary</p>
-              <p className="text-2xl font-bold text-purple-600 mt-1">
+        <Card className="p-5 border border-border shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Avg Monthly Salary</p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground mt-1 leading-tight">
                 {formatCurrency(keyMetrics.avgSalary)}
               </p>
-              <p className="text-xs text-purple-600 flex items-center gap-1 mt-1 font-medium">
-                Total: {formatCurrency(keyMetrics.totalPayroll)}
+              <p className="text-xs font-medium text-purple-600 dark:text-purple-400 flex items-center gap-1 mt-1.5">
+                <span>Total: {formatCurrency(keyMetrics.totalPayroll)}</span>
               </p>
             </div>
-            <div className="h-11 w-11 bg-purple-500/10 border border-purple-500/20 rounded-xl flex items-center justify-center text-purple-600">
-              <DollarSign className="h-5 w-5" />
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#8B5CF620', color: '#8B5CF6' }}>
+              <DollarSign className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-5 border border-border shadow-xs">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Leave Approval Rate</p>
-              <p className="text-2xl font-bold text-amber-600 mt-1">{keyMetrics.leaveUtilization}%</p>
-              <p className="text-xs text-amber-600 flex items-center gap-1 mt-1 font-medium">
-                {rawLeaves.length} total request records
+        <Card className="p-5 border border-border shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leave Approval Rate</p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground mt-1 leading-tight">{keyMetrics.leaveUtilization}%</p>
+              <p className="text-xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1 mt-1.5">
+                <span>{rawLeaves.length} total request records</span>
               </p>
             </div>
-            <div className="h-11 w-11 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-center text-amber-600">
-              <CalendarIcon className="h-5 w-5" />
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#F59E0B20', color: '#F59E0B' }}>
+              <CalendarIcon className="h-6 w-6" />
             </div>
           </div>
         </Card>
@@ -419,7 +424,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Attendance Trend */}
-        <Card className="p-5 border border-border shadow-xs">
+        <Card className="p-5 sm:p-6 border border-border shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-bold text-foreground">Monthly Attendance Trend (%)</h3>
             <div className="flex items-center gap-3 text-xs font-medium">
@@ -433,11 +438,11 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
               </div>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={monthlyAttendanceData}>
+          <ResponsiveContainer width="100%" height={260}>
+            <LineChart data={monthlyAttendanceData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
               <XAxis dataKey="month" fontSize={12} stroke="#64748b" />
-              <YAxis domain={[75, 100]} fontSize={12} stroke="#64748b" />
+              <YAxis domain={[60, 100]} ticks={[60, 70, 80, 90, 100]} fontSize={12} stroke="#64748b" />
               <Tooltip
                 formatter={(value: any) => [`${value}%`, 'Attendance']}
                 contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
@@ -449,7 +454,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
         </Card>
 
         {/* Leave Distribution */}
-        <Card className="p-5 border border-border shadow-xs">
+        <Card className="p-5 sm:p-6 border border-border shadow-xs">
           <h3 className="text-base font-bold text-foreground mb-4">Leave Types Breakdown</h3>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <ResponsiveContainer width="100%" height={240}>
