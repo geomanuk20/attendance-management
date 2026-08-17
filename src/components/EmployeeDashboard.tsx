@@ -5,7 +5,7 @@ import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 import { Clock, Calendar, AlertCircle, LogIn, LogOut, Loader2 } from 'lucide-react';
-import { getAttendance, clockIn, clockOut, getEmployees } from '../services/api';
+import { getAttendance, clockIn, clockOut, getEmployees, getLeaveRequests } from '../services/api';
 import { toast } from 'sonner';
 import { FaceRecognitionModal } from './FaceRecognitionModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
@@ -58,6 +58,19 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
   const [isLeaveBalanceModalOpen, setIsLeaveBalanceModalOpen] = useState(false);
   const [isHolidaysModalOpen, setIsHolidaysModalOpen] = useState(false);
 
+  const [leaveStats, setLeaveStats] = useState({
+    casualQuota: 6,
+    casualUsed: 0,
+    casualLeft: 6,
+    sickQuota: 6,
+    sickUsed: 0,
+    sickLeft: 6,
+    annualQuota: 6,
+    annualUsed: 2,
+    annualLeft: 4,
+    totalBalance: 16
+  });
+
   const toLocalDateStr = (date: Date) => {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -84,6 +97,52 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
 
   const [allEmployees, setAllEmployees] = useState<any[]>([]);
 
+  const fetchLeaveStats = async (employeeId?: string, userEmail?: string) => {
+    try {
+      const leaves = await getLeaveRequests(employeeId);
+      if (Array.isArray(leaves)) {
+        const myApprovedLeaves = leaves.filter((l: any) => {
+          const isMe = !employeeId || (employeeId && (l.employeeId?._id === employeeId || l.employeeId === employeeId)) ||
+            (userEmail && l.employeeId?.email?.toLowerCase() === userEmail.toLowerCase());
+          const isApproved = l.status === 'Approved' || l.status === 'approved';
+          return isMe && isApproved;
+        });
+
+        let casualUsed = 0;
+        let sickUsed = 0;
+        let annualUsed = 2;
+
+        myApprovedLeaves.forEach((l: any) => {
+          const type = (l.type || l.leaveType || '').toLowerCase();
+          const days = Number(l.days || l.duration || 1);
+          if (type.includes('casual')) casualUsed += days;
+          else if (type.includes('sick') || type.includes('medical')) sickUsed += days;
+          else annualUsed += days;
+        });
+
+        const casualLeft = Math.max(0, 6 - casualUsed);
+        const sickLeft = Math.max(0, 6 - sickUsed);
+        const annualLeft = Math.max(0, 6 - annualUsed);
+        const totalBalance = casualLeft + sickLeft + annualLeft;
+
+        setLeaveStats({
+          casualQuota: 6,
+          casualUsed,
+          casualLeft,
+          sickQuota: 6,
+          sickUsed,
+          sickLeft,
+          annualQuota: 6,
+          annualUsed,
+          annualLeft,
+          totalBalance
+        });
+      }
+    } catch (e) {
+      console.warn('Error fetching leave stats:', e);
+    }
+  };
+
   useEffect(() => {
     getEmployees().then(emps => {
       setAllEmployees(emps);
@@ -105,7 +164,9 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
-      fetchTodayAttendance(parsedUser.id || parsedUser._id);
+      const empId = parsedUser.id || parsedUser._id;
+      fetchTodayAttendance(empId);
+      fetchLeaveStats(empId, parsedUser.email);
     } else {
       setLoading(false);
     }
@@ -352,7 +413,7 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Leave Balance</p>
-              <p className="text-2xl font-semibold">14 Days</p>
+              <p className="text-2xl font-semibold">{leaveStats.totalBalance} Days</p>
               <p className="text-xs text-amber-500 mt-1 flex items-center gap-1 font-medium">
                 <span>Click to view breakdown</span>
               </p>
@@ -435,17 +496,35 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
           </DialogHeader>
 
           <div className="space-y-3 pt-2">
+            {/* Total Balance Banner */}
+            <div className="p-4 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">Total Available Leave Balance</p>
+                <p className="text-2xl font-bold text-foreground mt-0.5">{leaveStats.totalBalance} Days</p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setIsLeaveBalanceModalOpen(false);
+                  onNavigate?.('leave-requests');
+                }}
+                className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs h-9 px-3 rounded-lg cursor-pointer shrink-0"
+              >
+                Apply Leave
+              </Button>
+            </div>
+
             {/* Casual Leave */}
             <div className="flex items-center justify-between p-4 rounded-xl bg-muted/40 border border-border/70 hover:bg-muted/60 transition-colors">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">🏖️</span>
                 <div>
                   <p className="text-sm font-semibold text-foreground">Casual Leave (CL)</p>
-                  <p className="text-xs text-muted-foreground">Annual quota: 6 Days</p>
+                  <p className="text-xs text-muted-foreground">Annual quota: {leaveStats.casualQuota} Days • Used: {leaveStats.casualUsed} Days</p>
                 </div>
               </div>
               <span className="px-3.5 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-xs border border-emerald-500/20 whitespace-nowrap">
-                6 Days Left
+                {leaveStats.casualLeft} Days Left
               </span>
             </div>
 
@@ -455,11 +534,11 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
                 <span className="text-2xl">💊</span>
                 <div>
                   <p className="text-sm font-semibold text-foreground">Sick Leave (SL)</p>
-                  <p className="text-xs text-muted-foreground">Annual quota: 6 Days</p>
+                  <p className="text-xs text-muted-foreground">Annual quota: {leaveStats.sickQuota} Days • Used: {leaveStats.sickUsed} Days</p>
                 </div>
               </div>
               <span className="px-3.5 py-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold text-xs border border-blue-500/20 whitespace-nowrap">
-                6 Days Left
+                {leaveStats.sickLeft} Days Left
               </span>
             </div>
 
@@ -468,12 +547,12 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
               <div className="flex items-center gap-3">
                 <span className="text-2xl">📅</span>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Annual Leave</p>
-                  <p className="text-xs text-muted-foreground">Annual quota: 6 Days</p>
+                  <p className="text-sm font-semibold text-foreground">Annual Leave (AL)</p>
+                  <p className="text-xs text-muted-foreground">Annual quota: {leaveStats.annualQuota} Days • Used: {leaveStats.annualUsed} Days</p>
                 </div>
               </div>
               <span className="px-3.5 py-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-xs border border-amber-500/20 whitespace-nowrap">
-                2 Days Left
+                {leaveStats.annualLeft} Days Left
               </span>
             </div>
 
