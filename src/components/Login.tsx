@@ -115,8 +115,12 @@ export function Login({ onLogin }: LoginProps) {
     };
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center bg-slate-50 p-4 sm:p-6">
-            <Card className="w-full max-w-sm shadow-md border border-slate-200/80 bg-white rounded-xl">
+        <div className="min-h-screen w-full flex items-center justify-center login-texture-bg p-4 sm:p-6 relative overflow-hidden">
+            {/* Ambient decorative gradient blurs */}
+            <div className="absolute top-1/4 -left-20 w-72 h-72 bg-sky-400/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+
+            <Card className="w-full max-w-sm login-card-glass rounded-2xl relative z-10">
                 <CardHeader className="space-y-3 text-center pb-2">
                     <div className="flex justify-center">
                         <div className="h-11 w-auto px-3.5 py-1 rounded-xl bg-slate-900 flex items-center justify-center shadow-md">

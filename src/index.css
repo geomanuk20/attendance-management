@@ -3099,6 +3099,43 @@ html {
   color: #fde68a !important;
 }
 
+/* Login Page Textured Background */
+.login-texture-bg {
+  background-color: #f8fafc;
+  background-image: 
+    radial-gradient(at 15% 15%, rgba(59, 175, 218, 0.12) 0px, transparent 50%),
+    radial-gradient(at 85% 85%, rgba(13, 43, 82, 0.10) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(16, 185, 129, 0.06) 0px, transparent 60%),
+    radial-gradient(#94a3b8 1.2px, transparent 1.2px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 28px 28px;
+}
+
+.dark .login-texture-bg {
+  background-color: #070d18;
+  background-image: 
+    radial-gradient(at 15% 15%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+    radial-gradient(at 85% 85%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(16, 185, 129, 0.08) 0px, transparent 60%),
+    radial-gradient(rgba(255, 255, 255, 0.12) 1.2px, transparent 1.2px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 28px 28px;
+}
+
+.login-card-glass {
+  background: rgba(255, 255, 255, 0.96) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+  box-shadow: 0 25px 50px -12px rgba(13, 43, 82, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
+}
+
+.dark .login-card-glass {
+  background: rgba(15, 23, 42, 0.94) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(51, 65, 85, 0.7) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+}
+
 
 
 
