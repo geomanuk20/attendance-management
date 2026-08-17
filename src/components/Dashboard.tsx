@@ -86,17 +86,20 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
         });
         const leaveColors: Record<string, string> = {
           'Casual Leave': '#0D2B52',
-          'Sick Leave': '#3BAFDA',
-          'Annual Leave': '#F9A825',
+          'Week Off': '#0284C7',
+          'Sick Leave': '#10B981',
+          'Annual Leave': '#F59E0B',
           'Emergency Leave': '#E11D48',
           'Vacation': '#3BAFDA',
           'Personal': '#8B5CF6',
           'Maternity': '#EC4899',
           'Other': '#64748B',
         };
+        const totalLeaves = Object.values(leaveTypes).reduce((a, b) => a + b, 0) || 1;
         const distData = Object.entries(leaveTypes).map(([name, value]) => ({
           name,
           value,
+          percentage: Math.round((value / totalLeaves) * 100),
           color: leaveColors[name] || '#64748B',
         }));
         setLeaveDistribution(distData);
@@ -192,10 +195,10 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
   return (
     <div className="p-6 sm:p-8 lg:p-10 space-y-8 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/40">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Dashboard Overview</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">Welcome back! Real-time workforce management & attendance insights.</p>
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">Dashboard Overview</h2>
+          <p className="text-sm text-muted-foreground mt-1">Welcome back! Real-time workforce management & attendance insights.</p>
         </div>
         <div className="flex items-center gap-3">
           <Badge variant="secondary" className="flex items-center gap-2 px-3 py-1.5 font-medium border border-border shadow-xs">
@@ -206,64 +209,66 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
       </div>
 
       {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-1.5 min-w-0">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="p-6 border border-border/80 border-t-4 border-t-sky-500 shadow-xs hover:shadow-lg transition-all duration-300 rounded-2xl bg-card">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Employees</p>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{stats.totalEmployees}</p>
-              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                <TrendingUp className="h-3.5 w-3.5 shrink-0" />
+              <p className="text-3xl font-extrabold text-foreground leading-none">{stats.totalEmployees}</p>
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-600 dark:text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded-md border border-sky-500/20">
+                <TrendingUp className="h-3 w-3" />
                 <span>Real-time database</span>
-              </p>
+              </div>
             </div>
-            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#0284C720', color: '#0284C7' }}>
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#0284C718', color: '#0284C7' }}>
               <Users className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-1.5 min-w-0">
+        <Card className="p-6 border border-border/80 border-t-4 border-t-emerald-500 shadow-xs hover:shadow-lg transition-all duration-300 rounded-2xl bg-card">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Present Today</p>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{stats.presentToday}</p>
-              <p className="text-xs font-medium text-muted-foreground">
-                {stats.totalEmployees > 0 ? Math.round((stats.presentToday / stats.totalEmployees) * 100) : 0}% attendance rate
-              </p>
+              <p className="text-3xl font-extrabold text-foreground leading-none">{stats.presentToday}</p>
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                <Clock className="h-3 w-3" />
+                <span>{stats.totalEmployees > 0 ? Math.round((stats.presentToday / stats.totalEmployees) * 100) : 0}% Attendance</span>
+              </div>
             </div>
-            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#10B98120', color: '#10B981' }}>
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#10B98118', color: '#10B981' }}>
               <Clock className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-1.5 min-w-0">
+        <Card className="p-6 border border-border/80 border-t-4 border-t-purple-500 shadow-xs hover:shadow-lg transition-all duration-300 rounded-2xl bg-card">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Monthly Payroll</p>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{formatCurrency(stats.monthlyPayroll)}</p>
-              <p className="text-xs font-medium text-muted-foreground">
-                Active compensation sum
-              </p>
+              <p className="text-3xl font-extrabold text-foreground leading-none">{formatCurrency(stats.monthlyPayroll)}</p>
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-md border border-purple-500/20">
+                <DollarSign className="h-3 w-3" />
+                <span>Active compensation</span>
+              </div>
             </div>
-            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#8B5CF620', color: '#8B5CF6' }}>
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#8B5CF618', color: '#8B5CF6' }}>
               <DollarSign className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-1.5 min-w-0">
+        <Card className="p-6 border border-border/80 border-t-4 border-t-amber-500 shadow-xs hover:shadow-lg transition-all duration-300 rounded-2xl bg-card">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pending Requests</p>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{stats.pendingRequests}</p>
-              <p className="text-xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              <p className="text-3xl font-extrabold text-foreground leading-none">{stats.pendingRequests}</p>
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                <AlertCircle className="h-3 w-3" />
                 <span>Needs HR review</span>
-              </p>
+              </div>
             </div>
-            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#F59E0B20', color: '#F59E0B' }}>
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#F59E0B18', color: '#F59E0B' }}>
               <Calendar className="h-6 w-6" />
             </div>
           </div>
@@ -271,12 +276,15 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Weekly Attendance Bar Chart */}
-        <Card className="p-5 sm:p-6 border border-border shadow-xs">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-bold text-foreground">Weekly Attendance Trend</h3>
-            <div className="flex items-center gap-3 text-xs font-medium">
+        <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
+          <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
+            <div>
+              <h3 className="text-base font-bold text-foreground">Weekly Attendance Trend</h3>
+              <p className="text-xs text-muted-foreground">Daily headcount breakdown for the current week</p>
+            </div>
+            <div className="flex items-center gap-3 text-xs font-semibold">
               <div className="flex items-center gap-1.5">
                 <div className="h-2.5 w-2.5 rounded-full bg-[#10B981]" />
                 <span className="text-muted-foreground">Present</span>
@@ -289,16 +297,16 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
           </div>
           {weeklyData.some(d => d.Present > 0 || d.Absent > 0) ? (
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+              <BarChart data={weeklyData} margin={{ top: 10, right: 15, left: -15, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
                 <XAxis dataKey="name" fontSize={12} stroke="#64748b" />
                 <YAxis fontSize={12} stroke="#64748b" allowDecimals={false} />
                 <Tooltip
                   formatter={(value: any, name: any) => [`${value} employees`, name]}
-                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
+                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
                 />
-                <Bar dataKey="Present" fill="#10B981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Absent" fill="#F9A825" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Present" fill="#10B981" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="Absent" fill="#F9A825" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -309,18 +317,26 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
         </Card>
 
         {/* Leave Distribution Pie Chart */}
-        <Card className="p-5 sm:p-6 border border-border shadow-xs">
-          <h3 className="text-base font-bold text-foreground mb-4">Leave Distribution</h3>
+        <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card overflow-hidden">
+          <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
+            <div>
+              <h3 className="text-base font-bold text-foreground">Leave Distribution</h3>
+              <p className="text-xs text-muted-foreground">Categorical distribution of all requested time off</p>
+            </div>
+            <Badge variant="outline" className="text-xs font-bold">
+              {leaveDistribution.reduce((sum, item) => sum + (item.value || 0), 0)} Total Requests
+            </Badge>
+          </div>
           {leaveDistribution.length > 0 ? (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <ResponsiveContainer width="100%" height={240}>
-                <PieChart>
+            <div className="grid grid-cols-1 sm:grid-cols-2 items-center gap-6">
+              <div className="flex items-center justify-center min-h-[220px]">
+                <PieChart width={220} height={220}>
                   <Pie
                     data={leaveDistribution}
                     cx="50%"
                     cy="50%"
                     innerRadius={55}
-                    outerRadius={95}
+                    outerRadius={88}
                     paddingAngle={4}
                     dataKey="value"
                   >
@@ -330,27 +346,35 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
                   </Pie>
                   <Tooltip
                     formatter={(value: any, name: any) => [`${value} requests`, name]}
-                    contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
+                    contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
                   />
                 </PieChart>
-              </ResponsiveContainer>
-              <div className="flex flex-col gap-2 shrink-0 sm:min-w-[150px]">
+              </div>
+              <div className="flex flex-col gap-2.5 bg-muted/40 p-4 rounded-xl border border-border/40 w-full">
                 {leaveDistribution.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="h-3 w-3 rounded-md shrink-0"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="text-muted-foreground font-medium truncate">{item.name}</span>
+                  <div key={index} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="h-2.5 w-2.5 rounded-full shrink-0 shadow-xs"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <span className="text-muted-foreground font-semibold truncate max-w-[120px]">{item.name}</span>
+                      </div>
+                      <span className="font-bold text-foreground">{item.value}</span>
                     </div>
-                    <span className="font-bold text-foreground">{item.value}</span>
+                    <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{ width: `${item.percentage || 10}%`, backgroundColor: item.color }}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-[260px] text-muted-foreground text-sm">
+            <div className="flex items-center justify-center h-[240px] text-muted-foreground text-sm">
               No leave requests found in database
             </div>
           )}
@@ -358,22 +382,22 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
       </div>
 
       {/* Recent Activities */}
-      <Card className="p-5 sm:p-6 border border-border shadow-xs">
-        <div className="flex items-center justify-between mb-4">
+      <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card mt-8">
+        <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
           <div>
             <h3 className="text-base font-bold text-foreground">Recent Activities</h3>
             <p className="text-xs text-muted-foreground mt-0.5">Real-time biometric attendance and leave workflow updates</p>
           </div>
-          <Badge variant="outline" className="text-xs font-semibold">
+          <Badge variant="outline" className="text-xs font-semibold px-3 py-1">
             {recentActivities.length} Recent Logs
           </Badge>
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {recentActivities.length > 0 ? (
             recentActivities.map((activity) => (
               <div
                 key={activity.id}
-                className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/40 transition-colors border-b border-border/40 last:border-0"
+                className="flex items-center justify-between p-3.5 rounded-xl hover:bg-muted/40 transition-colors border-b border-border/30 last:border-0"
               >
                 <div className="flex items-center gap-3.5 min-w-0">
                   <div
@@ -391,17 +415,17 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
                     {activity.user.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">{activity.user}</p>
+                    <p className="text-sm font-bold text-foreground truncate">{activity.user}</p>
                     <p className="text-xs text-muted-foreground truncate">{activity.action}</p>
                   </div>
                 </div>
-                <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap ml-4 shrink-0 bg-muted/60 px-2.5 py-1 rounded-lg">
+                <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap ml-4 shrink-0 bg-muted/60 px-3 py-1 rounded-lg border border-border/30">
                   {activity.time}
                 </span>
               </div>
             ))
           ) : (
-            <p className="text-sm text-muted-foreground py-4 text-center">No recent activities found.</p>
+            <p className="text-sm text-muted-foreground py-6 text-center">No recent activities found.</p>
           )}
         </div>
       </Card>
