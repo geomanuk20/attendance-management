@@ -7,7 +7,7 @@ import { Input } from './ui/input';
 import { Calendar } from './ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Clock, CalendarIcon, Search, Loader2, ChevronsUpDown, Check, Download, Pencil, ShieldCheck, Camera, Upload, AlertCircle, CheckCircle } from 'lucide-react';
+import { Clock, CalendarIcon, Search, Loader2, ChevronsUpDown, Check, Download, Pencil, ShieldCheck, Camera, Upload, AlertCircle, CheckCircle, LogIn, LogOut } from 'lucide-react';
 import { getAttendance, clockIn, clockOut, getEmployees, getEmployeeNames, getLeaveRequests, updateAttendanceRecord, updateEmployee } from '../services/api';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from './ui/dialog';
@@ -1187,18 +1187,50 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
               </div>
             </div>
           )}
-          <div className="flex gap-8 text-center">
-            <div>
-              <p className="text-sm text-muted-foreground">Check In</p>
-              <p className="font-semibold">{todayRecord?.clockIn || '--:--'}</p>
+          {/* Today Attendance Metrics Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-xl pt-2">
+            {/* Check In Box */}
+            <div className="flex flex-col items-center justify-center p-3.5 rounded-xl bg-card/80 border border-border/80 shadow-xs text-center">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground mb-1">
+                <LogIn className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                <span>Check In</span>
+              </div>
+              <p className="text-sm sm:text-base font-bold text-foreground font-mono tracking-tight">
+                {todayRecord?.clockIn || '--:--'}
+              </p>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Check Out</p>
-              <p className="font-semibold text-muted-foreground">{todayRecord?.clockOut || '--:--'}</p>
+
+            {/* Check Out Box */}
+            <div className="flex flex-col items-center justify-center p-3.5 rounded-xl bg-card/80 border border-border/80 shadow-xs text-center">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground mb-1">
+                <LogOut className="h-3.5 w-3.5 text-rose-500 shrink-0" />
+                <span>Check Out</span>
+              </div>
+              <p className="text-sm sm:text-base font-bold text-muted-foreground font-mono tracking-tight">
+                {todayRecord?.clockOut || '--:--'}
+              </p>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Status</p>
-              <p className="font-semibold text-muted-foreground">{status}</p>
+
+            {/* Status Box */}
+            <div className="flex flex-col items-center justify-center p-3.5 rounded-xl bg-card/80 border border-border/80 shadow-xs text-center">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground mb-1">
+                <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span>Status</span>
+              </div>
+              <div>
+                <Badge
+                  variant="outline"
+                  className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                    status === 'Completed'
+                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                      : status === 'Checked In'
+                      ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30'
+                      : 'bg-muted text-muted-foreground border-border'
+                  }`}
+                >
+                  {status === 'Checked In' ? 'Working' : status}
+                </Badge>
+              </div>
             </div>
           </div>
         </Card>
