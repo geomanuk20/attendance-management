@@ -211,11 +211,6 @@ export function Sidebar({
         <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
           {renderNavButtons()}
         </nav>
-
-        {/* User Footer */}
-        <div className="p-3 border-t border-border mt-auto">
-          {renderUserSection()}
-        </div>
       </div>
 
       {/* ========================================================= */}
