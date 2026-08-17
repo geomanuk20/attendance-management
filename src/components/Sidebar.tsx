@@ -119,13 +119,12 @@ export function Sidebar({
             {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
 
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="h-8 w-11 flex items-center justify-center overflow-hidden rounded bg-black/5 dark:bg-white/5 p-1 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="h-8 w-auto min-w-[48px] px-1.5 flex items-center justify-center rounded bg-black dark:bg-white/10 shrink-0">
               <img
                 src={logoImage}
                 alt="Logo"
-                className="h-6 w-auto object-contain"
-                style={{ maxHeight: '24px', maxWidth: '40px' }}
+                className="h-5 w-auto object-contain block"
               />
             </div>
             <span className="font-bold text-sm text-foreground truncate">Attendance System</span>
@@ -181,25 +180,24 @@ export function Sidebar({
         }`}
       >
         {/* Drawer Header with Logo & Close Button */}
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-14 flex items-center justify-center overflow-hidden rounded bg-black/5 dark:bg-white/5 p-1">
+        <div className="p-4 border-b border-border flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-10 w-auto min-w-[56px] px-2 flex items-center justify-center rounded-lg bg-black dark:bg-white/10 shrink-0">
               <img
                 src={logoImage}
                 alt="Logo"
-                className="h-7 w-auto object-contain"
-                style={{ maxHeight: '28px', maxWidth: '44px' }}
+                className="h-6 w-auto object-contain block"
               />
             </div>
-            <div>
-              <h2 className="font-bold text-sm text-foreground leading-tight">Attendance System</h2>
-              <p className="text-[11px] text-muted-foreground">{['admin', 'hr', 'superadmin'].includes(userRole) ? 'HR System' : 'Employee Portal'}</p>
+            <div className="flex flex-col justify-center min-w-0">
+              <h2 className="font-bold text-sm text-foreground leading-tight truncate">Attendance System</h2>
+              <p className="text-[11px] text-muted-foreground font-medium truncate mt-0.5">{['admin', 'hr', 'superadmin'].includes(userRole) ? 'HR System' : 'Employee Portal'}</p>
             </div>
           </div>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer rounded-full"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer rounded-full shrink-0"
             onClick={() => onMobileToggle?.(false)}
             aria-label="Close navigation"
           >
@@ -217,19 +215,18 @@ export function Sidebar({
       {/* DESKTOP ONLY: Original Fixed Sidebar                      */}
       {/* ========================================================= */}
       <aside className="app-desktop-sidebar w-64 bg-card border-r border-border h-screen flex-col shrink-0">
-        <div className="p-5 border-b border-border">
+        <div className="p-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-16 flex items-center justify-center overflow-hidden rounded-md bg-black/5 dark:bg-white/5 p-1">
+            <div className="h-10 w-auto min-w-[56px] px-2 flex items-center justify-center rounded-lg bg-black dark:bg-white/10 shrink-0">
               <img
                 src={logoImage}
                 alt="Attendance System Logo"
-                className="h-9 w-auto object-contain"
-                style={{ maxHeight: '36px', maxWidth: '56px' }}
+                className="h-6 w-auto object-contain block"
               />
             </div>
-            <div>
-              <h1 className="text-base font-bold text-foreground leading-tight">Attendance System</h1>
-              <p className="text-[11px] text-muted-foreground">{['admin', 'hr', 'superadmin'].includes(userRole) ? 'HR System' : 'Employee Portal'}</p>
+            <div className="flex flex-col justify-center min-w-0">
+              <h1 className="text-sm font-bold text-foreground leading-tight truncate">Attendance System</h1>
+              <p className="text-[11px] text-muted-foreground font-medium truncate mt-0.5">{['admin', 'hr', 'superadmin'].includes(userRole) ? 'HR System' : 'Employee Portal'}</p>
             </div>
           </div>
         </div>
