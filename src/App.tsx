@@ -198,8 +198,10 @@ export default function App() {
           setDarkMode(false); // Reset dark mode on logout
         }}
       />
-      <main className="flex-1 overflow-auto bg-background app-content-wrapper">
-        {renderContent()}
+      <main className="flex-1 overflow-auto bg-background app-content-wrapper px-3 sm:px-5 lg:px-6 py-3 sm:py-5">
+        <div className="w-full h-full">
+          {renderContent()}
+        </div>
       </main>
       <Toaster />
     </div>

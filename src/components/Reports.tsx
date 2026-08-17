@@ -354,8 +354,8 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       </Card>
 
       {/* Key Metrics Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="p-6 sm:p-7 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Avg Attendance Rate</p>
@@ -371,7 +371,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
           </div>
         </Card>
 
-        <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
+        <Card className="p-6 sm:p-7 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Active Headcount</p>
@@ -387,7 +387,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
           </div>
         </Card>
 
-        <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
+        <Card className="p-6 sm:p-7 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Avg Monthly Salary</p>
@@ -404,7 +404,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
           </div>
         </Card>
 
-        <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
+        <Card className="p-6 sm:p-7 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leave Approval Rate</p>
@@ -421,7 +421,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Attendance Trend */}
         <Card className="p-6 sm:p-7 border border-border shadow-xs bg-card">
           <div className="flex items-center justify-between mb-6 pb-2 border-b border-border/40">
