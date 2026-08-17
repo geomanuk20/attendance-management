@@ -115,35 +115,21 @@ export function Login({ onLogin }: LoginProps) {
     };
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center login-texture-bg p-4 sm:p-6 relative overflow-hidden">
-            {/* Architectural Dot Grid Overlay */}
-            <div className="absolute inset-0 login-grid-pattern pointer-events-none opacity-60" />
-
-            {/* Ambient Multi-Hue Glowing Orbs */}
-            <div className="absolute -top-12 -left-12 w-96 h-96 bg-sky-400/20 dark:bg-sky-500/15 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-16 -right-16 w-[420px] h-[420px] bg-indigo-500/15 dark:bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-400/8 dark:bg-emerald-500/8 rounded-full blur-3xl pointer-events-none" />
-
-            {/* Geometric Tech Ring & Lattice Accents */}
-            <div className="absolute top-12 right-12 w-72 h-72 border border-sky-400/25 dark:border-sky-400/15 rounded-full pointer-events-none" />
-            <div className="absolute top-20 right-20 w-56 h-56 border border-dashed border-sky-400/30 dark:border-sky-400/20 rounded-full pointer-events-none" />
-            <div className="absolute -bottom-10 left-12 w-80 h-80 border border-indigo-400/20 dark:border-indigo-400/15 rounded-full pointer-events-none" />
-            <div className="absolute -bottom-2 left-20 w-64 h-64 border border-dashed border-indigo-400/25 dark:border-indigo-400/20 rounded-full pointer-events-none" />
-
-            <Card className="w-full max-w-sm login-card-glass rounded-2xl relative z-10">
-                <CardHeader className="space-y-3 text-center pb-2">
+        <div className="min-h-screen w-full flex items-center justify-center login-clean-bg p-4 sm:p-6">
+            <Card className="w-full max-w-sm login-card-modern rounded-2xl">
+                <CardHeader className="space-y-4 text-center pb-2 pt-6">
                     <div className="flex justify-center">
-                        <div className="h-11 w-auto px-3.5 py-1 rounded-xl bg-slate-900 flex items-center justify-center shadow-md">
+                        <div className="h-12 w-auto px-4 py-1.5 rounded-xl bg-slate-950 flex items-center justify-center shadow-lg border border-slate-800">
                             <img
                                 src={logoImage}
-                                alt="Company Logo"
+                                alt="VOID Logo"
                                 className="h-7 w-auto max-w-[110px] object-contain brightness-110"
                             />
                         </div>
                     </div>
                     <div>
-                        <CardTitle className="text-xl font-bold tracking-tight text-slate-900">Welcome to Attendance System</CardTitle>
-                        <CardDescription className="text-slate-500 text-sm mt-1">Sign in to your account to continue</CardDescription>
+                        <CardTitle className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Welcome to Attendance System</CardTitle>
+                        <CardDescription className="text-slate-500 dark:text-slate-400 text-sm mt-1">Sign in to your account to continue</CardDescription>
                     </div>
                 </CardHeader>
                 <form onSubmit={handleSubmit}>
