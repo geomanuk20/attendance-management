@@ -541,9 +541,9 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
 
           <div className="space-y-3 pt-2">
             {/* Total Balance Banner */}
-            <div className="p-4 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 flex items-center justify-between">
+            <div className="p-4 rounded-xl leave-banner-amber flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">Total Available Leave Balance</p>
+                <p className="text-xs font-bold leave-banner-title">Total Available Leave Balance</p>
                 <p className="text-2xl font-bold text-foreground mt-0.5">{leaveStats.totalBalance} Days</p>
               </div>
               <Button
@@ -567,7 +567,7 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
                   <p className="text-xs text-muted-foreground">Annual quota: {leaveStats.casualQuota} Days • Used: {leaveStats.casualUsed} Days</p>
                 </div>
               </div>
-              <span className="px-3.5 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-xs border border-emerald-500/20 whitespace-nowrap">
+              <span className="px-3.5 py-1.5 rounded-lg leave-pill-emerald font-bold text-xs whitespace-nowrap">
                 {leaveStats.casualLeft} Days Left
               </span>
             </div>
@@ -581,7 +581,7 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
                   <p className="text-xs text-muted-foreground">Annual quota: {leaveStats.sickQuota} Days • Used: {leaveStats.sickUsed} Days</p>
                 </div>
               </div>
-              <span className="px-3.5 py-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold text-xs border border-blue-500/20 whitespace-nowrap">
+              <span className="px-3.5 py-1.5 rounded-lg leave-pill-blue font-bold text-xs whitespace-nowrap">
                 {leaveStats.sickLeft} Days Left
               </span>
             </div>
@@ -595,7 +595,7 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
                   <p className="text-xs text-muted-foreground">Annual quota: {leaveStats.annualQuota} Days • Used: {leaveStats.annualUsed} Days</p>
                 </div>
               </div>
-              <span className="px-3.5 py-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-xs border border-amber-500/20 whitespace-nowrap">
+              <span className="px-3.5 py-1.5 rounded-lg leave-pill-amber font-bold text-xs whitespace-nowrap">
                 {leaveStats.annualLeft} Days Left
               </span>
             </div>
@@ -611,10 +611,8 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
                   </p>
                 </div>
               </div>
-              <span className={`px-3.5 py-1.5 rounded-lg font-bold text-xs border whitespace-nowrap ${
-                isTodayWeekOff
-                  ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
-                  : 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20'
+              <span className={`px-3.5 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap ${
+                isTodayWeekOff ? 'leave-pill-indigo' : 'leave-pill-slate'
               }`}>
                 {Math.max(0, 4 - monthlyWeekOffCount)} Left
               </span>

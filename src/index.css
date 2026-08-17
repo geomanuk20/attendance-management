@@ -3023,7 +3023,81 @@ html {
 .hover\:bg-red-700:hover { background-color: #b91c1c !important; }
 .bg-rose-600 { background-color: #e11d48 !important; }
 .hover\:bg-rose-700:hover { background-color: #be123c !important; }
+.bg-amber-600 { background-color: #d97706 !important; }
+.hover\:bg-amber-700:hover { background-color: #b45309 !important; }
 .text-white { color: #ffffff !important; }
+
+/* High-Contrast Badge & Pill Utilities for Light and Dark Modes */
+.leave-pill-emerald {
+  background-color: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+}
+.dark .leave-pill-emerald {
+  background-color: rgba(16, 185, 129, 0.2) !important;
+  color: #34d399 !important;
+  border-color: rgba(52, 211, 153, 0.35) !important;
+}
+
+.leave-pill-blue {
+  background-color: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #bfdbfe !important;
+}
+.dark .leave-pill-blue {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+  color: #60a5fa !important;
+  border-color: rgba(96, 165, 250, 0.35) !important;
+}
+
+.leave-pill-amber {
+  background-color: #fffbeb !important;
+  color: #b45309 !important;
+  border: 1px solid #fde68a !important;
+}
+.dark .leave-pill-amber {
+  background-color: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(251, 191, 36, 0.35) !important;
+}
+
+.leave-pill-slate {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+.dark .leave-pill-slate {
+  background-color: rgba(100, 116, 139, 0.25) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.35) !important;
+}
+
+.leave-pill-indigo {
+  background-color: #eef2ff !important;
+  color: #4338ca !important;
+  border: 1px solid #c7d2fe !important;
+}
+.dark .leave-pill-indigo {
+  background-color: rgba(99, 102, 241, 0.2) !important;
+  color: #a5b4fc !important;
+  border-color: rgba(165, 180, 252, 0.35) !important;
+}
+
+.leave-banner-amber {
+  background: linear-gradient(135deg, #fef3c7, #fed7aa) !important;
+  border: 1px solid #fde68a !important;
+}
+.dark .leave-banner-amber {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(249, 115, 22, 0.18)) !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+}
+
+.leave-banner-title {
+  color: #92400e !important;
+}
+.dark .leave-banner-title {
+  color: #fde68a !important;
+}
 
 
 
