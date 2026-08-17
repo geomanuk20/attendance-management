@@ -463,7 +463,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
         </Card>
       </div>
 
-      {/* Analytics Charts Grid */}
+      {/* Analytics Charts Grid Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-2">
         {/* Chart 1: Attendance Trend Area Chart */}
         <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
@@ -562,7 +562,10 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
             </div>
           </div>
         </Card>
+      </div>
 
+      {/* Analytics Charts Grid Row 2 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
         {/* Chart 3: Department Attendance Rates */}
         <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
           <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
@@ -619,7 +622,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       </div>
 
       {/* Department Summary & Benchmarks Table */}
-      <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
+      <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card mt-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-3 border-b border-border/40">
           <div>
             <h3 className="text-base font-bold text-foreground">Department Summary & Benchmarks</h3>
