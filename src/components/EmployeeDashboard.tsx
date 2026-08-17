@@ -635,7 +635,7 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1 pt-2">
+          <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto pr-1 pt-2">
             {COMPANY_HOLIDAYS.map((holiday) => {
               const isNext = holiday.id === nextHoliday?.id;
               const isPast = holiday.date < todayDateStr;
@@ -643,7 +643,7 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
               return (
                 <div
                   key={holiday.id}
-                  className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                  className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${
                     isNext
                       ? 'bg-emerald-500/10 border-emerald-500/40 shadow-xs'
                       : isPast
