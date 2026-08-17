@@ -209,7 +209,7 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
       </div>
 
       {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-2 mb-2">
         <Card className="p-6 border border-border/80 border-t-4 border-t-sky-500 shadow-xs hover:shadow-lg transition-all duration-300 rounded-2xl bg-card">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-2 min-w-0">
@@ -276,7 +276,7 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
         {/* Weekly Attendance Bar Chart */}
         <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
           <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
