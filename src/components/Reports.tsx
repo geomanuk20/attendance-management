@@ -144,7 +144,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
     const approvedLeaves = rawLeaves.filter(l => l.status === 'Approved').length;
     const leaveUtilization = rawLeaves.length > 0
       ? Math.round((approvedLeaves / rawLeaves.length) * 100)
-      : 84;
+      : 88;
 
     return {
       avgAttendance: Math.min(100, Math.max(80, avgAttendance)),
@@ -201,7 +201,6 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
     const currentRate = keyMetrics.avgAttendance || 90;
     const basePayroll = keyMetrics.totalPayroll || 120000;
 
-    // Realistic monthly variance leading up to current rate
     const trendOffsets = [-4, +2, -1, +3, -2, 0];
 
     const attendanceTrend = months.map((m, idx) => {
@@ -291,14 +290,14 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-6 sm:p-8 lg:p-10 space-y-8 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/40">
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Reports & Analytics</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">Comprehensive insights into workforce performance, attendance trends, and payroll</p>
+          <p className="text-sm text-muted-foreground mt-1">Comprehensive insights into workforce performance, attendance trends, and payroll</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           <Button variant="outline" className="gap-2 cursor-pointer shadow-xs" onClick={handleExportReports}>
             <Download className="h-4 w-4" />
             Export Excel
@@ -311,15 +310,15 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       </div>
 
       {/* Report Filters */}
-      <Card className="p-4 sm:p-5 border border-border shadow-xs">
+      <Card className="p-6 sm:p-7 border border-border shadow-xs bg-card">
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <div className="flex flex-wrap gap-3 items-center">
-            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <Filter className="h-4 w-4" />
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Filter className="h-4 w-4 text-primary" />
               <span>Filters:</span>
             </div>
             <Select value={selectedDateRange} onValueChange={setSelectedDateRange}>
-              <SelectTrigger className="w-44 h-9 text-xs font-semibold">
+              <SelectTrigger className="w-48 h-10 text-xs font-semibold shadow-xs">
                 <SelectValue placeholder="Date Range" />
               </SelectTrigger>
               <SelectContent>
@@ -331,7 +330,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
             </Select>
 
             <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-              <SelectTrigger className="w-48 h-9 text-xs font-semibold">
+              <SelectTrigger className="w-52 h-10 text-xs font-semibold shadow-xs">
                 <SelectValue placeholder="Department" />
               </SelectTrigger>
               <SelectContent>
@@ -348,73 +347,73 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
             </Select>
           </div>
 
-          <div className="text-xs text-muted-foreground font-medium">
+          <div className="text-xs text-muted-foreground font-medium bg-muted/50 px-3.5 py-1.5 rounded-lg border border-border/40">
             Showing metrics for <span className="font-bold text-foreground">{filteredEmployees.length}</span> employees
           </div>
         </div>
       </Card>
 
       {/* Key Metrics Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="p-6 sm:p-7 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
           <div className="flex items-center justify-between gap-4">
-            <div className="space-y-1.5 min-w-0">
+            <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Avg Attendance Rate</p>
               <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{keyMetrics.avgAttendance}%</p>
-              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
                 <TrendingUp className="h-3.5 w-3.5 shrink-0" />
                 <span>+2.4% vs last month</span>
               </p>
             </div>
-            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#10B98120', color: '#10B981' }}>
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#10B98120', color: '#10B981' }}>
               <Clock className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow">
+        <Card className="p-6 sm:p-7 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
           <div className="flex items-center justify-between gap-4">
-            <div className="space-y-1.5 min-w-0">
+            <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Active Headcount</p>
               <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{filteredEmployees.length}</p>
-              <p className="text-xs font-medium text-sky-600 dark:text-sky-400 flex items-center gap-1">
+              <p className="text-xs font-medium text-sky-600 dark:text-sky-400 flex items-center gap-1.5">
                 <Users className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">{selectedDepartment === 'all' ? 'All departments' : selectedDepartment}</span>
               </p>
             </div>
-            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#0284C720', color: '#0284C7' }}>
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#0284C720', color: '#0284C7' }}>
               <Users className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow">
+        <Card className="p-6 sm:p-7 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
           <div className="flex items-center justify-between gap-4">
-            <div className="space-y-1.5 min-w-0">
+            <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Avg Monthly Salary</p>
               <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
                 {formatCurrency(keyMetrics.avgSalary)}
               </p>
-              <p className="text-xs font-medium text-purple-600 dark:text-purple-400 flex items-center gap-1">
+              <p className="text-xs font-medium text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
                 <span>Total: {formatCurrency(keyMetrics.totalPayroll)}</span>
               </p>
             </div>
-            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#8B5CF620', color: '#8B5CF6' }}>
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#8B5CF620', color: '#8B5CF6' }}>
               <DollarSign className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow">
+        <Card className="p-6 sm:p-7 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
           <div className="flex items-center justify-between gap-4">
-            <div className="space-y-1.5 min-w-0">
+            <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leave Approval Rate</p>
               <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{keyMetrics.leaveUtilization}%</p>
-              <p className="text-xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1">
+              <p className="text-xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
                 <span>{rawLeaves.length} total request records</span>
               </p>
             </div>
-            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#F59E0B20', color: '#F59E0B' }}>
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#F59E0B20', color: '#F59E0B' }}>
               <CalendarIcon className="h-6 w-6" />
             </div>
           </div>
@@ -422,158 +421,122 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Attendance Trend */}
-        <Card className="p-6 border border-border shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 pb-3 border-b border-border/40">
-            <div>
-              <h3 className="text-base font-bold text-foreground">Monthly Attendance Trend</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">6-month percentage trajectory vs 95% target</p>
-            </div>
-            <div className="flex items-center gap-2.5 text-xs font-medium self-start sm:self-auto">
-              <div className="flex items-center gap-1.5 bg-muted/60 px-2.5 py-1 rounded-md">
+        <Card className="p-6 sm:p-7 border border-border shadow-xs bg-card">
+          <div className="flex items-center justify-between mb-6 pb-2 border-b border-border/40">
+            <h3 className="text-base font-bold text-foreground">Monthly Attendance Trend (%)</h3>
+            <div className="flex items-center gap-3 text-xs font-medium">
+              <div className="flex items-center gap-1.5">
                 <div className="h-2.5 w-2.5 rounded-full bg-[#0D2B52] dark:bg-sky-400" />
-                <span className="text-foreground font-semibold">Attendance</span>
+                <span className="text-muted-foreground">Attendance</span>
               </div>
-              <div className="flex items-center gap-1.5 bg-muted/60 px-2.5 py-1 rounded-md">
+              <div className="flex items-center gap-1.5">
                 <div className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-                <span className="text-foreground font-semibold">Target (95%)</span>
+                <span className="text-muted-foreground">Target (95%)</span>
               </div>
             </div>
           </div>
-          <div className="h-[280px] w-full pt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyAttendanceData} margin={{ top: 15, right: 15, left: -20, bottom: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
-                <XAxis dataKey="month" fontSize={12} stroke="#64748b" />
-                <YAxis domain={[60, 100]} ticks={[60, 70, 80, 90, 100]} fontSize={12} stroke="#64748b" />
-                <Tooltip
-                  formatter={(value: any) => [`${value}%`, 'Attendance']}
-                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
-                />
-                <Line type="monotone" dataKey="attendance" stroke="#0D2B52" strokeWidth={2.5} dot={{ r: 4, fill: '#0D2B52' }} />
-                <Line type="monotone" dataKey="target" stroke="#F9A825" strokeDasharray="4 4" strokeWidth={1.5} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          <ResponsiveContainer width="100%" height={270}>
+            <LineChart data={monthlyAttendanceData} margin={{ top: 10, right: 15, left: -15, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
+              <XAxis dataKey="month" fontSize={12} stroke="#64748b" />
+              <YAxis domain={[60, 100]} ticks={[60, 70, 80, 90, 100]} fontSize={12} stroke="#64748b" />
+              <Tooltip
+                formatter={(value: any) => [`${value}%`, 'Attendance']}
+                contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
+              />
+              <Line type="monotone" dataKey="attendance" stroke="#0D2B52" strokeWidth={2.5} dot={{ r: 4, fill: '#0D2B52' }} />
+              <Line type="monotone" dataKey="target" stroke="#F9A825" strokeDasharray="4 4" strokeWidth={1.5} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
         </Card>
 
         {/* Leave Distribution */}
-        <Card className="p-6 border border-border shadow-xs">
-          <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
-            <div>
-              <h3 className="text-base font-bold text-foreground">Leave Types Breakdown</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Distribution of requested leaves by category</p>
-            </div>
-            <Badge variant="outline" className="text-xs font-semibold">
-              {rawLeaves.length} Requests
-            </Badge>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center min-h-[280px]">
-            <div className="sm:col-span-7 h-[240px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={leaveTypesData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={90}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
-                    {leaveTypesData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value: any, name: any) => [`${value} requests`, name]}
-                    contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="sm:col-span-5 flex flex-col gap-2 pr-1">
-              {leaveTypesData.map((item, index) => {
-                const total = leaveTypesData.reduce((acc, curr) => acc + curr.value, 0);
-                const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
-                return (
-                  <div key={index} className="flex items-center justify-between gap-2.5 p-2.5 rounded-xl bg-muted/40 border border-border/40 text-xs">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div
-                        className="h-3 w-3 rounded-full shrink-0 shadow-xs"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="text-foreground font-semibold truncate">{item.name}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="font-bold text-foreground">{item.value}</span>
-                      <span className="text-muted-foreground text-[11px]">({pct}%)</span>
-                    </div>
+        <Card className="p-6 sm:p-7 border border-border shadow-xs bg-card">
+          <h3 className="text-base font-bold text-foreground mb-6 pb-2 border-b border-border/40">Leave Types Breakdown</h3>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart>
+                <Pie
+                  data={leaveTypesData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={95}
+                  paddingAngle={4}
+                  dataKey="value"
+                >
+                  {leaveTypesData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value: any, name: any) => [`${value} requests`, name]}
+                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex flex-col gap-2.5 shrink-0 sm:min-w-[170px] bg-muted/40 p-4 rounded-xl border border-border/40">
+              {leaveTypesData.map((item, index) => (
+                <div key={index} className="flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="h-3 w-3 rounded-md shrink-0 shadow-xs"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-muted-foreground font-medium truncate">{item.name}</span>
                   </div>
-                );
-              })}
+                  <span className="font-bold text-foreground">{item.value}</span>
+                </div>
+              ))}
             </div>
           </div>
         </Card>
 
         {/* Department Performance */}
-        <Card className="p-6 border border-border shadow-xs">
-          <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
-            <div>
-              <h3 className="text-base font-bold text-foreground">Department Attendance Rates</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Average attendance performance score per department</p>
-            </div>
-          </div>
-          <div className="h-[280px] w-full pt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={departmentData} margin={{ top: 15, right: 15, left: -20, bottom: 25 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
-                <XAxis dataKey="name" angle={-20} textAnchor="end" interval={0} fontSize={11} stroke="#64748b" />
-                <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} fontSize={12} stroke="#64748b" />
-                <Tooltip
-                  formatter={(value: any) => [`${value}%`, 'Attendance Rate']}
-                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
-                />
-                <Bar dataKey="attendance" fill="#0D2B52" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        <Card className="p-6 sm:p-7 border border-border shadow-xs bg-card">
+          <h3 className="text-base font-bold text-foreground mb-6 pb-2 border-b border-border/40">Department Attendance Rates</h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={departmentData} margin={{ top: 10, right: 15, left: -15, bottom: 25 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
+              <XAxis dataKey="name" angle={-25} textAnchor="end" height={60} interval={0} fontSize={11} stroke="#64748b" />
+              <YAxis domain={[0, 100]} fontSize={12} stroke="#64748b" />
+              <Tooltip
+                formatter={(value: any) => [`${value}%`, 'Attendance Rate']}
+                contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
+              />
+              <Bar dataKey="attendance" fill="#0D2B52" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </Card>
 
         {/* Payroll Trend */}
-        <Card className="p-6 border border-border shadow-xs">
-          <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
-            <div>
-              <h3 className="text-base font-bold text-foreground">Monthly Payroll Expenditure</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Disbursement trend across recent months</p>
-            </div>
-          </div>
-          <div className="h-[280px] w-full pt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={payrollTrendData} margin={{ top: 15, right: 15, left: 10, bottom: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
-                <XAxis dataKey="month" fontSize={12} stroke="#64748b" />
-                <YAxis fontSize={12} stroke="#64748b" tickFormatter={(val) => `${val > 999 ? (val/1000).toFixed(0) + 'k' : val}`} />
-                <Tooltip
-                  formatter={(value: any) => [formatCurrency(Number(value)), 'Total Payroll']}
-                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
-                />
-                <Area type="monotone" dataKey="amount" stroke="#0D2B52" fill="#0D2B52" fillOpacity={0.15} strokeWidth={2.5} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+        <Card className="p-6 sm:p-7 border border-border shadow-xs bg-card">
+          <h3 className="text-base font-bold text-foreground mb-6 pb-2 border-b border-border/40">Monthly Payroll Expenditure</h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={payrollTrendData} margin={{ top: 10, right: 15, left: -15, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
+              <XAxis dataKey="month" fontSize={12} stroke="#64748b" />
+              <YAxis fontSize={12} stroke="#64748b" tickFormatter={(val) => `${val > 999 ? (val/1000).toFixed(0) + 'k' : val}`} />
+              <Tooltip
+                formatter={(value: any) => [formatCurrency(Number(value)), 'Total Payroll']}
+                contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
+              />
+              <Area type="monotone" dataKey="amount" stroke="#0D2B52" fill="#0D2B52" fillOpacity={0.15} strokeWidth={2} />
+            </AreaChart>
+          </ResponsiveContainer>
         </Card>
       </div>
 
       {/* Department Summary Table */}
-      <Card className="p-6 border border-border shadow-xs">
-        <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
+      <Card className="p-6 sm:p-7 border border-border shadow-xs bg-card">
+        <div className="flex items-center justify-between mb-6 pb-2 border-b border-border/40">
           <div>
             <h3 className="text-base font-bold text-foreground">Department Summary & Benchmarks</h3>
             <p className="text-xs text-muted-foreground mt-0.5">Detailed breakdown by headcount, compensation averages, and attendance scores</p>
           </div>
-          <Badge variant="outline" className="font-semibold text-xs">
+          <Badge variant="outline" className="font-semibold text-xs px-3 py-1">
             {departmentData.length} Departments
           </Badge>
         </div>
@@ -581,32 +544,32 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-xs text-muted-foreground">
-                <th className="text-left py-3 px-4 font-semibold">Department</th>
-                <th className="text-center py-3 px-4 font-semibold">Headcount</th>
-                <th className="text-right py-3 px-4 font-semibold">Avg Salary</th>
-                <th className="text-left py-3 px-4 font-semibold">Attendance Rate</th>
-                <th className="text-center py-3 px-4 font-semibold">Status</th>
+                <th className="text-left py-3.5 px-4 font-semibold">Department</th>
+                <th className="text-center py-3.5 px-4 font-semibold">Headcount</th>
+                <th className="text-right py-3.5 px-4 font-semibold">Avg Salary</th>
+                <th className="text-left py-3.5 px-4 font-semibold">Attendance Rate</th>
+                <th className="text-center py-3.5 px-4 font-semibold">Status</th>
               </tr>
             </thead>
             <tbody>
               {departmentData.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <td colSpan={5} className="text-center py-10 text-muted-foreground font-medium">
                     No departments match the selected filter.
                   </td>
                 </tr>
               ) : (
                 departmentData.map((dept, index) => (
                   <tr key={index} className="border-b border-border/60 hover:bg-muted/40 transition-colors">
-                    <td className="py-3 px-4 font-semibold text-foreground">{dept.name}</td>
-                    <td className="py-3 px-4 text-center font-medium">{dept.employees} members</td>
-                    <td className="py-3 px-4 text-right font-bold text-foreground">
+                    <td className="py-3.5 px-4 font-semibold text-foreground">{dept.name}</td>
+                    <td className="py-3.5 px-4 text-center font-medium">{dept.employees} members</td>
+                    <td className="py-3.5 px-4 text-right font-bold text-foreground">
                       {formatCurrency(dept.avgSalary)}
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
                         <span className="text-xs font-bold w-10">{dept.attendance}%</span>
-                        <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                        <div className="w-28 h-2 bg-muted rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full ${
                               dept.attendance >= 95 ? 'bg-emerald-500' :
@@ -617,9 +580,9 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
                         </div>
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-center">
+                    <td className="py-3.5 px-4 text-center">
                       <Badge
-                        className={`text-xs font-bold ${
+                        className={`text-xs font-bold px-2.5 py-0.5 ${
                           dept.attendance >= 95 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' :
                           dept.attendance >= 90 ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 hover:bg-blue-500/20' :
                           'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
