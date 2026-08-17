@@ -504,7 +504,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
         </Card>
 
         {/* Chart 2: Leave Breakdown Donut */}
-        <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
+        <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card overflow-hidden">
           <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
             <div>
               <h3 className="text-base font-bold text-foreground">Leave Types Breakdown</h3>
@@ -514,31 +514,29 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
               {rawLeaves.length} Total Logs
             </Badge>
           </div>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="w-full sm:w-[240px] h-[240px] shrink-0 flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={leaveTypesData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={90}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
-                    {leaveTypesData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value: any, name: any) => [`${value} requests`, name]}
-                    contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+          <div className="grid grid-cols-1 sm:grid-cols-2 items-center gap-6">
+            <div className="flex items-center justify-center min-h-[220px]">
+              <PieChart width={220} height={220}>
+                <Pie
+                  data={leaveTypesData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={88}
+                  paddingAngle={4}
+                  dataKey="value"
+                >
+                  {leaveTypesData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value: any, name: any) => [`${value} requests`, name]}
+                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
+                />
+              </PieChart>
             </div>
-            <div className="flex flex-col gap-2.5 shrink-0 sm:min-w-[190px] bg-muted/40 p-4 rounded-xl border border-border/40 w-full sm:w-auto">
+            <div className="flex flex-col gap-2.5 bg-muted/40 p-4 rounded-xl border border-border/40 w-full">
               {leaveTypesData.map((item, index) => (
                 <div key={index} className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
@@ -547,7 +545,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
                         className="h-2.5 w-2.5 rounded-full shrink-0 shadow-xs"
                         style={{ backgroundColor: item.color }}
                       />
-                      <span className="text-muted-foreground font-semibold truncate max-w-[110px]">{item.name}</span>
+                      <span className="text-muted-foreground font-semibold truncate max-w-[120px]">{item.name}</span>
                     </div>
                     <span className="font-bold text-foreground">{item.value}</span>
                   </div>
