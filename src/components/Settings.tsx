@@ -184,17 +184,17 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
       </div>
 
       <Tabs defaultValue="general" className="w-full" onValueChange={setActiveSettingsTab}>
-        <div className="w-full overflow-x-auto no-scrollbar pb-1 mb-2">
-          <TabsList className="inline-flex w-auto min-w-full sm:w-full flex-nowrap justify-start sm:justify-center items-center p-1 bg-muted/60 rounded-xl gap-1">
-            <TabsTrigger value="general" className="whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm font-semibold shrink-0">General</TabsTrigger>
-            <TabsTrigger value="notifications" className="whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm font-semibold shrink-0">Notifications</TabsTrigger>
-            <TabsTrigger value="security" className="whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm font-semibold shrink-0">Security</TabsTrigger>
-            <TabsTrigger value="appUpdate" className="whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm font-semibold shrink-0">📲 App Update</TabsTrigger>
+        <div className="w-full overflow-x-auto no-scrollbar py-1 mb-3" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <TabsList className="inline-flex w-max min-w-full flex-nowrap justify-start items-center p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl gap-1.5 border border-slate-200/60 dark:border-slate-700/60">
+            <TabsTrigger value="general" className="whitespace-nowrap px-4 py-2 text-xs sm:text-sm font-semibold shrink-0 cursor-pointer">General</TabsTrigger>
+            <TabsTrigger value="notifications" className="whitespace-nowrap px-4 py-2 text-xs sm:text-sm font-semibold shrink-0 cursor-pointer">Notifications</TabsTrigger>
+            <TabsTrigger value="security" className="whitespace-nowrap px-4 py-2 text-xs sm:text-sm font-semibold shrink-0 cursor-pointer">Security</TabsTrigger>
+            <TabsTrigger value="appUpdate" className="whitespace-nowrap px-4 py-2 text-xs sm:text-sm font-semibold shrink-0 cursor-pointer">📲 App Update</TabsTrigger>
             {userRole === 'superadmin' && (
               <>
-                <TabsTrigger value="company" className="whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm font-semibold shrink-0">Company</TabsTrigger>
-                <TabsTrigger value="integrations" className="whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm font-semibold shrink-0">Integrations</TabsTrigger>
-                <TabsTrigger value="backup" className="whitespace-nowrap px-3.5 py-2 text-xs sm:text-sm font-semibold shrink-0">Backup</TabsTrigger>
+                <TabsTrigger value="company" className="whitespace-nowrap px-4 py-2 text-xs sm:text-sm font-semibold shrink-0 cursor-pointer">Company</TabsTrigger>
+                <TabsTrigger value="integrations" className="whitespace-nowrap px-4 py-2 text-xs sm:text-sm font-semibold shrink-0 cursor-pointer">Integrations</TabsTrigger>
+                <TabsTrigger value="backup" className="whitespace-nowrap px-4 py-2 text-xs sm:text-sm font-semibold shrink-0 cursor-pointer">Backup</TabsTrigger>
               </>
             )}
           </TabsList>
