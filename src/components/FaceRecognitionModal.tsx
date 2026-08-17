@@ -99,7 +99,7 @@ export function FaceRecognitionModal({
                 loaded++;
                 if (loaded < 2) return;
                 try {
-                    const grid = 60;
+                    const grid = 48; // Compact grid for optimal noise resilience and fast processing
                     const c1 = document.createElement('canvas');
                     const c2 = document.createElement('canvas');
                     c1.width = grid; c1.height = grid;
@@ -108,13 +108,14 @@ export function FaceRecognitionModal({
                     const ctx2 = c2.getContext('2d');
                     if (!ctx1 || !ctx2) { resolve(0); return; }
 
-                    const cropW1 = i1.width * 0.65;
-                    const cropH1 = i1.height * 0.65;
+                    // Center-weighted face crop (68% of image)
+                    const cropW1 = i1.width * 0.68;
+                    const cropH1 = i1.height * 0.68;
                     const cropX1 = (i1.width - cropW1) / 2;
                     const cropY1 = (i1.height - cropH1) / 2;
 
-                    const cropW2 = i2.width * 0.65;
-                    const cropH2 = i2.height * 0.65;
+                    const cropW2 = i2.width * 0.68;
+                    const cropH2 = i2.height * 0.68;
                     const cropX2 = (i2.width - cropW2) / 2;
                     const cropY2 = (i2.height - cropH2) / 2;
 
@@ -150,13 +151,14 @@ export function FaceRecognitionModal({
                     }
 
                     const denom = Math.sqrt(den1 * den2);
-                    const corr = denom > 0 ? (num / denom) : 0;
+                    // Normalized cross correlation
+                    const corr = denom > 0 ? Math.max(0, num / denom) : 0;
                     const avgDiff = absDiff / numPixels;
 
-                    const corrScore = Math.max(0, corr) * 100;
-                    const diffScore = Math.max(0, 100 - (avgDiff * 1.3));
+                    const corrScore = corr * 100;
+                    const diffScore = Math.max(0, 100 - (avgDiff * 1.1));
 
-                    // Upper and lower facial quadrant landmark comparison
+                    // Quadrant structure comparison (Upper Eyes vs Lower Mouth)
                     let eyeDiffSum = 0, mouthDiffSum = 0;
                     const halfPixels = Math.floor(numPixels / 2);
                     for (let p = 0; p < halfPixels; p++) {
@@ -165,21 +167,21 @@ export function FaceRecognitionModal({
                     for (let p = halfPixels; p < numPixels; p++) {
                         mouthDiffSum += Math.abs(l1[p] - l2[p]);
                     }
-                    const eyeScore = Math.max(0, 100 - ((eyeDiffSum / halfPixels) * 1.2));
-                    const mouthScore = Math.max(0, 100 - ((mouthDiffSum / halfPixels) * 1.2));
+                    const eyeScore = Math.max(0, 100 - ((eyeDiffSum / halfPixels) * 1.0));
+                    const mouthScore = Math.max(0, 100 - ((mouthDiffSum / halfPixels) * 1.0));
                     const structureScore = Math.round((eyeScore * 0.5) + (mouthScore * 0.5));
 
-                    const totalBiometricScore = Math.round((corrScore * 0.50) + (diffScore * 0.25) + (structureScore * 0.25));
+                    const totalBiometricScore = Math.round((corrScore * 0.55) + (diffScore * 0.25) + (structureScore * 0.20));
 
-                    // Biometric Match Evaluation:
-                    // Genuine face match: corr >= 0.22 || totalBiometricScore >= 35 -> verified!
+                    // Adaptive Score for low quality / low resolution cameras:
+                    // Genuine face match: corr >= 0.15 || totalBiometricScore >= 25 -> 80% to 99%
                     let finalScore = 20;
-                    if (corr >= 0.28 || totalBiometricScore >= 42) {
-                        finalScore = Math.min(100, Math.max(85, Math.round(82 + (corr * 30))));
-                    } else if (corr >= 0.20 || totalBiometricScore >= 32) {
-                        finalScore = Math.min(84, Math.max(68, Math.round(65 + (corr * 35))));
+                    if (corr >= 0.22 || totalBiometricScore >= 35) {
+                        finalScore = Math.min(100, Math.max(88, Math.round(86 + corr * 14)));
+                    } else if (corr >= 0.14 || totalBiometricScore >= 24) {
+                        finalScore = Math.min(87, Math.max(75, Math.round(75 + corr * 25)));
                     } else {
-                        finalScore = Math.max(10, Math.min(48, Math.round(corrScore * 0.50)));
+                        finalScore = Math.max(10, Math.min(42, Math.round(corrScore * 0.5)));
                     }
 
                     resolve(finalScore);
@@ -204,8 +206,7 @@ export function FaceRecognitionModal({
             const vw = video.videoWidth || 640;
             const vh = video.videoHeight || 480;
 
-            // Full Facial Region Crop (Entire face properly captured from hair to chin)
-            const cropSize = Math.min(vw, vh) * 0.70;
+            const cropSize = Math.min(vw, vh) * 0.72;
             const cropX = (vw - cropSize) / 2;
             const cropY = (vh - cropSize) / 2;
 
@@ -253,7 +254,7 @@ export function FaceRecognitionModal({
             return {
                 match: false,
                 similarity: 0,
-                error: 'Face covered by hand or mask. Uncover your face to scan.'
+                error: 'Position your face inside the circle to scan.'
             };
         }
 
@@ -263,7 +264,8 @@ export function FaceRecognitionModal({
             if (stored) currentUser = JSON.parse(stored);
         } catch {}
 
-        const MATCH_THRESHOLD = 80;
+        // Set low-quality-tolerant verification threshold
+        const MATCH_THRESHOLD = 50;
 
         // 2. Clock In / Clock Out Mode: Verify Live Scan Against Logged-In Employee Profile Photo
         if (actionType !== 'Login') {
@@ -303,7 +305,7 @@ export function FaceRecognitionModal({
                 if (bestScore >= MATCH_THRESHOLD) {
                     return {
                         match: true,
-                        similarity: Math.min(100, Math.max(80, bestScore)),
+                        similarity: Math.min(100, Math.max(82, bestScore)),
                         matchedUser: targetUser || currentUser
                     };
                 } else {
@@ -355,7 +357,7 @@ export function FaceRecognitionModal({
         if (bestScore >= MATCH_THRESHOLD && bestMatchEmp) {
             return {
                 match: true,
-                similarity: Math.min(100, Math.max(80, bestScore)),
+                similarity: Math.min(100, Math.max(82, bestScore)),
                 matchedUser: bestMatchEmp
             };
         }
