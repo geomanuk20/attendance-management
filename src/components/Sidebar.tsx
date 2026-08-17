@@ -68,8 +68,10 @@ export function Sidebar({
         <Button
           key={item.id}
           variant={isActive ? "secondary" : "ghost"}
-          className={`w-full justify-start gap-3 ${
-            isActive ? 'bg-secondary text-secondary-foreground font-medium' : 'text-muted-foreground hover:text-foreground'
+          className={`w-full justify-start gap-3 transition-colors cursor-pointer ${
+            isActive
+              ? 'bg-secondary text-secondary-foreground font-medium'
+              : 'text-muted-foreground hover:text-foreground hover:bg-transparent'
           }`}
           onClick={() => handleNavClick(item.id)}
         >
@@ -93,10 +95,10 @@ export function Sidebar({
         <p className="text-sm font-medium text-foreground truncate">{userName}</p>
         <p className="text-xs text-muted-foreground capitalize truncate">{userPosition || (userRole === 'superadmin' ? 'Super Admin' : userRole)}</p>
       </div>
-      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => onDarkModeChange?.(!darkMode)} title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-transparent hover:text-foreground" onClick={() => onDarkModeChange?.(!darkMode)} title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
         {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
       </Button>
-      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive" onClick={onLogout} title="Logout">
+      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-transparent hover:text-destructive" onClick={onLogout} title="Logout">
         <LogOut className="h-4 w-4" />
       </Button>
     </div>
@@ -108,11 +110,11 @@ export function Sidebar({
       {/* MOBILE ONLY: Top Header Bar                               */}
       {/* ========================================================= */}
       <header className="app-mobile-header fixed top-0 left-0 right-0 h-14 bg-card border-b border-border z-40 items-center justify-between px-3 sm:px-4 shadow-xs">
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 rounded-xl text-foreground hover:bg-muted shrink-0 cursor-pointer"
+            className="h-9 w-9 text-foreground shrink-0 cursor-pointer hover:bg-transparent hover:text-primary"
             onClick={() => onMobileToggle?.(!isMobileOpen)}
             aria-label="Toggle menu"
           >
@@ -120,14 +122,14 @@ export function Sidebar({
           </Button>
 
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="h-8 w-auto min-w-[50px] px-2 flex items-center justify-center rounded-lg bg-slate-950 dark:bg-slate-900 border border-slate-800/80 shadow-xs shrink-0">
+            <div className="h-8 w-auto min-w-[48px] px-1.5 flex items-center justify-center rounded bg-black dark:bg-white/10 shrink-0">
               <img
                 src={logoImage}
                 alt="Logo"
-                className="h-4.5 w-auto object-contain block brightness-110"
+                className="h-5 w-auto object-contain block"
               />
             </div>
-            <span className="font-bold text-sm text-foreground tracking-tight leading-none truncate">Attendance System</span>
+            <span className="font-bold text-sm text-foreground truncate">Attendance System</span>
           </div>
         </div>
 
@@ -135,7 +137,7 @@ export function Sidebar({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-transparent cursor-pointer"
             onClick={() => onDarkModeChange?.(!darkMode)}
             title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
@@ -145,7 +147,7 @@ export function Sidebar({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-destructive cursor-pointer"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-transparent cursor-pointer"
             onClick={onLogout}
             title="Logout"
           >
@@ -182,11 +184,11 @@ export function Sidebar({
         {/* Drawer Header with Logo & Close Button */}
         <div className="p-4 border-b border-border flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-9 w-auto min-w-[54px] px-2 flex items-center justify-center rounded-lg bg-slate-950 dark:bg-slate-900 border border-slate-800/80 shadow-xs shrink-0">
+            <div className="h-10 w-auto min-w-[56px] px-2 flex items-center justify-center rounded-lg bg-black dark:bg-white/10 shrink-0">
               <img
                 src={logoImage}
                 alt="Logo"
-                className="h-5 w-auto object-contain block brightness-110"
+                className="h-6 w-auto object-contain block"
               />
             </div>
             <div className="flex flex-col justify-center min-w-0">
@@ -217,11 +219,11 @@ export function Sidebar({
       <aside className="app-desktop-sidebar w-64 bg-card border-r border-border h-screen flex-col shrink-0">
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-auto min-w-[54px] px-2 flex items-center justify-center rounded-lg bg-slate-950 dark:bg-slate-900 border border-slate-800/80 shadow-xs shrink-0">
+            <div className="h-10 w-auto min-w-[56px] px-2 flex items-center justify-center rounded-lg bg-black dark:bg-white/10 shrink-0">
               <img
                 src={logoImage}
                 alt="Attendance System Logo"
-                className="h-5 w-auto object-contain block brightness-110"
+                className="h-6 w-auto object-contain block"
               />
             </div>
             <div className="flex flex-col justify-center min-w-0">
