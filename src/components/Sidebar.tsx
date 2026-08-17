@@ -108,11 +108,11 @@ export function Sidebar({
       {/* MOBILE ONLY: Top Header Bar                               */}
       {/* ========================================================= */}
       <header className="app-mobile-header fixed top-0 left-0 right-0 h-14 bg-card border-b border-border z-40 items-center justify-between px-3 sm:px-4 shadow-xs">
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-center gap-3 min-w-0">
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 text-foreground shrink-0 cursor-pointer"
+            className="h-9 w-9 rounded-xl text-foreground hover:bg-muted shrink-0 cursor-pointer"
             onClick={() => onMobileToggle?.(!isMobileOpen)}
             aria-label="Toggle menu"
           >
@@ -120,14 +120,14 @@ export function Sidebar({
           </Button>
 
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="h-8 w-auto min-w-[48px] px-1.5 flex items-center justify-center rounded bg-black dark:bg-white/10 shrink-0">
+            <div className="h-8 w-auto min-w-[50px] px-2 flex items-center justify-center rounded-lg bg-slate-950 dark:bg-slate-900 border border-slate-800/80 shadow-xs shrink-0">
               <img
                 src={logoImage}
                 alt="Logo"
-                className="h-5 w-auto object-contain block"
+                className="h-4.5 w-auto object-contain block brightness-110"
               />
             </div>
-            <span className="font-bold text-sm text-foreground truncate">Attendance System</span>
+            <span className="font-bold text-sm text-foreground tracking-tight leading-none truncate">Attendance System</span>
           </div>
         </div>
 
@@ -182,11 +182,11 @@ export function Sidebar({
         {/* Drawer Header with Logo & Close Button */}
         <div className="p-4 border-b border-border flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-10 w-auto min-w-[56px] px-2 flex items-center justify-center rounded-lg bg-black dark:bg-white/10 shrink-0">
+            <div className="h-9 w-auto min-w-[54px] px-2 flex items-center justify-center rounded-lg bg-slate-950 dark:bg-slate-900 border border-slate-800/80 shadow-xs shrink-0">
               <img
                 src={logoImage}
                 alt="Logo"
-                className="h-6 w-auto object-contain block"
+                className="h-5 w-auto object-contain block brightness-110"
               />
             </div>
             <div className="flex flex-col justify-center min-w-0">
@@ -217,11 +217,11 @@ export function Sidebar({
       <aside className="app-desktop-sidebar w-64 bg-card border-r border-border h-screen flex-col shrink-0">
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-auto min-w-[56px] px-2 flex items-center justify-center rounded-lg bg-black dark:bg-white/10 shrink-0">
+            <div className="h-9 w-auto min-w-[54px] px-2 flex items-center justify-center rounded-lg bg-slate-950 dark:bg-slate-900 border border-slate-800/80 shadow-xs shrink-0">
               <img
                 src={logoImage}
                 alt="Attendance System Logo"
-                className="h-6 w-auto object-contain block"
+                className="h-5 w-auto object-contain block brightness-110"
               />
             </div>
             <div className="flex flex-col justify-center min-w-0">
