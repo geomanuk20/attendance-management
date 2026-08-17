@@ -310,10 +310,10 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       </div>
 
       {/* Report Filters */}
-      <Card className="p-5 sm:p-6 border border-border shadow-xs bg-card">
-        <div className="flex flex-wrap gap-[5px] sm:gap-3 items-center justify-between">
-          <div className="flex flex-wrap gap-[5px] sm:gap-2.5 items-center">
-            <div className="flex items-center gap-[5px] text-sm font-semibold text-foreground mr-1">
+      <Card className="p-6 sm:p-7 border border-border shadow-xs bg-card">
+        <div className="flex flex-wrap gap-4 items-center justify-between">
+          <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <Filter className="h-4 w-4 text-primary" />
               <span>Filters:</span>
             </div>
@@ -356,11 +356,11 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       {/* Key Metrics Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
-          <div className="flex items-center justify-between gap-[5px] sm:gap-4">
-            <div className="space-y-1.5 min-w-0">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Avg Attendance Rate</p>
               <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{keyMetrics.avgAttendance}%</p>
-              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-[5px]">
+              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
                 <TrendingUp className="h-3.5 w-3.5 shrink-0" />
                 <span>+2.4% vs last month</span>
               </p>
@@ -372,11 +372,11 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
         </Card>
 
         <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
-          <div className="flex items-center justify-between gap-[5px] sm:gap-4">
-            <div className="space-y-1.5 min-w-0">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Active Headcount</p>
               <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{filteredEmployees.length}</p>
-              <p className="text-xs font-medium text-sky-600 dark:text-sky-400 flex items-center gap-[5px]">
+              <p className="text-xs font-medium text-sky-600 dark:text-sky-400 flex items-center gap-1.5">
                 <Users className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">{selectedDepartment === 'all' ? 'All departments' : selectedDepartment}</span>
               </p>
@@ -388,13 +388,13 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
         </Card>
 
         <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
-          <div className="flex items-center justify-between gap-[5px] sm:gap-4">
-            <div className="space-y-1.5 min-w-0">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Avg Monthly Salary</p>
               <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
                 {formatCurrency(keyMetrics.avgSalary)}
               </p>
-              <p className="text-xs font-medium text-purple-600 dark:text-purple-400 flex items-center gap-[5px]">
+              <p className="text-xs font-medium text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
                 <span>Total: {formatCurrency(keyMetrics.totalPayroll)}</span>
               </p>
             </div>
@@ -405,11 +405,11 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
         </Card>
 
         <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
-          <div className="flex items-center justify-between gap-[5px] sm:gap-4">
-            <div className="space-y-1.5 min-w-0">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-2 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leave Approval Rate</p>
               <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{keyMetrics.leaveUtilization}%</p>
-              <p className="text-xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-[5px]">
+              <p className="text-xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
                 <span>{rawLeaves.length} total request records</span>
               </p>
             </div>
@@ -421,7 +421,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Attendance Trend */}
         <Card className="p-6 sm:p-7 border border-border shadow-xs bg-card">
           <div className="flex items-center justify-between mb-6 pb-2 border-b border-border/40">
