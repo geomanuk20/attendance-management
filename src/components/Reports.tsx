@@ -5,9 +5,12 @@ import { Badge } from './ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
-  LineChart, Line, PieChart, Pie, Cell, Area, AreaChart, Tooltip
+  PieChart, Pie, Cell, Area, AreaChart, Tooltip
 } from 'recharts';
-import { CalendarIcon, Download, TrendingUp, Users, Clock, DollarSign, FileText, Filter } from 'lucide-react';
+import {
+  CalendarIcon, Download, TrendingUp, Users, Clock, DollarSign,
+  FileText, Filter, Sparkles, Building2, CheckCircle2, AlertTriangle, ArrowUpRight
+} from 'lucide-react';
 import { getEmployees, getAttendance, getLeaveRequests } from '../services/api';
 import { ModernSpinner } from './ui/ModernSpinner';
 import { toast } from 'sonner';
@@ -178,18 +181,21 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
 
     const colorFallbacks = ['#0D2B52', '#0284C7', '#10B981', '#F59E0B', '#8B5CF6', '#E11D48', '#06B6D4', '#64748B'];
     const keys = Object.keys(counts);
+    const totalCount = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
+
     const entries = keys.map((type, idx) => ({
       name: type,
       value: counts[type],
+      percentage: Math.round((counts[type] / totalCount) * 100),
       color: distinctPalette[type] || colorFallbacks[idx % colorFallbacks.length]
     }));
 
     if (entries.length === 0) {
       return [
-        { name: 'Casual Leave', value: 8, color: '#0D2B52' },
-        { name: 'Week Off', value: 5, color: '#0284C7' },
-        { name: 'Sick Leave', value: 4, color: '#10B981' },
-        { name: 'Annual Leave', value: 6, color: '#F59E0B' }
+        { name: 'Casual Leave', value: 8, percentage: 35, color: '#0D2B52' },
+        { name: 'Week Off', value: 5, percentage: 22, color: '#0284C7' },
+        { name: 'Sick Leave', value: 4, percentage: 17, color: '#10B981' },
+        { name: 'Annual Leave', value: 6, percentage: 26, color: '#F59E0B' }
       ];
     }
     return entries;
@@ -201,7 +207,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
     const currentRate = keyMetrics.avgAttendance || 90;
     const basePayroll = keyMetrics.totalPayroll || 120000;
 
-    const trendOffsets = [-4, +2, -1, +3, -2, 0];
+    const trendOffsets = [-3, +2, -1, +3, -2, 0];
 
     const attendanceTrend = months.map((m, idx) => {
       const rate = Math.min(99, Math.max(78, currentRate + trendOffsets[idx]));
@@ -290,50 +296,81 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
+    <div className="p-6 sm:p-8 lg:p-10 space-y-8 max-w-7xl mx-auto">
+      {/* Header Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border/60">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Reports & Analytics</h2>
-          <p className="text-sm text-muted-foreground mt-1">Comprehensive insights into workforce performance, attendance trends, and payroll</p>
+          <div className="flex items-center gap-2 mb-1.5">
+            <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+              <Sparkles className="h-3 w-3" />
+              <span>Enterprise Intelligence</span>
+            </Badge>
+            <span className="text-xs text-muted-foreground">• Live Telemetry</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground">
+            Reports & Analytics
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+            Real-time aggregate data on organizational attendance, departmental benchmarks, and compensation trends.
+          </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" className="gap-2 cursor-pointer shadow-xs" onClick={handleExportReports}>
-            <Download className="h-4 w-4" />
-            Export Excel
+
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <Button
+            variant="outline"
+            className="gap-2 cursor-pointer shadow-xs hover:border-primary/40 hover:bg-primary/5 transition-all"
+            onClick={handleExportReports}
+          >
+            <Download className="h-4 w-4 text-muted-foreground" />
+            <span>Export Excel</span>
           </Button>
-          <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer shadow-xs" onClick={handleExportReports}>
+          <Button
+            className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer shadow-sm hover:shadow transition-all"
+            onClick={handleExportReports}
+          >
             <FileText className="h-4 w-4" />
-            Generate Report
+            <span>Generate Report</span>
           </Button>
         </div>
       </div>
 
-      {/* Report Filters */}
-      <Card className="p-5 sm:p-6 border border-border shadow-xs bg-card">
-        <div className="flex flex-wrap gap-4 items-center justify-between">
-          <div className="flex flex-wrap gap-3 items-center">
-            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <Filter className="h-4 w-4 text-primary" />
-              <span>Filters:</span>
+      {/* Modern Filter Control Card */}
+      <Card className="p-5 sm:p-6 border border-border/80 shadow-xs bg-card/95 backdrop-blur-sm rounded-2xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground mr-1">
+              <Filter className="h-3.5 w-3.5 text-primary" />
+              <span>Filter View</span>
             </div>
-            <Select value={selectedDateRange} onValueChange={setSelectedDateRange}>
-              <SelectTrigger className="w-48 h-10 text-xs font-semibold shadow-xs">
-                <SelectValue placeholder="Date Range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="last-30-days">Last 30 Days</SelectItem>
-                <SelectItem value="last-3-months">Last 3 Months</SelectItem>
-                <SelectItem value="last-6-months">Last 6 Months (2026)</SelectItem>
-                <SelectItem value="last-year">Full Year (2026)</SelectItem>
-              </SelectContent>
-            </Select>
 
+            {/* Quick Range Pill Buttons */}
+            <div className="inline-flex bg-muted/60 p-1 rounded-xl border border-border/50 text-xs font-medium">
+              {[
+                { id: 'last-30-days', label: '30 Days' },
+                { id: 'last-3-months', label: '3 Months' },
+                { id: 'last-6-months', label: '6 Months' },
+                { id: 'last-year', label: 'Full Year' },
+              ].map(range => (
+                <button
+                  key={range.id}
+                  onClick={() => setSelectedDateRange(range.id)}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-semibold ${
+                    selectedDateRange === range.id
+                      ? 'bg-background text-foreground shadow-xs font-bold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {range.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Department Selector */}
             <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-              <SelectTrigger className="w-52 h-10 text-xs font-semibold shadow-xs">
+              <SelectTrigger className="w-56 h-9 text-xs font-semibold shadow-xs rounded-xl bg-background">
                 <SelectValue placeholder="Department" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-xl shadow-lg border-border">
                 <SelectItem value="all">All Departments ({rawEmployees.length})</SelectItem>
                 {uniqueDepartments.map((dept) => {
                   const count = rawEmployees.filter(e => (e.department || 'General') === dept).length;
@@ -347,122 +384,146 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
             </Select>
           </div>
 
-          <div className="text-xs text-muted-foreground font-medium bg-muted/50 px-3.5 py-1.5 rounded-lg border border-border/40">
-            Showing metrics for <span className="font-bold text-foreground">{filteredEmployees.length}</span> employees
+          <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium bg-muted/40 px-3.5 py-1.5 rounded-xl border border-border/40 shrink-0">
+            <Users className="h-3.5 w-3.5 text-primary" />
+            <span>Scope:</span>
+            <span className="font-bold text-foreground">{filteredEmployees.length} Active Staff</span>
           </div>
         </div>
       </Card>
 
-      {/* Key Metrics Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <Card className="p-5 sm:p-6 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-1.5 min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Avg Attendance Rate</p>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{keyMetrics.avgAttendance}%</p>
-              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                <TrendingUp className="h-3.5 w-3.5 shrink-0" />
-                <span>+2.4% vs last month</span>
-              </p>
+      {/* 4 Modern Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Card 1: Attendance Rate */}
+        <Card className="p-6 border border-border/80 border-t-4 border-t-emerald-500 shadow-xs hover:shadow-lg transition-all duration-300 rounded-2xl bg-card">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2 min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Attendance Rate</p>
+              <p className="text-3xl font-extrabold text-foreground leading-none">{keyMetrics.avgAttendance}%</p>
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                <TrendingUp className="h-3 w-3" />
+                <span>+2.4% vs prev</span>
+              </div>
             </div>
-            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#10B98120', color: '#10B981' }}>
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#10B98118', color: '#10B981' }}>
               <Clock className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-5 sm:p-6 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-1.5 min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Active Headcount</p>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{filteredEmployees.length}</p>
-              <p className="text-xs font-medium text-sky-600 dark:text-sky-400 flex items-center gap-1">
-                <Users className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{selectedDepartment === 'all' ? 'All departments' : selectedDepartment}</span>
-              </p>
+        {/* Card 2: Active Headcount */}
+        <Card className="p-6 border border-border/80 border-t-4 border-t-sky-500 shadow-xs hover:shadow-lg transition-all duration-300 rounded-2xl bg-card">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2 min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Staff</p>
+              <p className="text-3xl font-extrabold text-foreground leading-none">{filteredEmployees.length}</p>
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-600 dark:text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded-md border border-sky-500/20">
+                <Building2 className="h-3 w-3" />
+                <span className="truncate max-w-[110px]">{selectedDepartment === 'all' ? 'All Depts' : selectedDepartment}</span>
+              </div>
             </div>
-            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#0284C720', color: '#0284C7' }}>
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#0284C718', color: '#0284C7' }}>
               <Users className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-5 sm:p-6 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-1.5 min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Avg Monthly Salary</p>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
+        {/* Card 3: Avg Monthly Salary */}
+        <Card className="p-6 border border-border/80 border-t-4 border-t-purple-500 shadow-xs hover:shadow-lg transition-all duration-300 rounded-2xl bg-card">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2 min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Avg Monthly Comp</p>
+              <p className="text-3xl font-extrabold text-foreground leading-none">
                 {formatCurrency(keyMetrics.avgSalary)}
               </p>
-              <p className="text-xs font-medium text-purple-600 dark:text-purple-400 flex items-center gap-1">
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-md border border-purple-500/20">
+                <DollarSign className="h-3 w-3" />
                 <span>Total: {formatCurrency(keyMetrics.totalPayroll)}</span>
-              </p>
+              </div>
             </div>
-            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#8B5CF620', color: '#8B5CF6' }}>
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#8B5CF618', color: '#8B5CF6' }}>
               <DollarSign className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-5 sm:p-6 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-1.5 min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leave Approval Rate</p>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{keyMetrics.leaveUtilization}%</p>
-              <p className="text-xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                <span>{rawLeaves.length} total request records</span>
-              </p>
+        {/* Card 4: Leave Approval Rate */}
+        <Card className="p-6 border border-border/80 border-t-4 border-t-amber-500 shadow-xs hover:shadow-lg transition-all duration-300 rounded-2xl bg-card">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2 min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leave Approval</p>
+              <p className="text-3xl font-extrabold text-foreground leading-none">{keyMetrics.leaveUtilization}%</p>
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                <CalendarIcon className="h-3 w-3" />
+                <span>{rawLeaves.length} Total Requests</span>
+              </div>
             </div>
-            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#F59E0B20', color: '#F59E0B' }}>
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-xs" style={{ backgroundColor: '#F59E0B18', color: '#F59E0B' }}>
               <CalendarIcon className="h-6 w-6" />
             </div>
           </div>
         </Card>
       </div>
 
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-7">
-        {/* Attendance Trend */}
-        <Card className="p-5 sm:p-6 border border-border shadow-xs bg-card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-bold text-foreground">Monthly Attendance Trend (%)</h3>
-            <div className="flex items-center gap-3 text-xs font-medium">
+      {/* Analytics Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Chart 1: Attendance Trend Area Chart */}
+        <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
+          <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
+            <div>
+              <h3 className="text-base font-bold text-foreground">Monthly Attendance Trend</h3>
+              <p className="text-xs text-muted-foreground">Historical 6-month attendance performance against 95% target</p>
+            </div>
+            <div className="flex items-center gap-3 text-xs font-semibold">
               <div className="flex items-center gap-1.5">
                 <div className="h-2.5 w-2.5 rounded-full bg-[#0D2B52] dark:bg-sky-400" />
-                <span className="text-muted-foreground">Attendance</span>
+                <span className="text-muted-foreground">Actual</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-                <span className="text-muted-foreground">Target (95%)</span>
+                <span className="text-muted-foreground">Target</span>
               </div>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={monthlyAttendanceData} margin={{ top: 10, right: 15, left: -15, bottom: 5 }}>
+          <ResponsiveContainer width="100%" height={270}>
+            <AreaChart data={monthlyAttendanceData} margin={{ top: 10, right: 15, left: -15, bottom: 5 }}>
+              <defs>
+                <linearGradient id="attendanceGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#0D2B52" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#0D2B52" stopOpacity={0.0} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
               <XAxis dataKey="month" fontSize={12} stroke="#64748b" />
               <YAxis domain={[60, 100]} ticks={[60, 70, 80, 90, 100]} fontSize={12} stroke="#64748b" />
               <Tooltip
-                formatter={(value: any) => [`${value}%`, 'Attendance']}
-                contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
+                formatter={(value: any) => [`${value}%`, 'Attendance Rate']}
+                contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
               />
-              <Line type="monotone" dataKey="attendance" stroke="#0D2B52" strokeWidth={2.5} dot={{ r: 4, fill: '#0D2B52' }} />
-              <Line type="monotone" dataKey="target" stroke="#F9A825" strokeDasharray="4 4" strokeWidth={1.5} dot={false} />
-            </LineChart>
+              <Area type="monotone" dataKey="attendance" stroke="#0D2B52" strokeWidth={3} fillOpacity={1} fill="url(#attendanceGrad)" dot={{ r: 4, fill: '#0D2B52' }} />
+            </AreaChart>
           </ResponsiveContainer>
         </Card>
 
-        {/* Leave Distribution */}
-        <Card className="p-5 sm:p-6 border border-border shadow-xs bg-card">
-          <h3 className="text-base font-bold text-foreground mb-4">Leave Types Breakdown</h3>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
+        {/* Chart 2: Leave Breakdown Donut */}
+        <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
+          <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
+            <div>
+              <h3 className="text-base font-bold text-foreground">Leave Types Breakdown</h3>
+              <p className="text-xs text-muted-foreground">Categorical distribution of all requested time off</p>
+            </div>
+            <Badge variant="outline" className="text-xs font-bold">
+              {rawLeaves.length} Total Logs
+            </Badge>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
                 <Pie
                   data={leaveTypesData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={55}
+                  innerRadius={60}
                   outerRadius={95}
                   paddingAngle={4}
                   dataKey="value"
@@ -473,122 +534,165 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
                 </Pie>
                 <Tooltip
                   formatter={(value: any, name: any) => [`${value} requests`, name]}
-                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
+                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
                 />
               </PieChart>
             </ResponsiveContainer>
-            <div className="flex flex-col gap-2 shrink-0 sm:min-w-[160px] bg-muted/30 p-3.5 rounded-xl border border-border/40">
+            <div className="flex flex-col gap-2.5 shrink-0 sm:min-w-[190px] bg-muted/40 p-4 rounded-xl border border-border/40 w-full sm:w-auto">
               {leaveTypesData.map((item, index) => (
-                <div key={index} className="flex items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="h-3 w-3 rounded-md shrink-0 shadow-xs"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className="text-muted-foreground font-medium truncate">{item.name}</span>
+                <div key={index} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-2.5 w-2.5 rounded-full shrink-0 shadow-xs"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="text-muted-foreground font-semibold truncate max-w-[110px]">{item.name}</span>
+                    </div>
+                    <span className="font-bold text-foreground">{item.value}</span>
                   </div>
-                  <span className="font-bold text-foreground">{item.value}</span>
+                  <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{ width: `${item.percentage || 10}%`, backgroundColor: item.color }}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         </Card>
 
-        {/* Department Performance */}
-        <Card className="p-5 sm:p-6 border border-border shadow-xs bg-card">
-          <h3 className="text-base font-bold text-foreground mb-4">Department Attendance Rates</h3>
-          <ResponsiveContainer width="100%" height={270}>
-            <BarChart data={departmentData} margin={{ top: 10, right: 15, left: -15, bottom: 20 }}>
+        {/* Chart 3: Department Attendance Rates */}
+        <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
+          <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
+            <div>
+              <h3 className="text-base font-bold text-foreground">Department Attendance Rates</h3>
+              <p className="text-xs text-muted-foreground">Comparative attendance scores across active divisions</p>
+            </div>
+            <span className="text-xs font-bold text-muted-foreground">Target: 95%</span>
+          </div>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={departmentData} margin={{ top: 10, right: 15, left: -15, bottom: 25 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
               <XAxis dataKey="name" angle={-25} textAnchor="end" height={60} interval={0} fontSize={11} stroke="#64748b" />
               <YAxis domain={[0, 100]} fontSize={12} stroke="#64748b" />
               <Tooltip
                 formatter={(value: any) => [`${value}%`, 'Attendance Rate']}
-                contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
+                contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
               />
               <Bar dataKey="attendance" fill="#0D2B52" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
 
-        {/* Payroll Trend */}
-        <Card className="p-5 sm:p-6 border border-border shadow-xs bg-card">
-          <h3 className="text-base font-bold text-foreground mb-4">Monthly Payroll Expenditure</h3>
-          <ResponsiveContainer width="100%" height={270}>
+        {/* Chart 4: Monthly Payroll Expenditure */}
+        <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
+          <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
+            <div>
+              <h3 className="text-base font-bold text-foreground">Monthly Payroll Expenditure</h3>
+              <p className="text-xs text-muted-foreground">Total salary budget allocated per active period</p>
+            </div>
+            <Badge variant="outline" className="text-xs font-bold text-purple-600 border-purple-500/30 bg-purple-500/5">
+              {formatCurrency(keyMetrics.totalPayroll)}
+            </Badge>
+          </div>
+          <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={payrollTrendData} margin={{ top: 10, right: 15, left: -15, bottom: 5 }}>
+              <defs>
+                <linearGradient id="payrollGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.0} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
               <XAxis dataKey="month" fontSize={12} stroke="#64748b" />
               <YAxis fontSize={12} stroke="#64748b" tickFormatter={(val) => `${val > 999 ? (val/1000).toFixed(0) + 'k' : val}`} />
               <Tooltip
                 formatter={(value: any) => [formatCurrency(Number(value)), 'Total Payroll']}
-                contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
+                contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
               />
-              <Area type="monotone" dataKey="amount" stroke="#0D2B52" fill="#0D2B52" fillOpacity={0.15} strokeWidth={2} />
+              <Area type="monotone" dataKey="amount" stroke="#8B5CF6" strokeWidth={3} fillOpacity={1} fill="url(#payrollGrad)" dot={{ r: 4, fill: '#8B5CF6' }} />
             </AreaChart>
           </ResponsiveContainer>
         </Card>
       </div>
 
-      {/* Department Summary Table */}
-      <Card className="p-5 sm:p-6 border border-border shadow-xs bg-card">
-        <div className="flex items-center justify-between mb-4">
+      {/* Department Summary & Benchmarks Table */}
+      <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-3 border-b border-border/40">
           <div>
             <h3 className="text-base font-bold text-foreground">Department Summary & Benchmarks</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Detailed breakdown by headcount, compensation averages, and attendance scores</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Comprehensive overview of headcount, compensation averages, and attendance benchmarks</p>
           </div>
-          <Badge variant="outline" className="font-semibold text-xs px-3 py-1">
-            {departmentData.length} Departments
+          <Badge variant="outline" className="font-bold text-xs px-3 py-1 bg-muted/30">
+            {departmentData.length} Active Departments
           </Badge>
         </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-xs text-muted-foreground">
-                <th className="text-left py-3.5 px-4 font-semibold">Department</th>
-                <th className="text-center py-3.5 px-4 font-semibold">Headcount</th>
-                <th className="text-right py-3.5 px-4 font-semibold">Avg Salary</th>
-                <th className="text-left py-3.5 px-4 font-semibold">Attendance Rate</th>
-                <th className="text-center py-3.5 px-4 font-semibold">Status</th>
+                <th className="text-left py-3.5 px-4 font-bold uppercase tracking-wider">Department</th>
+                <th className="text-center py-3.5 px-4 font-bold uppercase tracking-wider">Headcount</th>
+                <th className="text-right py-3.5 px-4 font-bold uppercase tracking-wider">Avg Compensation</th>
+                <th className="text-left py-3.5 px-4 font-bold uppercase tracking-wider">Attendance Score</th>
+                <th className="text-center py-3.5 px-4 font-bold uppercase tracking-wider">Status</th>
               </tr>
             </thead>
             <tbody>
               {departmentData.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-10 text-muted-foreground font-medium">
+                  <td colSpan={5} className="text-center py-12 text-muted-foreground font-medium">
                     No departments match the selected filter.
                   </td>
                 </tr>
               ) : (
                 departmentData.map((dept, index) => (
-                  <tr key={index} className="border-b border-border/60 hover:bg-muted/40 transition-colors">
-                    <td className="py-3.5 px-4 font-semibold text-foreground">{dept.name}</td>
-                    <td className="py-3.5 px-4 text-center font-medium">{dept.employees} members</td>
-                    <td className="py-3.5 px-4 text-right font-bold text-foreground">
+                  <tr key={index} className="border-b border-border/50 hover:bg-muted/40 transition-colors">
+                    <td className="py-4 px-4 font-bold text-foreground">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary font-bold flex items-center justify-center text-xs shrink-0">
+                          {dept.name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-bold text-foreground leading-tight">{dept.name}</p>
+                          <p className="text-xs text-muted-foreground font-normal">Active Operations</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 text-center font-semibold text-foreground">
+                      <span className="bg-muted/60 px-3 py-1 rounded-full text-xs font-bold">
+                        {dept.employees} members
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 text-right font-extrabold text-foreground">
                       {formatCurrency(dept.avgSalary)}
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-4 px-4">
                       <div className="flex items-center gap-3">
                         <span className="text-xs font-bold w-10">{dept.attendance}%</span>
                         <div className="w-28 h-2 bg-muted rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full ${
+                            className={`h-full rounded-full transition-all ${
                               dept.attendance >= 95 ? 'bg-emerald-500' :
-                              dept.attendance >= 90 ? 'bg-blue-500' : 'bg-amber-500'
+                              dept.attendance >= 90 ? 'bg-sky-500' : 'bg-amber-500'
                             }`}
                             style={{ width: `${dept.attendance}%` }}
                           />
                         </div>
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 text-center">
+                    <td className="py-4 px-4 text-center">
                       <Badge
-                        className={`text-xs font-bold px-2.5 py-0.5 ${
+                        className={`text-xs font-bold px-3 py-1 rounded-full ${
                           dept.attendance >= 95 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' :
-                          dept.attendance >= 90 ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 hover:bg-blue-500/20' :
+                          dept.attendance >= 90 ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20 hover:bg-sky-500/20' :
                           'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
                         }`}
                       >
-                        {dept.attendance >= 95 ? 'Excellent' : dept.attendance >= 90 ? 'Good' : 'Needs Review'}
+                        {dept.attendance >= 95 ? '● Excellent' : dept.attendance >= 90 ? '● Good' : '● Needs Review'}
                       </Badge>
                     </td>
                   </tr>
