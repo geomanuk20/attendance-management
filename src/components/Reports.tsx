@@ -295,15 +295,15 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold">Reports & Analytics</h2>
-          <p className="text-sm text-muted-foreground">Comprehensive insights into workforce performance, attendance trends, and payroll</p>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Reports & Analytics</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">Comprehensive insights into workforce performance, attendance trends, and payroll</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" className="gap-2 cursor-pointer" onClick={handleExportReports}>
+          <Button variant="outline" className="gap-2 cursor-pointer shadow-xs" onClick={handleExportReports}>
             <Download className="h-4 w-4" />
             Export Excel
           </Button>
-          <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer" onClick={handleExportReports}>
+          <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer shadow-xs" onClick={handleExportReports}>
             <FileText className="h-4 w-4" />
             Generate Report
           </Button>
@@ -424,118 +424,154 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Attendance Trend */}
-        <Card className="p-5 sm:p-6 border border-border shadow-xs">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-bold text-foreground">Monthly Attendance Trend (%)</h3>
-            <div className="flex items-center gap-3 text-xs font-medium">
-              <div className="flex items-center gap-1.5">
+        <Card className="p-6 border border-border shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 pb-3 border-b border-border/40">
+            <div>
+              <h3 className="text-base font-bold text-foreground">Monthly Attendance Trend</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">6-month percentage trajectory vs 95% target</p>
+            </div>
+            <div className="flex items-center gap-2.5 text-xs font-medium self-start sm:self-auto">
+              <div className="flex items-center gap-1.5 bg-muted/60 px-2.5 py-1 rounded-md">
                 <div className="h-2.5 w-2.5 rounded-full bg-[#0D2B52] dark:bg-sky-400" />
-                <span className="text-muted-foreground">Attendance</span>
+                <span className="text-foreground font-semibold">Attendance</span>
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 bg-muted/60 px-2.5 py-1 rounded-md">
                 <div className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-                <span className="text-muted-foreground">Target (95%)</span>
+                <span className="text-foreground font-semibold">Target (95%)</span>
               </div>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={monthlyAttendanceData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
-              <XAxis dataKey="month" fontSize={12} stroke="#64748b" />
-              <YAxis domain={[60, 100]} ticks={[60, 70, 80, 90, 100]} fontSize={12} stroke="#64748b" />
-              <Tooltip
-                formatter={(value: any) => [`${value}%`, 'Attendance']}
-                contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
-              />
-              <Line type="monotone" dataKey="attendance" stroke="#0D2B52" strokeWidth={2.5} dot={{ r: 4, fill: '#0D2B52' }} />
-              <Line type="monotone" dataKey="target" stroke="#F9A825" strokeDasharray="4 4" strokeWidth={1.5} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="h-[280px] w-full pt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={monthlyAttendanceData} margin={{ top: 15, right: 15, left: -20, bottom: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
+                <XAxis dataKey="month" fontSize={12} stroke="#64748b" />
+                <YAxis domain={[60, 100]} ticks={[60, 70, 80, 90, 100]} fontSize={12} stroke="#64748b" />
+                <Tooltip
+                  formatter={(value: any) => [`${value}%`, 'Attendance']}
+                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
+                />
+                <Line type="monotone" dataKey="attendance" stroke="#0D2B52" strokeWidth={2.5} dot={{ r: 4, fill: '#0D2B52' }} />
+                <Line type="monotone" dataKey="target" stroke="#F9A825" strokeDasharray="4 4" strokeWidth={1.5} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </Card>
 
         {/* Leave Distribution */}
-        <Card className="p-5 sm:p-6 border border-border shadow-xs">
-          <h3 className="text-base font-bold text-foreground mb-4">Leave Types Breakdown</h3>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <ResponsiveContainer width="100%" height={240}>
-              <PieChart>
-                <Pie
-                  data={leaveTypesData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={95}
-                  paddingAngle={4}
-                  dataKey="value"
-                >
-                  {leaveTypesData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value: any, name: any) => [`${value} requests`, name]}
-                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="flex flex-col gap-2 shrink-0 sm:min-w-[160px]">
-              {leaveTypesData.map((item, index) => (
-                <div key={index} className="flex items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="h-3 w-3 rounded-md shrink-0"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className="text-muted-foreground font-medium truncate">{item.name}</span>
+        <Card className="p-6 border border-border shadow-xs">
+          <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
+            <div>
+              <h3 className="text-base font-bold text-foreground">Leave Types Breakdown</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Distribution of requested leaves by category</p>
+            </div>
+            <Badge variant="outline" className="text-xs font-semibold">
+              {rawLeaves.length} Requests
+            </Badge>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center min-h-[280px]">
+            <div className="sm:col-span-7 h-[240px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={leaveTypesData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={90}
+                    paddingAngle={4}
+                    dataKey="value"
+                  >
+                    {leaveTypesData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: any, name: any) => [`${value} requests`, name]}
+                    contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="sm:col-span-5 flex flex-col gap-2 pr-1">
+              {leaveTypesData.map((item, index) => {
+                const total = leaveTypesData.reduce((acc, curr) => acc + curr.value, 0);
+                const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
+                return (
+                  <div key={index} className="flex items-center justify-between gap-2.5 p-2.5 rounded-xl bg-muted/40 border border-border/40 text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div
+                        className="h-3 w-3 rounded-full shrink-0 shadow-xs"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="text-foreground font-semibold truncate">{item.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="font-bold text-foreground">{item.value}</span>
+                      <span className="text-muted-foreground text-[11px]">({pct}%)</span>
+                    </div>
                   </div>
-                  <span className="font-bold text-foreground">{item.value}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </Card>
 
         {/* Department Performance */}
-        <Card className="p-5 border border-border shadow-xs">
-          <h3 className="text-base font-bold text-foreground mb-4">Department Attendance Rates</h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={departmentData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
-              <XAxis dataKey="name" angle={-25} textAnchor="end" height={60} interval={0} fontSize={11} stroke="#64748b" />
-              <YAxis domain={[0, 100]} fontSize={12} stroke="#64748b" />
-              <Tooltip
-                formatter={(value: any) => [`${value}%`, 'Attendance Rate']}
-                contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
-              />
-              <Bar dataKey="attendance" fill="#0D2B52" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        <Card className="p-6 border border-border shadow-xs">
+          <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
+            <div>
+              <h3 className="text-base font-bold text-foreground">Department Attendance Rates</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Average attendance performance score per department</p>
+            </div>
+          </div>
+          <div className="h-[280px] w-full pt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={departmentData} margin={{ top: 15, right: 15, left: -20, bottom: 25 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
+                <XAxis dataKey="name" angle={-20} textAnchor="end" interval={0} fontSize={11} stroke="#64748b" />
+                <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} fontSize={12} stroke="#64748b" />
+                <Tooltip
+                  formatter={(value: any) => [`${value}%`, 'Attendance Rate']}
+                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
+                />
+                <Bar dataKey="attendance" fill="#0D2B52" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </Card>
 
         {/* Payroll Trend */}
-        <Card className="p-5 border border-border shadow-xs">
-          <h3 className="text-base font-bold text-foreground mb-4">Monthly Payroll Expenditure</h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={payrollTrendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
-              <XAxis dataKey="month" fontSize={12} stroke="#64748b" />
-              <YAxis fontSize={12} stroke="#64748b" tickFormatter={(val) => `${val > 999 ? (val/1000).toFixed(0) + 'k' : val}`} />
-              <Tooltip
-                formatter={(value: any) => [formatCurrency(Number(value)), 'Total Payroll']}
-                contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
-              />
-              <Area type="monotone" dataKey="amount" stroke="#0D2B52" fill="#0D2B52" fillOpacity={0.15} strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
+        <Card className="p-6 border border-border shadow-xs">
+          <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
+            <div>
+              <h3 className="text-base font-bold text-foreground">Monthly Payroll Expenditure</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Disbursement trend across recent months</p>
+            </div>
+          </div>
+          <div className="h-[280px] w-full pt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={payrollTrendData} margin={{ top: 15, right: 15, left: 10, bottom: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
+                <XAxis dataKey="month" fontSize={12} stroke="#64748b" />
+                <YAxis fontSize={12} stroke="#64748b" tickFormatter={(val) => `${val > 999 ? (val/1000).toFixed(0) + 'k' : val}`} />
+                <Tooltip
+                  formatter={(value: any) => [formatCurrency(Number(value)), 'Total Payroll']}
+                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '12px' }}
+                />
+                <Area type="monotone" dataKey="amount" stroke="#0D2B52" fill="#0D2B52" fillOpacity={0.15} strokeWidth={2.5} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </Card>
       </div>
 
       {/* Department Summary Table */}
-      <Card className="p-5 border border-border shadow-xs">
-        <div className="flex items-center justify-between mb-4">
+      <Card className="p-6 border border-border shadow-xs">
+        <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
           <div>
             <h3 className="text-base font-bold text-foreground">Department Summary & Benchmarks</h3>
-            <p className="text-xs text-muted-foreground">Detailed breakdown by headcount, compensation averages, and attendance scores</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Detailed breakdown by headcount, compensation averages, and attendance scores</p>
           </div>
           <Badge variant="outline" className="font-semibold text-xs">
             {departmentData.length} Departments
