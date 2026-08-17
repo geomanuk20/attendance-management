@@ -207,63 +207,63 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
 
       {/* Key Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        <Card className="p-5 border border-border shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
+        <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1.5 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Employees</p>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground mt-1 leading-tight">{stats.totalEmployees}</p>
-              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-1.5">
+              <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{stats.totalEmployees}</p>
+              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                 <TrendingUp className="h-3.5 w-3.5 shrink-0" />
                 <span>Real-time database</span>
               </p>
             </div>
-            <div className="h-12 w-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0 text-sky-600 dark:text-sky-400">
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#0284C720', color: '#0284C7' }}>
               <Users className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-5 border border-border shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
+        <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1.5 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Present Today</p>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground mt-1 leading-tight">{stats.presentToday}</p>
-              <p className="text-xs font-medium text-muted-foreground mt-1.5">
+              <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{stats.presentToday}</p>
+              <p className="text-xs font-medium text-muted-foreground">
                 {stats.totalEmployees > 0 ? Math.round((stats.presentToday / stats.totalEmployees) * 100) : 0}% attendance rate
               </p>
             </div>
-            <div className="h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-600 dark:text-emerald-400">
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#10B98120', color: '#10B981' }}>
               <Clock className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-5 border border-border shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
+        <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1.5 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Monthly Payroll</p>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground mt-1 leading-tight">{formatCurrency(stats.monthlyPayroll)}</p>
-              <p className="text-xs font-medium text-muted-foreground mt-1.5">
+              <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{formatCurrency(stats.monthlyPayroll)}</p>
+              <p className="text-xs font-medium text-muted-foreground">
                 Active compensation sum
               </p>
             </div>
-            <div className="h-12 w-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 text-amber-600 dark:text-amber-400">
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#8B5CF620', color: '#8B5CF6' }}>
               <DollarSign className="h-6 w-6" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-5 border border-border shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
+        <Card className="p-6 border border-border shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1.5 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pending Requests</p>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground mt-1 leading-tight">{stats.pendingRequests}</p>
-              <p className="text-xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1 mt-1.5">
+              <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{stats.pendingRequests}</p>
+              <p className="text-xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1">
                 <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                 <span>Needs HR review</span>
               </p>
             </div>
-            <div className="h-12 w-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0 text-purple-600 dark:text-purple-400">
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#F59E0B20', color: '#F59E0B' }}>
               <Calendar className="h-6 w-6" />
             </div>
           </div>
