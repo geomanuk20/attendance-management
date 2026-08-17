@@ -50,7 +50,22 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
   const [allEmployees, setAllEmployees] = useState<any[]>([]);
 
   useEffect(() => {
-    getEmployees().then(setAllEmployees).catch(() => {});
+    getEmployees().then(emps => {
+      setAllEmployees(emps);
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
+        const match = emps.find((e: any) =>
+          (e._id && e._id === (parsed._id || parsed.id)) ||
+          (e.email && e.email.toLowerCase() === parsed.email?.toLowerCase()) ||
+          (e.name && e.name.toLowerCase() === parsed.name?.toLowerCase())
+        );
+        if (match && match.faceImage) {
+          setUser({ ...parsed, faceImage: match.faceImage });
+        }
+      }
+    }).catch(() => {});
+
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
