@@ -116,9 +116,19 @@ export function Login({ onLogin }: LoginProps) {
 
     return (
         <div className="min-h-screen w-full flex items-center justify-center login-texture-bg p-4 sm:p-6 relative overflow-hidden">
-            {/* Ambient decorative gradient blurs */}
-            <div className="absolute top-1/4 -left-20 w-72 h-72 bg-sky-400/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+            {/* Architectural Dot Grid Overlay */}
+            <div className="absolute inset-0 login-grid-pattern pointer-events-none opacity-60" />
+
+            {/* Ambient Multi-Hue Glowing Orbs */}
+            <div className="absolute -top-12 -left-12 w-96 h-96 bg-sky-400/20 dark:bg-sky-500/15 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-16 -right-16 w-[420px] h-[420px] bg-indigo-500/15 dark:bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-400/8 dark:bg-emerald-500/8 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Geometric Tech Ring & Lattice Accents */}
+            <div className="absolute top-12 right-12 w-72 h-72 border border-sky-400/25 dark:border-sky-400/15 rounded-full pointer-events-none" />
+            <div className="absolute top-20 right-20 w-56 h-56 border border-dashed border-sky-400/30 dark:border-sky-400/20 rounded-full pointer-events-none" />
+            <div className="absolute -bottom-10 left-12 w-80 h-80 border border-indigo-400/20 dark:border-indigo-400/15 rounded-full pointer-events-none" />
+            <div className="absolute -bottom-2 left-20 w-64 h-64 border border-dashed border-indigo-400/25 dark:border-indigo-400/20 rounded-full pointer-events-none" />
 
             <Card className="w-full max-w-sm login-card-glass rounded-2xl relative z-10">
                 <CardHeader className="space-y-3 text-center pb-2">
