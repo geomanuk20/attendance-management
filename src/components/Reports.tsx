@@ -290,9 +290,9 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
   };
 
   return (
-    <div className="p-6 sm:p-8 lg:p-10 space-y-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/40">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Reports & Analytics</h2>
           <p className="text-sm text-muted-foreground mt-1">Comprehensive insights into workforce performance, attendance trends, and payroll</p>
@@ -310,7 +310,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       </div>
 
       {/* Report Filters */}
-      <Card className="p-6 sm:p-7 border border-border shadow-xs bg-card">
+      <Card className="p-5 sm:p-6 border border-border shadow-xs bg-card">
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <div className="flex flex-wrap gap-3 items-center">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -354,13 +354,13 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       </Card>
 
       {/* Key Metrics Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="p-6 sm:p-7 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <Card className="p-5 sm:p-6 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
           <div className="flex items-center justify-between gap-4">
-            <div className="space-y-2 min-w-0">
+            <div className="space-y-1.5 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Avg Attendance Rate</p>
               <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{keyMetrics.avgAttendance}%</p>
-              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                 <TrendingUp className="h-3.5 w-3.5 shrink-0" />
                 <span>+2.4% vs last month</span>
               </p>
@@ -371,12 +371,12 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
           </div>
         </Card>
 
-        <Card className="p-6 sm:p-7 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
+        <Card className="p-5 sm:p-6 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
           <div className="flex items-center justify-between gap-4">
-            <div className="space-y-2 min-w-0">
+            <div className="space-y-1.5 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Active Headcount</p>
               <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{filteredEmployees.length}</p>
-              <p className="text-xs font-medium text-sky-600 dark:text-sky-400 flex items-center gap-1.5">
+              <p className="text-xs font-medium text-sky-600 dark:text-sky-400 flex items-center gap-1">
                 <Users className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">{selectedDepartment === 'all' ? 'All departments' : selectedDepartment}</span>
               </p>
@@ -387,14 +387,14 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
           </div>
         </Card>
 
-        <Card className="p-6 sm:p-7 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
+        <Card className="p-5 sm:p-6 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
           <div className="flex items-center justify-between gap-4">
-            <div className="space-y-2 min-w-0">
+            <div className="space-y-1.5 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Avg Monthly Salary</p>
               <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
                 {formatCurrency(keyMetrics.avgSalary)}
               </p>
-              <p className="text-xs font-medium text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
+              <p className="text-xs font-medium text-purple-600 dark:text-purple-400 flex items-center gap-1">
                 <span>Total: {formatCurrency(keyMetrics.totalPayroll)}</span>
               </p>
             </div>
@@ -404,12 +404,12 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
           </div>
         </Card>
 
-        <Card className="p-6 sm:p-7 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
+        <Card className="p-5 sm:p-6 border border-border shadow-xs hover:shadow-md transition-shadow bg-card">
           <div className="flex items-center justify-between gap-4">
-            <div className="space-y-2 min-w-0">
+            <div className="space-y-1.5 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leave Approval Rate</p>
               <p className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">{keyMetrics.leaveUtilization}%</p>
-              <p className="text-xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+              <p className="text-xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1">
                 <span>{rawLeaves.length} total request records</span>
               </p>
             </div>
@@ -421,10 +421,10 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-7">
         {/* Attendance Trend */}
-        <Card className="p-6 sm:p-7 border border-border shadow-xs bg-card">
-          <div className="flex items-center justify-between mb-6 pb-2 border-b border-border/40">
+        <Card className="p-5 sm:p-6 border border-border shadow-xs bg-card">
+          <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-bold text-foreground">Monthly Attendance Trend (%)</h3>
             <div className="flex items-center gap-3 text-xs font-medium">
               <div className="flex items-center gap-1.5">
@@ -437,7 +437,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
               </div>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={270}>
+          <ResponsiveContainer width="100%" height={260}>
             <LineChart data={monthlyAttendanceData} margin={{ top: 10, right: 15, left: -15, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
               <XAxis dataKey="month" fontSize={12} stroke="#64748b" />
@@ -453,9 +453,9 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
         </Card>
 
         {/* Leave Distribution */}
-        <Card className="p-6 sm:p-7 border border-border shadow-xs bg-card">
-          <h3 className="text-base font-bold text-foreground mb-6 pb-2 border-b border-border/40">Leave Types Breakdown</h3>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+        <Card className="p-5 sm:p-6 border border-border shadow-xs bg-card">
+          <h3 className="text-base font-bold text-foreground mb-4">Leave Types Breakdown</h3>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
                 <Pie
@@ -477,7 +477,7 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
                 />
               </PieChart>
             </ResponsiveContainer>
-            <div className="flex flex-col gap-2.5 shrink-0 sm:min-w-[170px] bg-muted/40 p-4 rounded-xl border border-border/40">
+            <div className="flex flex-col gap-2 shrink-0 sm:min-w-[160px] bg-muted/30 p-3.5 rounded-xl border border-border/40">
               {leaveTypesData.map((item, index) => (
                 <div key={index} className="flex items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-2">
@@ -495,10 +495,10 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
         </Card>
 
         {/* Department Performance */}
-        <Card className="p-6 sm:p-7 border border-border shadow-xs bg-card">
-          <h3 className="text-base font-bold text-foreground mb-6 pb-2 border-b border-border/40">Department Attendance Rates</h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={departmentData} margin={{ top: 10, right: 15, left: -15, bottom: 25 }}>
+        <Card className="p-5 sm:p-6 border border-border shadow-xs bg-card">
+          <h3 className="text-base font-bold text-foreground mb-4">Department Attendance Rates</h3>
+          <ResponsiveContainer width="100%" height={270}>
+            <BarChart data={departmentData} margin={{ top: 10, right: 15, left: -15, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
               <XAxis dataKey="name" angle={-25} textAnchor="end" height={60} interval={0} fontSize={11} stroke="#64748b" />
               <YAxis domain={[0, 100]} fontSize={12} stroke="#64748b" />
@@ -512,9 +512,9 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
         </Card>
 
         {/* Payroll Trend */}
-        <Card className="p-6 sm:p-7 border border-border shadow-xs bg-card">
-          <h3 className="text-base font-bold text-foreground mb-6 pb-2 border-b border-border/40">Monthly Payroll Expenditure</h3>
-          <ResponsiveContainer width="100%" height={280}>
+        <Card className="p-5 sm:p-6 border border-border shadow-xs bg-card">
+          <h3 className="text-base font-bold text-foreground mb-4">Monthly Payroll Expenditure</h3>
+          <ResponsiveContainer width="100%" height={270}>
             <AreaChart data={payrollTrendData} margin={{ top: 10, right: 15, left: -15, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
               <XAxis dataKey="month" fontSize={12} stroke="#64748b" />
@@ -530,8 +530,8 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
       </div>
 
       {/* Department Summary Table */}
-      <Card className="p-6 sm:p-7 border border-border shadow-xs bg-card">
-        <div className="flex items-center justify-between mb-6 pb-2 border-b border-border/40">
+      <Card className="p-5 sm:p-6 border border-border shadow-xs bg-card">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-base font-bold text-foreground">Department Summary & Benchmarks</h3>
             <p className="text-xs text-muted-foreground mt-0.5">Detailed breakdown by headcount, compensation averages, and attendance scores</p>
