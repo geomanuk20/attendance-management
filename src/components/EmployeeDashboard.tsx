@@ -550,7 +550,9 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
                 size="sm"
                 onClick={() => {
                   setIsLeaveBalanceModalOpen(false);
-                  onNavigate?.('leave-requests');
+                  if (onNavigate) {
+                    onNavigate('leave');
+                  }
                 }}
                 className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs h-9 px-3 rounded-lg cursor-pointer shrink-0"
               >

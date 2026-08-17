@@ -160,7 +160,7 @@ export default function App() {
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
-        return ['admin', 'superadmin', 'hr'].includes(userRole) ? <Dashboard currency={currency} /> : <EmployeeDashboard currency={currency} />;
+        return ['admin', 'superadmin', 'hr'].includes(userRole) ? <Dashboard currency={currency} /> : <EmployeeDashboard currency={currency} onNavigate={setActiveSection} />;
       case 'attendance':
         return <Attendance userRole={userRole} />;
       case 'salary':
@@ -174,7 +174,7 @@ export default function App() {
       case 'settings':
         return <Settings userRole={userRole!} onLogout={() => setCurrentUser(null)} currency={currency} onCurrencyChange={setCurrency} darkMode={darkMode} onDarkModeChange={setDarkMode} />;
       default:
-        return ['admin', 'superadmin', 'hr'].includes(userRole!) ? <Dashboard currency={currency} /> : <EmployeeDashboard currency={currency} />;
+        return ['admin', 'superadmin', 'hr'].includes(userRole!) ? <Dashboard currency={currency} /> : <EmployeeDashboard currency={currency} onNavigate={setActiveSection} />;
     }
   };
 
