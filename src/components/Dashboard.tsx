@@ -382,53 +382,55 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
       </div>
 
       {/* Recent Activities */}
-      <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card mt-8">
-        <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
-          <div>
-            <h3 className="text-base font-bold text-foreground">Recent Activities</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Real-time biometric attendance and leave workflow updates</p>
+      <div className="pt-6 sm:pt-8">
+        <Card className="p-6 sm:p-7 border border-border/80 shadow-xs rounded-2xl bg-card">
+          <div className="flex items-center justify-between mb-6 pb-3 border-b border-border/40">
+            <div>
+              <h3 className="text-base font-bold text-foreground">Recent Activities</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Real-time biometric attendance and leave workflow updates</p>
+            </div>
+            <Badge variant="outline" className="text-xs font-semibold px-3 py-1">
+              {recentActivities.length} Recent Logs
+            </Badge>
           </div>
-          <Badge variant="outline" className="text-xs font-semibold px-3 py-1">
-            {recentActivities.length} Recent Logs
-          </Badge>
-        </div>
-        <div className="space-y-2">
-          {recentActivities.length > 0 ? (
-            recentActivities.map((activity) => (
-              <div
-                key={activity.id}
-                className="flex items-center justify-between p-3.5 rounded-xl hover:bg-muted/40 transition-colors border-b border-border/30 last:border-0"
-              >
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div
-                    className="flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-xs"
-                    style={{
-                      width: '36px',
-                      height: '36px',
-                      minWidth: '36px',
-                      minHeight: '36px',
-                      borderRadius: '9999px',
-                      aspectRatio: '1/1',
-                      backgroundColor: activity.type === 'attendance' ? '#0D2B52' : '#F9A825',
-                    }}
-                  >
-                    {activity.user.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
+          <div className="space-y-2">
+            {recentActivities.length > 0 ? (
+              recentActivities.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex items-center justify-between p-3.5 rounded-xl hover:bg-muted/40 transition-colors border-b border-border/30 last:border-0"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div
+                      className="flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-xs"
+                      style={{
+                        width: '36px',
+                        height: '36px',
+                        minWidth: '36px',
+                        minHeight: '36px',
+                        borderRadius: '9999px',
+                        aspectRatio: '1/1',
+                        backgroundColor: activity.type === 'attendance' ? '#0D2B52' : '#F9A825',
+                      }}
+                    >
+                      {activity.user.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-foreground truncate">{activity.user}</p>
+                      <p className="text-xs text-muted-foreground truncate">{activity.action}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-foreground truncate">{activity.user}</p>
-                    <p className="text-xs text-muted-foreground truncate">{activity.action}</p>
-                  </div>
+                  <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap ml-4 shrink-0 bg-muted/60 px-3 py-1 rounded-lg border border-border/30">
+                    {activity.time}
+                  </span>
                 </div>
-                <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap ml-4 shrink-0 bg-muted/60 px-3 py-1 rounded-lg border border-border/30">
-                  {activity.time}
-                </span>
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-muted-foreground py-6 text-center">No recent activities found.</p>
-          )}
-        </div>
-      </Card>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground py-6 text-center">No recent activities found.</p>
+            )}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }
