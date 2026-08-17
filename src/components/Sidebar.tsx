@@ -107,55 +107,29 @@ export function Sidebar({
       {/* ========================================================= */}
       {/* MOBILE ONLY: Top Header Bar                               */}
       {/* ========================================================= */}
-      <header className="app-mobile-header fixed top-0 left-0 right-0 h-16 bg-card border-b border-border z-40 items-center justify-between px-3 sm:px-4 shadow-xs">
-        <div className="flex items-center gap-2.5 min-w-0">
+      <header className="app-mobile-header fixed top-0 left-0 right-0 h-14 bg-card border-b border-border z-40 items-center justify-between px-3 sm:px-4 shadow-xs">
+        <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 text-foreground shrink-0"
+            className="h-9 w-9 text-foreground shrink-0 cursor-pointer"
             onClick={() => onMobileToggle?.(!isMobileOpen)}
             aria-label="Toggle menu"
           >
             {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
 
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div
-              className="w-9 h-9 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-xs shrink-0 shadow-xs"
-              style={{ width: '36px', height: '36px', minWidth: '36px', minHeight: '36px', borderRadius: '9999px', aspectRatio: '1/1' }}
-            >
-              <span className="leading-none">
-                {userName ? userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '??'}
-              </span>
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-12 flex items-center justify-center overflow-hidden rounded bg-black/5 dark:bg-white/5 p-1">
+              <img
+                src={logoImage}
+                alt="Logo"
+                className="h-6 w-auto object-contain"
+                style={{ maxHeight: '24px', maxWidth: '44px' }}
+              />
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-foreground leading-tight truncate">{userName || 'Admin'}</p>
-              <p className="text-xs text-muted-foreground leading-tight truncate capitalize mt-0.5">
-                {userPosition || (userRole === 'superadmin' ? 'Administrator' : (userRole === 'hr' ? 'HR Manager' : 'Employee'))}
-              </p>
-            </div>
+            <span className="font-bold text-sm text-foreground">Attendance System</span>
           </div>
-        </div>
-
-        <div className="flex items-center gap-1 shrink-0">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 text-muted-foreground hover:text-foreground"
-            onClick={() => onDarkModeChange?.(!darkMode)}
-            title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          >
-            {darkMode ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 text-muted-foreground hover:text-destructive"
-            onClick={onLogout}
-            title="Logout"
-          >
-            <LogOut className="h-4.5 w-4.5" />
-          </Button>
         </div>
       </header>
 
