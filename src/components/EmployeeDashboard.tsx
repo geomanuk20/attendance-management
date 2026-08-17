@@ -24,11 +24,29 @@ const myRecentActivities = [
   { id: 3, action: 'Clocked out', time: '6:00 PM', date: 'Yesterday' },
 ];
 
+const COMPANY_HOLIDAYS = [
+  { id: '1', name: 'Independence Day', date: '2026-08-15', day: 'Saturday', type: 'National Holiday', icon: '🇮🇳' },
+  { id: '2', name: 'Thiruvonam (Onam)', date: '2026-08-27', day: 'Thursday', type: 'Festival Holiday', icon: '🌾' },
+  { id: '3', name: 'Sree Krishna Jayanthi', date: '2026-09-04', day: 'Friday', type: 'Festival Holiday', icon: '🪈' },
+  { id: '4', name: 'Milad-un-Nabi (Id-e-Milad)', date: '2026-09-15', day: 'Tuesday', type: 'Festival Holiday', icon: '🌙' },
+  { id: '5', name: 'Gandhi Jayanti', date: '2026-10-02', day: 'Friday', type: 'National Holiday', icon: '🕊️' },
+  { id: '6', name: 'Mahanavami / Dussehra', date: '2026-10-20', day: 'Tuesday', type: 'Festival Holiday', icon: '✨' },
+  { id: '7', name: 'Deepavali (Diwali)', date: '2026-11-08', day: 'Sunday', type: 'Festival Holiday', icon: '🪔' },
+  { id: '8', name: 'Christmas', date: '2026-12-25', day: 'Friday', type: 'Festival Holiday', icon: '🎄' },
+  { id: '9', name: 'New Year’s Day', date: '2027-01-01', day: 'Friday', type: 'Public Holiday', icon: '🎆' },
+  { id: '10', name: 'Republic Day', date: '2027-01-26', day: 'Tuesday', type: 'National Holiday', icon: '🇮🇳' },
+  { id: '11', name: 'Maha Shivratri', date: '2027-03-06', day: 'Saturday', type: 'Festival Holiday', icon: '🔱' },
+  { id: '12', name: 'Eid al-Fitr (Ramzan)', date: '2027-03-10', day: 'Wednesday', type: 'Festival Holiday', icon: '🌙' },
+  { id: '13', name: 'Vishu / Good Friday', date: '2027-04-14', day: 'Wednesday', type: 'Festival Holiday', icon: '🌿' },
+  { id: '14', name: 'May Day (Labor Day)', date: '2027-05-01', day: 'Saturday', type: 'Public Holiday', icon: '🔨' },
+];
+
 interface EmployeeDashboardProps {
   currency?: string;
+  onNavigate?: (view: string) => void;
 }
 
-export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) {
+export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<'Checked In' | 'Checked Out' | 'Completed'>('Checked Out');
   const [todayRecord, setTodayRecord] = useState<any>(null);
@@ -335,9 +353,9 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Next Holiday</p>
-              <p className="text-2xl font-semibold">Labor Day</p>
+              <p className="text-2xl font-semibold">{nextHoliday?.name || 'Thiruvonam (Onam)'}</p>
               <p className="text-xs text-emerald-500 mt-1 flex items-center gap-1 font-medium">
-                <span>May 1st, 2027 • Click to view all</span>
+                <span>{nextHoliday ? `${formatHolidayDate(nextHoliday.date)} • Click to view all` : 'Click to view all'}</span>
               </p>
             </div>
             <div className="h-12 w-12 rounded-lg flex items-center justify-center bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors">
@@ -355,7 +373,8 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
-              <Bar dataKey="hours" fill="#0D2B52" name="Hours" radius={[4, 4, 0, 0]} />
+              <Tooltip />
+              <Bar dataKey="hours" fill="#3BAFDA" />
             </BarChart>
           </ResponsiveContainer>
         </Card>
@@ -394,7 +413,7 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
               <span>📊</span> Leave Balance Breakdown (2026)
             </DialogTitle>
             <DialogDescription className="text-muted-foreground text-xs">
-              Annual Leave Quota Allocation & Available Balances
+              Annual allotted quotas and remaining leave balance
             </DialogDescription>
           </DialogHeader>
 
@@ -404,25 +423,25 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
               <div className="flex items-center gap-3">
                 <span className="text-2xl">🏖️</span>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Casual Leave</p>
-                  <p className="text-xs text-muted-foreground">Annual quota: 6 Days</p>
-                </div>
-              </div>
-              <span className="px-3.5 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold text-xs border border-indigo-500/20 whitespace-nowrap">
-                6 Days Left
-              </span>
-            </div>
-
-            {/* Medical Leave */}
-            <div className="flex items-center justify-between p-4 rounded-xl bg-muted/40 border border-border/70 hover:bg-muted/60 transition-colors">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">🏥</span>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Medical Leave</p>
+                  <p className="text-sm font-semibold text-foreground">Casual Leave (CL)</p>
                   <p className="text-xs text-muted-foreground">Annual quota: 6 Days</p>
                 </div>
               </div>
               <span className="px-3.5 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-xs border border-emerald-500/20 whitespace-nowrap">
+                6 Days Left
+              </span>
+            </div>
+
+            {/* Sick Leave */}
+            <div className="flex items-center justify-between p-4 rounded-xl bg-muted/40 border border-border/70 hover:bg-muted/60 transition-colors">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">💊</span>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Sick Leave (SL)</p>
+                  <p className="text-xs text-muted-foreground">Annual quota: 6 Days</p>
+                </div>
+              </div>
+              <span className="px-3.5 py-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold text-xs border border-blue-500/20 whitespace-nowrap">
                 6 Days Left
               </span>
             </div>
@@ -471,82 +490,52 @@ export function EmployeeDashboard({ currency = 'USD' }: EmployeeDashboardProps) 
           </DialogHeader>
 
           <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1 pt-2">
-            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/70">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">🇮🇳</span>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Independence Day</p>
-                  <p className="text-xs text-muted-foreground">August 15th, 2026 • Saturday</p>
-                </div>
-              </div>
-              <Badge variant="outline" className="text-xs text-indigo-600 dark:text-indigo-400 border-indigo-500/30 bg-indigo-500/10">National Holiday</Badge>
-            </div>
+            {COMPANY_HOLIDAYS.map((holiday) => {
+              const isNext = holiday.id === nextHoliday?.id;
+              const isPast = holiday.date < todayDateStr;
 
-            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/70">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">🕊️</span>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Gandhi Jayanti</p>
-                  <p className="text-xs text-muted-foreground">October 2nd, 2026 • Friday</p>
+              return (
+                <div
+                  key={holiday.id}
+                  className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                    isNext
+                      ? 'bg-emerald-500/10 border-emerald-500/40 shadow-xs'
+                      : isPast
+                      ? 'bg-muted/20 border-border/40 opacity-60'
+                      : 'bg-muted/40 border-border/70'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{holiday.icon}</span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-foreground">{holiday.name}</p>
+                        {isNext && (
+                          <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500 text-white leading-none">
+                            Next
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {formatHolidayDate(holiday.date)} • {holiday.day}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={`text-xs ${
+                      holiday.type === 'National Holiday'
+                        ? 'text-indigo-600 dark:text-indigo-400 border-indigo-500/30 bg-indigo-500/10'
+                        : holiday.type === 'Festival Holiday'
+                        ? 'text-purple-600 dark:text-purple-400 border-purple-500/30 bg-purple-500/10'
+                        : 'text-cyan-600 dark:text-cyan-400 border-cyan-500/30 bg-cyan-500/10'
+                    }`}
+                  >
+                    {holiday.type}
+                  </Badge>
                 </div>
-              </div>
-              <Badge variant="outline" className="text-xs text-indigo-600 dark:text-indigo-400 border-indigo-500/30 bg-indigo-500/10">National Holiday</Badge>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/70">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">🪔</span>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Diwali</p>
-                  <p className="text-xs text-muted-foreground">November 8th, 2026 • Sunday</p>
-                </div>
-              </div>
-              <Badge variant="outline" className="text-xs text-purple-600 dark:text-purple-400 border-purple-500/30 bg-purple-500/10">Festival Holiday</Badge>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/70">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">🎄</span>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Christmas</p>
-                  <p className="text-xs text-muted-foreground">December 25th, 2026 • Friday</p>
-                </div>
-              </div>
-              <Badge variant="outline" className="text-xs text-purple-600 dark:text-purple-400 border-purple-500/30 bg-purple-500/10">Festival Holiday</Badge>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/70">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">🎆</span>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">New Year’s Day</p>
-                  <p className="text-xs text-muted-foreground">January 1st, 2027 • Friday</p>
-                </div>
-              </div>
-              <Badge variant="outline" className="text-xs text-cyan-600 dark:text-cyan-400 border-cyan-500/30 bg-cyan-500/10">Public Holiday</Badge>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/70">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">🇮🇳</span>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Republic Day</p>
-                  <p className="text-xs text-muted-foreground">January 26th, 2027 • Tuesday</p>
-                </div>
-              </div>
-              <Badge variant="outline" className="text-xs text-indigo-600 dark:text-indigo-400 border-indigo-500/30 bg-indigo-500/10">National Holiday</Badge>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/70">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">🔨</span>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Labor Day</p>
-                  <p className="text-xs text-muted-foreground">May 1st, 2027 • Saturday</p>
-                </div>
-              </div>
-              <Badge variant="outline" className="text-xs text-cyan-600 dark:text-cyan-400 border-cyan-500/30 bg-cyan-500/10">Public Holiday</Badge>
-            </div>
+              );
+            })}
           </div>
         </DialogContent>
       </Dialog>
