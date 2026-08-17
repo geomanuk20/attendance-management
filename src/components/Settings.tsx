@@ -308,30 +308,33 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
                 />
               </div>
 
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="quickFaceScanGeneral" className="font-semibold text-sm flex items-center gap-2">
-                    <span>⚡ Quick Face Scan Login</span>
-                    <Badge variant="outline" className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800">
-                      Login Screen
-                    </Badge>
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Show or hide the one-tap face recognition login button on the sign-in screen
-                  </p>
-                </div>
-                <Switch
-                  id="quickFaceScanGeneral"
-                  checked={quickFaceScanLogin}
-                  onCheckedChange={(checked) => {
-                    setQuickFaceScanLogin(checked);
-                    localStorage.setItem('quickFaceScanLoginEnabled', checked ? 'true' : 'false');
-                    toast.success(`Quick Face Scan Login ${checked ? 'Enabled (ON)' : 'Disabled (OFF)'}`);
-                  }}
-                />
-              </div>
+              {['admin', 'superadmin', 'hr'].includes(userRole) && (
+                <>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="quickFaceScanGeneral" className="font-semibold text-sm flex items-center gap-2">
+                        <span>⚡ Quick Face Scan Login</span>
+                        <Badge variant="outline" className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800">
+                          Login Screen
+                        </Badge>
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Show or hide the one-tap face recognition login button on the sign-in screen
+                      </p>
+                    </div>
+                    <Switch
+                      id="quickFaceScanGeneral"
+                      checked={quickFaceScanLogin}
+                      onCheckedChange={(checked) => {
+                        setQuickFaceScanLogin(checked);
+                        localStorage.setItem('quickFaceScanLoginEnabled', checked ? 'true' : 'false');
+                        toast.success(`Quick Face Scan Login ${checked ? 'Enabled (ON)' : 'Disabled (OFF)'}`);
+                      }}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </Card>
         </TabsContent>
@@ -428,29 +431,33 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
                   onCheckedChange={setAutoLogout}
                 />
               </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="quickFaceScanSecurity" className="font-semibold text-sm flex items-center gap-2">
-                    <span>⚡ Quick Face Scan Login Option</span>
-                    <Badge variant="outline" className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800">
-                      Login Screen
-                    </Badge>
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Allow employees & admins to log in with one-click facial recognition on sign in page
-                  </p>
-                </div>
-                <Switch
-                  id="quickFaceScanSecurity"
-                  checked={quickFaceScanLogin}
-                  onCheckedChange={(checked) => {
-                    setQuickFaceScanLogin(checked);
-                    localStorage.setItem('quickFaceScanLoginEnabled', checked ? 'true' : 'false');
-                    toast.success(`Quick Face Scan Login ${checked ? 'Enabled (ON)' : 'Disabled (OFF)'}`);
-                  }}
-                />
-              </div>
+              {['admin', 'superadmin', 'hr'].includes(userRole) && (
+                <>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="quickFaceScanSecurity" className="font-semibold text-sm flex items-center gap-2">
+                        <span>⚡ Quick Face Scan Login Option</span>
+                        <Badge variant="outline" className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800">
+                          Login Screen
+                        </Badge>
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Allow employees & admins to log in with one-click facial recognition on sign in page
+                      </p>
+                    </div>
+                    <Switch
+                      id="quickFaceScanSecurity"
+                      checked={quickFaceScanLogin}
+                      onCheckedChange={(checked) => {
+                        setQuickFaceScanLogin(checked);
+                        localStorage.setItem('quickFaceScanLoginEnabled', checked ? 'true' : 'false');
+                        toast.success(`Quick Face Scan Login ${checked ? 'Enabled (ON)' : 'Disabled (OFF)'}`);
+                      }}
+                    />
+                  </div>
+                </>
+              )}
               <Separator />
               <div className="space-y-4">
                 <Label>Password Settings</Label>
