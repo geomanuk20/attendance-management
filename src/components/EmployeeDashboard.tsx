@@ -16,6 +16,8 @@ const myAttendanceData = [
   { name: 'Wed', hours: 9.0 },
   { name: 'Thu', hours: 8.5 },
   { name: 'Fri', hours: 7.5 },
+  { name: 'Sat', hours: 0 },
+  { name: 'Sun', hours: 0 },
 ];
 
 const myRecentActivities = [
@@ -233,8 +235,8 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
         monday.setHours(0, 0, 0, 0);
 
         let sumHours = 0;
-        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-        const dayMap: { [key: string]: number } = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0 };
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const dayMap: { [key: string]: number } = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
 
         data.forEach((rec: any) => {
           const d = new Date(rec.date);
@@ -248,10 +250,8 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
           }
         });
 
-        if (sumHours > 0) {
-          setWeeklyHours(Number(sumHours.toFixed(1)));
-          setWeeklyAttendanceChart(days.map((day) => ({ name: day, hours: dayMap[day] || 0 })));
-        }
+        setWeeklyHours(Number(sumHours.toFixed(1)));
+        setWeeklyAttendanceChart(days.map((day) => ({ name: day, hours: dayMap[day] || 0 })));
 
         // Recent activity feed
         const sorted = [...data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
