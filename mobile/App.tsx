@@ -370,6 +370,7 @@ function AppContent() {
   const [clockReminders, setClockReminders] = useState(true);
   const [twoFactorAuth, setTwoFactorAuth] = useState(false);
   const [autoLogout, setAutoLogout] = useState(true);
+  const [quickFaceScanLoginEnabled, setQuickFaceScanLoginEnabled] = useState(true);
 
   // Calendar Widget state
   const [calendarDate, setCalendarDate] = useState(new Date());
@@ -493,9 +494,41 @@ function AppContent() {
     }
   };
 
+  const loadFaceSettings = async () => {
+    try {
+      const stored = await AsyncStorage.getItem('quickFaceScanLoginEnabled');
+      if (stored !== null) {
+        setQuickFaceScanLoginEnabled(stored === 'true');
+      }
+      const urls = Platform.OS === 'android'
+        ? [`${API_URL}/company-settings`, 'http://10.0.2.2:5001/api/company-settings', 'http://127.0.0.1:5001/api/company-settings']
+        : [`${API_URL}/company-settings`];
+
+      for (const url of urls) {
+        try {
+          const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.quickFaceScanLoginEnabled !== undefined) {
+              const isEnabled = Boolean(data.quickFaceScanLoginEnabled);
+              setQuickFaceScanLoginEnabled(isEnabled);
+              await AsyncStorage.setItem('quickFaceScanLoginEnabled', isEnabled ? 'true' : 'false');
+              break;
+            }
+          }
+        } catch (e) {
+          // ignore candidate error
+        }
+      }
+    } catch (e) {
+      console.warn('Face settings load completed');
+    }
+  };
+
   useEffect(() => {
     checkLoggedInUser();
     loadTheme();
+    loadFaceSettings();
     checkForUpdates();
     requestLocationPermissionOnLaunch();
   }, []);
@@ -1767,43 +1800,47 @@ function AppContent() {
             )}
           </TouchableOpacity>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 14 }}>
-            <View style={{ flex: 1, height: 1, backgroundColor: theme.border }} />
-            <Text style={{ marginHorizontal: 10, color: theme.textSub, fontSize: 11, fontWeight: '700' }}>OR QUICK LOGIN</Text>
-            <View style={{ flex: 1, height: 1, backgroundColor: theme.border }} />
-          </View>
-
-          <TouchableOpacity
-            style={{
-              width: '100%',
-              height: 50,
-              borderRadius: 25,
-              backgroundColor: '#ffffff',
-              borderWidth: 1,
-              borderColor: '#e2e8f0',
-              justifyContent: 'center',
-              alignItems: 'center',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 4,
-              marginVertical: 6,
-            }}
-            onPress={() => triggerFaceModal('login')}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#0f172a" />
-            ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: '#dcfce7', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#86efac' }}>
-                  <Text style={{ fontSize: 14 }}>📸</Text>
-                </View>
-                <Text style={{ color: '#0f172a', fontSize: 15, fontWeight: '700' }}>Quick Face Scan Login</Text>
+          {quickFaceScanLoginEnabled && (
+            <>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 14 }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: theme.border }} />
+                <Text style={{ marginHorizontal: 10, color: theme.textSub, fontSize: 11, fontWeight: '700' }}>OR QUICK LOGIN</Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: theme.border }} />
               </View>
-            )}
-          </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  width: '100%',
+                  height: 50,
+                  borderRadius: 25,
+                  backgroundColor: '#ffffff',
+                  borderWidth: 1,
+                  borderColor: '#e2e8f0',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 8,
+                  elevation: 4,
+                  marginVertical: 6,
+                }}
+                onPress={() => triggerFaceModal('login')}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#0f172a" />
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: '#dcfce7', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#86efac' }}>
+                      <Text style={{ fontSize: 14 }}>📸</Text>
+                    </View>
+                    <Text style={{ color: '#0f172a', fontSize: 15, fontWeight: '700' }}>Quick Face Scan Login</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </>
+          )}
 
 
         </View>
@@ -3435,6 +3472,29 @@ function AppContent() {
                 <View style={[styles.salaryRow, { borderBottomColor: theme.border, alignItems: 'center' }]}>
                   <Text style={[styles.salaryLabel, { color: theme.text }]}>Two-Factor Authentication (2FA)</Text>
                   <Switch value={twoFactorAuth} onValueChange={setTwoFactorAuth} trackColor={{ false: '#cbd5e1', true: '#6366f1' }} />
+                </View>
+
+                <View style={[styles.salaryRow, { borderBottomColor: theme.border, alignItems: 'center' }]}>
+                  <View style={{ flex: 1, paddingRight: 10 }}>
+                    <Text style={[styles.salaryLabel, { color: theme.text }]}>⚡ Quick Face Scan Login</Text>
+                    <Text style={{ fontSize: 11, color: theme.textSub, marginTop: 2 }}>Show one-tap face recognition on sign-in screen</Text>
+                  </View>
+                  <Switch
+                    value={quickFaceScanLoginEnabled}
+                    onValueChange={async (val) => {
+                      setQuickFaceScanLoginEnabled(val);
+                      await AsyncStorage.setItem('quickFaceScanLoginEnabled', val ? 'true' : 'false');
+                      try {
+                        await fetch(`${API_URL}/company-settings`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ quickFaceScanLoginEnabled: val })
+                        });
+                        triggerTestNotification("⚡ Quick Face Scan", val ? "Quick Face Scan Login enabled on login screen." : "Quick Face Scan Login disabled on login screen.");
+                      } catch (e) {}
+                    }}
+                    trackColor={{ false: '#cbd5e1', true: '#10b981' }}
+                  />
                 </View>
               </View>
             )}

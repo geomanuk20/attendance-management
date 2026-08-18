@@ -5,7 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Eye, EyeOff, Loader2, Lock, Mail, Scan } from 'lucide-react';
 import { toast } from 'sonner';
-import { loginUser, getEnrolledFaceProfiles, loginWithFace } from '../services/api';
+import { loginUser, getEnrolledFaceProfiles, loginWithFace, getCompanySettings } from '../services/api';
 import { FaceRecognitionModal } from './FaceRecognitionModal';
 import logoImage from '../assets/60ace96c513e5568730553.png';
 
@@ -29,8 +29,22 @@ export function Login({ onLogin }: LoginProps) {
     });
 
     useEffect(() => {
-        const stored = localStorage.getItem('quickFaceScanLoginEnabled');
-        setIsQuickFaceEnabled(stored !== null ? stored === 'true' : true);
+        const syncSettings = async () => {
+            try {
+                const settings = await getCompanySettings();
+                if (settings && settings.quickFaceScanLoginEnabled !== undefined) {
+                    const isEnabled = Boolean(settings.quickFaceScanLoginEnabled);
+                    setIsQuickFaceEnabled(isEnabled);
+                    localStorage.setItem('quickFaceScanLoginEnabled', isEnabled ? 'true' : 'false');
+                    return;
+                }
+            } catch (e) {
+                console.warn('Could not fetch remote quickFaceScanLogin setting:', e);
+            }
+            const stored = localStorage.getItem('quickFaceScanLoginEnabled');
+            setIsQuickFaceEnabled(stored !== null ? stored === 'true' : true);
+        };
+        syncSettings();
     }, []);
 
     const performLogin = async (targetEmail: string, targetPass: string) => {

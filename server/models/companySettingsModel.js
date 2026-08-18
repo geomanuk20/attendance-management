@@ -14,6 +14,7 @@ const companySettingsSchema = mongoose.Schema({
     annualVacationDays: { type: Number, default: 25 },
     sickLeaveDays: { type: Number, default: 10 },
     personalDays: { type: Number, default: 5 },
+    quickFaceScanLoginEnabled: { type: Boolean, default: true },
 }, {
     timestamps: true,
 });

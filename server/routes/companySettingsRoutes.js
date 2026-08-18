@@ -23,7 +23,8 @@ router.post('/', asyncHandler(async (req, res) => {
         companyName, companyEmail, companyPhone, website, address,
         officeLatitude, officeLongitude, allowedRadiusMeters,
         workStartTime, workEndTime,
-        annualVacationDays, sickLeaveDays, personalDays
+        annualVacationDays, sickLeaveDays, personalDays,
+        quickFaceScanLoginEnabled
     } = req.body;
 
     let settings = await CompanySettings.findOne();
@@ -42,6 +43,7 @@ router.post('/', asyncHandler(async (req, res) => {
         if (annualVacationDays !== undefined) settings.annualVacationDays = annualVacationDays;
         if (sickLeaveDays !== undefined) settings.sickLeaveDays = sickLeaveDays;
         if (personalDays !== undefined) settings.personalDays = personalDays;
+        if (quickFaceScanLoginEnabled !== undefined) settings.quickFaceScanLoginEnabled = quickFaceScanLoginEnabled;
         await settings.save();
     } else {
         settings = await CompanySettings.create(req.body);

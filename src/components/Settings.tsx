@@ -136,6 +136,10 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
           setAnnualVacationDays(String(data.annualVacationDays ?? 25));
           setSickLeaveDays(String(data.sickLeaveDays ?? 10));
           setPersonalDays(String(data.personalDays ?? 5));
+          if (data.quickFaceScanLoginEnabled !== undefined) {
+            setQuickFaceScanLogin(Boolean(data.quickFaceScanLoginEnabled));
+            localStorage.setItem('quickFaceScanLoginEnabled', data.quickFaceScanLoginEnabled ? 'true' : 'false');
+          }
         }
       } catch (error) {
         console.error('Failed to load company settings:', error);
@@ -332,9 +336,14 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
                     <Switch
                       id="quickFaceScanGeneral"
                       checked={quickFaceScanLogin}
-                      onCheckedChange={(checked) => {
+                      onCheckedChange={async (checked) => {
                         setQuickFaceScanLogin(checked);
                         localStorage.setItem('quickFaceScanLoginEnabled', checked ? 'true' : 'false');
+                        try {
+                          await saveCompanySettings({ quickFaceScanLoginEnabled: checked });
+                        } catch (e) {
+                          console.error('Failed to sync to DB:', e);
+                        }
                         toast.success(`Quick Face Scan Login ${checked ? 'Enabled (ON)' : 'Disabled (OFF)'}`);
                       }}
                     />
@@ -455,9 +464,14 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
                     <Switch
                       id="quickFaceScanSecurity"
                       checked={quickFaceScanLogin}
-                      onCheckedChange={(checked) => {
+                      onCheckedChange={async (checked) => {
                         setQuickFaceScanLogin(checked);
                         localStorage.setItem('quickFaceScanLoginEnabled', checked ? 'true' : 'false');
+                        try {
+                          await saveCompanySettings({ quickFaceScanLoginEnabled: checked });
+                        } catch (e) {
+                          console.error('Failed to sync to DB:', e);
+                        }
                         toast.success(`Quick Face Scan Login ${checked ? 'Enabled (ON)' : 'Disabled (OFF)'}`);
                       }}
                     />
