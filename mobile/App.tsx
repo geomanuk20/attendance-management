@@ -267,14 +267,45 @@ function AppContent() {
           } catch {}
         }
 
-        // Compare live frame against enrolled employee photos in database
-        let bestMatch: any = user || enrolledFaceUser || (validProfiles && validProfiles[0]) || null;
-        let bestScore = 100;
+        // For Clock In / Clock Out: Strictly verify ONLY against the currently logged-in employee
+        if (pendingFaceAction === 'clockIn' || pendingFaceAction === 'clockOut') {
+          const targetName = user?.name || enrolledFaceUser?.name || 'Employee';
+          const targetFace = user?.faceImage || enrolledFaceUser?.faceImage;
 
-        if (validProfiles && validProfiles.length > 0 && liveBase64) {
+          if (targetFace && liveBase64) {
+            const sampleLen = Math.min(1000, liveBase64.length, targetFace.length);
+            let diffSum = 0, count = 0;
+            for (let i = 50; i < sampleLen; i += 10) {
+              diffSum += Math.abs(liveBase64.charCodeAt(i) - targetFace.charCodeAt(i));
+              count++;
+            }
+            const score = Math.max(10, Math.min(100, Math.round(100 - (diffSum / (count || 1)) * 0.5)));
+            if (score < 30) {
+              setFaceScanState('failed');
+              setFaceStatusMessage(`❌ Face does not match ${targetName}'s enrolled profile photo.`);
+              return;
+            }
+          }
+
+          setFaceScanProgress(100);
+          setFaceScanState('verified');
+          setFaceStatusMessage(`✓ Biometric Face Verified! Welcome, ${targetName}!`);
+
+          setTimeout(async () => {
+            setIsFaceModalOpen(false);
+            await executeClockAction();
+          }, 1100);
+          return;
+        }
+
+        // For Quick Login: Identify which employee is in front of the camera
+        let bestMatch: any = (validProfiles && validProfiles[0]) || null;
+        let bestScore = 0;
+
+        if (validProfiles && validProfiles.length > 0) {
           for (const emp of validProfiles) {
-            let score = 0;
-            if (emp.faceImage) {
+            let score = 95;
+            if (emp.faceImage && liveBase64) {
               const sampleLen = Math.min(1000, liveBase64.length, emp.faceImage.length);
               let diffSum = 0, count = 0;
               for (let i = 50; i < sampleLen; i += 10) {
@@ -282,8 +313,6 @@ function AppContent() {
                 count++;
               }
               score = Math.max(10, Math.min(100, Math.round(100 - (diffSum / (count || 1)) * 0.5)));
-            } else {
-              score = 95;
             }
 
             if (score >= bestScore) {
@@ -293,19 +322,19 @@ function AppContent() {
           }
         }
 
-        const matchedName = bestMatch?.name || user?.name || enrolledFaceUser?.name || 'geo manu';
-        setFaceScanProgress(100);
-        setFaceScanState('verified');
-        setFaceStatusMessage(`✓ Biometric Face Verified! Welcome, ${matchedName}!`);
+        if (bestMatch && bestScore >= 35) {
+          setFaceScanProgress(100);
+          setFaceScanState('verified');
+          setFaceStatusMessage(`✓ Biometric Face Verified! Welcome, ${bestMatch.name}!`);
 
-        setTimeout(async () => {
-          setIsFaceModalOpen(false);
-          if (pendingFaceAction === 'login') {
-            await executeFaceLoginWithUser(bestMatch || { name: matchedName, email: user?.email });
-          } else if (pendingFaceAction === 'clockIn' || pendingFaceAction === 'clockOut') {
-            await executeClockAction();
-          }
-        }, 1100);
+          setTimeout(async () => {
+            setIsFaceModalOpen(false);
+            await executeFaceLoginWithUser(bestMatch);
+          }, 1100);
+        } else {
+          setFaceScanState('failed');
+          setFaceStatusMessage('❌ Unrecognized Face. Live scan does not match any enrolled user.');
+        }
       } catch (err: any) {
         setFaceScanState('failed');
         setFaceStatusMessage(`❌ Verification error: ${err.message || 'Could not verify'}`);

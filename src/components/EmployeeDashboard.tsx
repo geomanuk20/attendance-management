@@ -374,7 +374,7 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
   };
 
   const executeVerifiedClockAction = async (matchedUser?: any) => {
-    const userId = matchedUser?._id || matchedUser?.id || user?.id || user?._id;
+    const userId = user?._id || user?.id || matchedUser?._id || matchedUser?.id;
     if (!userId) {
       toast.error('Could not identify employee profile for attendance logging.');
       return;
@@ -578,7 +578,6 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
         userName={user?.name || 'Employee'}
         actionType={pendingClockAction}
         enrolledFaceImage={user?.faceImage}
-        enrolledEmployees={allEmployees}
       />
 
       {/* Leave Balance Breakdown Dialog Modal */}

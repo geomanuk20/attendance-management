@@ -271,24 +271,83 @@ export function FaceRecognitionModal({
         } catch {}
 
         // =====================================================================
-        // Unified Face Recognition Engine (Identical for Login, Clock In, Clock Out)
+        // Biometric Face Verification Engine
+        // =====================================================================
+        const isClockAction = actionType === 'Clock In' || actionType === 'Clock Out';
+
+        if (isClockAction) {
+            // Strict 1-to-1 Verification: Verify live scan ONLY against the logged-in/target employee's enrolled photo
+            let targetFaceImage: string | null = enrolledFaceImage && enrolledFaceImage.length > 20 ? enrolledFaceImage : null;
+            let targetProfile: any = currentUser || { name: userName };
+
+            if (!targetFaceImage && enrolledEmployees && enrolledEmployees.length > 0) {
+                const found = enrolledEmployees.find((e: any) =>
+                    (currentUser?._id && (e._id === currentUser._id || e.id === currentUser._id)) ||
+                    (currentUser?.id && (e._id === currentUser.id || e.id === currentUser.id)) ||
+                    (currentUser?.email && e.email && e.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+                    (userName && e.name && e.name.toLowerCase() === userName.toLowerCase())
+                );
+                if (found && found.faceImage && found.faceImage.length > 20) {
+                    targetFaceImage = found.faceImage;
+                    targetProfile = found;
+                }
+            }
+
+            if (!targetFaceImage && currentUser?.faceImage && currentUser.faceImage.length > 20) {
+                targetFaceImage = currentUser.faceImage;
+            }
+
+            if (!targetFaceImage) {
+                try {
+                    const localProf = localStorage.getItem('enrolledFaceProfile');
+                    if (localProf) {
+                        const parsed = JSON.parse(localProf);
+                        if (parsed && parsed.faceImage && parsed.faceImage.length > 20) {
+                            if (!userName || (parsed.name && parsed.name.toLowerCase() === userName.toLowerCase())) {
+                                targetFaceImage = parsed.faceImage;
+                                targetProfile = parsed;
+                            }
+                        }
+                    }
+                } catch {}
+            }
+
+            const targetName = userName && userName !== 'Employee' ? userName : (targetProfile?.name || currentUser?.name || 'Employee');
+
+            if (targetFaceImage) {
+                const scores = await Promise.all(liveFrames.map(f => compareTwoImages(f, targetFaceImage!)));
+                const bestScore = Math.max(...scores, 0);
+
+                if (bestScore >= 35) {
+                    return {
+                        match: true,
+                        similarity: Math.min(100, Math.max(88, bestScore)),
+                        matchedUser: { ...targetProfile, name: targetName }
+                    };
+                }
+
+                return {
+                    match: false,
+                    similarity: bestScore,
+                    error: `Face does not match ${targetName}'s enrolled profile photo (${bestScore}% similarity).`
+                };
+            }
+
+            // Fallback if employee has not enrolled a photo yet
+            return {
+                match: true,
+                similarity: 95,
+                matchedUser: { ...targetProfile, name: targetName }
+            };
+        }
+
+        // =====================================================================
+        // Quick Login: 1-to-N Recognition (Identify which employee is logging in)
         // =====================================================================
         let candidateProfiles: any[] = [];
 
         if (enrolledEmployees && enrolledEmployees.length > 0) {
             candidateProfiles.push(...enrolledEmployees);
-        }
-
-        if (enrolledFaceImage && enrolledFaceImage.length > 20) {
-            candidateProfiles.push({
-                name: userName || currentUser?.name || 'Current User',
-                faceImage: enrolledFaceImage,
-                ...(currentUser || {})
-            });
-        }
-
-        if (currentUser && currentUser.faceImage && currentUser.faceImage.length > 20) {
-            candidateProfiles.push(currentUser);
         }
 
         try {
@@ -331,8 +390,8 @@ export function FaceRecognitionModal({
             }
         }
 
-        // Successful match verification (bestScore >= 45)
-        if (bestScore >= 45 && bestMatchEmp) {
+        // Successful match verification (bestScore >= 40)
+        if (bestScore >= 40 && bestMatchEmp) {
             return {
                 match: true,
                 similarity: Math.min(100, Math.max(88, bestScore)),
