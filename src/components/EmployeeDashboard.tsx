@@ -544,8 +544,13 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
-              <Tooltip />
-              <Bar dataKey="hours" fill="#3BAFDA" />
+              <Tooltip
+                formatter={(value: any) => [`${value} hrs`, 'Work Hours']}
+                contentStyle={{ backgroundColor: '#0f172a', borderRadius: '10px', border: '1px solid #334155', fontSize: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.4)' }}
+                labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
+                itemStyle={{ color: '#38bdf8', fontWeight: '500' }}
+              />
+              <Bar dataKey="hours" fill="#3BAFDA" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>

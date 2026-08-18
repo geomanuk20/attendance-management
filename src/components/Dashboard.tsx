@@ -303,7 +303,9 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
                 <YAxis fontSize={12} stroke="#64748b" allowDecimals={false} />
                 <Tooltip
                   formatter={(value: any, name: any) => [`${value} employees`, name]}
-                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
+                  contentStyle={{ backgroundColor: '#0f172a', borderRadius: '10px', border: '1px solid #334155', fontSize: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.4)' }}
+                  labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
+                  itemStyle={{ color: '#f8fafc', fontWeight: '500' }}
                 />
                 <Bar dataKey="Present" fill="#10B981" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="Absent" fill="#F9A825" radius={[6, 6, 0, 0]} />
@@ -346,7 +348,9 @@ export function Dashboard({ currency = 'USD' }: DashboardProps) {
                   </Pie>
                   <Tooltip
                     formatter={(value: any, name: any) => [`${value} requests`, name]}
-                    contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
+                    contentStyle={{ backgroundColor: '#0f172a', borderRadius: '10px', border: '1px solid #334155', fontSize: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.4)' }}
+                    labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
+                    itemStyle={{ color: '#f8fafc', fontWeight: '500' }}
                   />
                 </PieChart>
               </div>

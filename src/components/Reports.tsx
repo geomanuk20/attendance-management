@@ -496,7 +496,9 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
               <YAxis domain={[60, 100]} ticks={[60, 70, 80, 90, 100]} fontSize={12} stroke="#64748b" />
               <Tooltip
                 formatter={(value: any) => [`${value}%`, 'Attendance Rate']}
-                contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
+                contentStyle={{ backgroundColor: '#0f172a', borderRadius: '10px', border: '1px solid #334155', fontSize: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.4)' }}
+                labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
+                itemStyle={{ color: '#38bdf8', fontWeight: '500' }}
               />
               <Area type="monotone" dataKey="attendance" stroke="#0D2B52" strokeWidth={3} fillOpacity={1} fill="url(#attendanceGrad)" dot={{ r: 4, fill: '#0D2B52' }} />
             </AreaChart>
@@ -532,7 +534,9 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
                 </Pie>
                 <Tooltip
                   formatter={(value: any, name: any) => [`${value} requests`, name]}
-                  contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
+                  contentStyle={{ backgroundColor: '#0f172a', borderRadius: '10px', border: '1px solid #334155', fontSize: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.4)' }}
+                  labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
+                  itemStyle={{ color: '#f8fafc', fontWeight: '500' }}
                 />
               </PieChart>
             </div>
@@ -580,7 +584,9 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
               <YAxis domain={[0, 100]} fontSize={12} stroke="#64748b" />
               <Tooltip
                 formatter={(value: any) => [`${value}%`, 'Attendance Rate']}
-                contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
+                contentStyle={{ backgroundColor: '#0f172a', borderRadius: '10px', border: '1px solid #334155', fontSize: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.4)' }}
+                labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
+                itemStyle={{ color: '#38bdf8', fontWeight: '500' }}
               />
               <Bar dataKey="attendance" fill="#0D2B52" radius={[6, 6, 0, 0]} />
             </BarChart>
@@ -611,7 +617,9 @@ export function Reports({ currency = 'USD' }: ReportsProps) {
               <YAxis fontSize={12} stroke="#64748b" tickFormatter={(val) => `${val > 999 ? (val/1000).toFixed(0) + 'k' : val}`} />
               <Tooltip
                 formatter={(value: any) => [formatCurrency(Number(value)), 'Total Payroll']}
-                contentStyle={{ backgroundColor: '#0f172a', color: '#fff', borderRadius: '10px', border: 'none', fontSize: '12px' }}
+                contentStyle={{ backgroundColor: '#0f172a', borderRadius: '10px', border: '1px solid #334155', fontSize: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.4)' }}
+                labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
+                itemStyle={{ color: '#c084fc', fontWeight: '500' }}
               />
               <Area type="monotone" dataKey="amount" stroke="#8B5CF6" strokeWidth={3} fillOpacity={1} fill="url(#payrollGrad)" dot={{ r: 4, fill: '#8B5CF6' }} />
             </AreaChart>
