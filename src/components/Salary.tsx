@@ -859,17 +859,17 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
 
       {/* Details Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="max-w-xl w-[90vw] max-h-[85vh] overflow-y-auto p-4 sm:p-6 rounded-2xl shadow-2xl border border-border bg-background">
+        <DialogContent className="w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl shadow-2xl border border-border bg-background">
           <DialogHeader className="pb-2 border-b">
-            <DialogTitle className="text-xl font-bold text-foreground">Salary Details</DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
+            <DialogTitle className="text-lg sm:text-xl font-bold text-foreground">Salary Details</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm text-muted-foreground">
               Breakdown for {selectedRecord?.name} - {new Date(selectedMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}
             </DialogDescription>
           </DialogHeader>
           {selectedRecord && (
             <div className="space-y-4 py-3" ref={slipRef}>
               {/* Employee Summary Card */}
-              <div className="bg-slate-100 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-3 text-xs">
+              <div className="bg-slate-100 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
                   <span className="text-muted-foreground block text-[11px] font-medium">Employee Name</span>
                   <span className="font-bold text-foreground text-sm">{selectedRecord?.name}</span>
@@ -901,12 +901,12 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
                   )}
                 </div>
                 <div className="bg-green-50 dark:bg-emerald-950/30 p-3.5 sm:p-4 rounded-xl space-y-2.5 border border-green-100 dark:border-emerald-900/40">
-                  <div className="flex justify-between text-sm items-center gap-3">
+                  <div className="flex justify-between text-xs sm:text-sm items-center gap-2 sm:gap-3">
                     <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Basic Salary</span>
                     {isEditing ? (
                       <Input
                         type="number"
-                        className="h-8 w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 focus:ring-2 focus:ring-emerald-500"
+                        className="h-8 w-24 sm:w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2 sm:px-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500"
                         value={editValues.basicSalary}
                         onChange={(e) => setEditValues({ ...editValues, basicSalary: Number(e.target.value) })}
                       />
@@ -914,12 +914,12 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
                       <span className="font-semibold text-foreground">{formatCurrency(selectedRecord.basicSalary)}</span>
                     )}
                   </div>
-                  <div className="flex justify-between text-sm items-center gap-3">
+                  <div className="flex justify-between text-xs sm:text-sm items-center gap-2 sm:gap-3">
                     <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">HRA</span>
                     {isEditing ? (
                       <Input
                         type="number"
-                        className="h-8 w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 focus:ring-2 focus:ring-emerald-500"
+                        className="h-8 w-24 sm:w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2 sm:px-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500"
                         value={editValues.hra}
                         onChange={(e) => setEditValues({ ...editValues, hra: Number(e.target.value) })}
                       />
@@ -927,12 +927,12 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
                       <span className="font-semibold text-foreground">{formatCurrency(selectedRecord.hra)}</span>
                     )}
                   </div>
-                  <div className="flex justify-between text-sm items-center gap-3">
+                  <div className="flex justify-between text-xs sm:text-sm items-center gap-2 sm:gap-3">
                     <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Allowances</span>
                     {isEditing ? (
                       <Input
                         type="number"
-                        className="h-8 w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 focus:ring-2 focus:ring-emerald-500"
+                        className="h-8 w-24 sm:w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2 sm:px-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500"
                         value={editValues.otherAllowances}
                         onChange={(e) => setEditValues({ ...editValues, otherAllowances: Number(e.target.value) })}
                       />
@@ -941,12 +941,12 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
                     )}
                   </div>
 
-                  <div className="flex justify-between text-sm items-center gap-3">
+                  <div className="flex justify-between text-xs sm:text-sm items-center gap-2 sm:gap-3">
                     <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Overtime</span>
                     {isEditing ? (
                       <Input
                         type="number"
-                        className="h-8 w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 focus:ring-2 focus:ring-emerald-500"
+                        className="h-8 w-24 sm:w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2 sm:px-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500"
                         value={editValues.overtime}
                         onChange={(e) => setEditValues({ ...editValues, overtime: Number(e.target.value) })}
                       />
@@ -956,12 +956,12 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
                       </span>
                     )}
                   </div>
-                  <div className="flex justify-between text-sm items-center gap-3">
+                  <div className="flex justify-between text-xs sm:text-sm items-center gap-2 sm:gap-3">
                     <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Bonus / Incentive</span>
                     {isEditing ? (
                       <Input
                         type="number"
-                        className="h-8 w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 focus:ring-2 focus:ring-emerald-500"
+                        className="h-8 w-24 sm:w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2 sm:px-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500"
                         value={editValues.bonus}
                         onChange={(e) => setEditValues({ ...editValues, bonus: Number(e.target.value) })}
                       />
@@ -1086,13 +1086,13 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
 
       {/* Salary & Payroll Calculator Modal */}
       <Dialog open={isCalcOpen} onOpenChange={setIsCalcOpen}>
-        <DialogContent className="max-w-xl w-[90vw] max-h-[85vh] overflow-y-auto p-4 sm:p-6 rounded-2xl shadow-2xl border border-border bg-background">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
+        <DialogContent className="w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl shadow-2xl border border-border bg-background">
+          <DialogHeader className="pb-2 border-b">
+            <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl font-bold">
               <Calculator className="h-5 w-5 text-primary" />
               Payroll & Salary Calculator
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm text-muted-foreground">
               Estimate net monthly payouts, overtime wages, and deductions.
             </DialogDescription>
           </DialogHeader>
@@ -1102,7 +1102,7 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
             <div className="space-y-1.5 bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border">
               <Label className="text-xs text-muted-foreground font-semibold">Quick Auto-Fill Employee Data</Label>
               <Select value={calcEmpId} onValueChange={handleSelectCalcEmployee}>
-                <SelectTrigger className="h-8 bg-background">
+                <SelectTrigger className="h-8 bg-background text-xs sm:text-sm">
                   <SelectValue placeholder="Custom Calculation" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1116,7 +1116,7 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="calcBaseSalary" className="text-xs">Base Monthly Gross (₹)</Label>
                 <Input

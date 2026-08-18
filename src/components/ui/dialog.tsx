@@ -41,10 +41,9 @@ const DialogContent = React.forwardRef<
       <DialogPrimitive.Content
         ref={ref}
         data-slot="dialog-content"
-        style={{ maxHeight: '85vh', ...props.style }}
         className={cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 flex flex-col w-[92vw] max-h-[85vh] translate-x-[-50%] translate-y-[-50%] rounded-2xl border shadow-2xl duration-200 overflow-hidden min-h-0",
-          !hasCustomMaxWidth && "max-w-lg",
+          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 flex flex-col w-[95vw] sm:w-full max-h-[90vh] translate-x-[-50%] translate-y-[-50%] rounded-2xl border shadow-2xl duration-200 overflow-y-auto min-h-0",
+          !hasCustomMaxWidth && "sm:max-w-lg",
           className
         )}
         {...props}
