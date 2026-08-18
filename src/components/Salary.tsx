@@ -858,7 +858,10 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
 
       {/* Details Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="w-[96vw] sm:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-7 rounded-2xl shadow-2xl border border-border bg-background">
+        <DialogContent
+          style={{ width: 'min(calc(100vw - 1.25rem), 56rem)', maxWidth: '56rem' }}
+          className="p-4 sm:p-7 rounded-2xl shadow-2xl border border-border bg-background"
+        >
           <DialogHeader className="pb-3 border-b">
             <DialogTitle className="text-xl sm:text-2xl font-bold text-foreground">Salary Details</DialogTitle>
             <DialogDescription className="text-xs sm:text-sm text-muted-foreground">
@@ -1090,7 +1093,10 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
 
       {/* Salary & Payroll Calculator Modal */}
       <Dialog open={isCalcOpen} onOpenChange={setIsCalcOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl shadow-2xl border border-border bg-background">
+        <DialogContent
+          style={{ width: 'min(calc(100vw - 1.25rem), 48rem)', maxWidth: '48rem' }}
+          className="p-4 sm:p-6 rounded-2xl shadow-2xl border border-border bg-background"
+        >
           <DialogHeader className="pb-2 border-b">
             <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl font-bold">
               <Calculator className="h-5 w-5 text-primary" />
