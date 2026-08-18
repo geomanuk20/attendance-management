@@ -181,16 +181,23 @@ export function FaceRecognitionModal({
                     const scoreFlipped = calcScore(d1, d2F);
                     const best = scoreNormal.totalScore >= scoreFlipped.totalScore ? scoreNormal : scoreFlipped;
 
-                    let finalScore = 15;
-                    if (best.corr >= 0.18 || best.totalScore >= 28) {
-                        finalScore = Math.min(100, Math.max(88, Math.round(86 + best.corr * 14)));
-                    } else if (best.corr >= 0.08 || best.totalScore >= 18) {
-                        finalScore = Math.min(85, Math.max(72, Math.round(70 + best.corr * 20)));
+                    // Accurate biometric similarity score (0 - 100)
+                    let finalScore = 0;
+                    if (best.corr >= 0.50) {
+                        // Strong positive match: 80% to 100%
+                        finalScore = Math.round(80 + (best.corr - 0.50) * 40);
+                    } else if (best.corr >= 0.35 && best.totalScore >= 38) {
+                        // Moderate match: 60% to 79%
+                        finalScore = Math.round(60 + (best.corr - 0.35) * 120);
+                    } else if (best.corr >= 0.20) {
+                        // Weak correlation (different person): 25% to 45%
+                        finalScore = Math.round(25 + (best.corr - 0.20) * 130);
                     } else {
-                        finalScore = Math.max(5, Math.min(30, Math.round(best.totalScore * 0.8)));
+                        // Complete mismatch (unknown user): 5% to 20%
+                        finalScore = Math.max(5, Math.round(Math.max(0, best.corr) * 80));
                     }
 
-                    resolve(finalScore);
+                    resolve(Math.min(100, Math.max(0, finalScore)));
                 } catch {
                     resolve(0);
                 }
@@ -314,30 +321,31 @@ export function FaceRecognitionModal({
 
             const targetName = userName && userName !== 'Employee' ? userName : (targetProfile?.name || currentUser?.name || 'Employee');
 
-            if (targetFaceImage) {
-                const scores = await Promise.all(liveFrames.map(f => compareTwoImages(f, targetFaceImage!)));
-                const bestScore = Math.max(...scores, 0);
-
-                if (bestScore >= 35) {
-                    return {
-                        match: true,
-                        similarity: Math.min(100, Math.max(88, bestScore)),
-                        matchedUser: { ...targetProfile, name: targetName }
-                    };
-                }
-
+            // Strictly require enrolled photo for Clock In / Clock Out
+            if (!targetFaceImage) {
                 return {
                     match: false,
-                    similarity: bestScore,
-                    error: `Face does not match ${targetName}'s enrolled profile photo (${bestScore}% similarity).`
+                    similarity: 0,
+                    error: `No enrolled biometric photo found for ${targetName}. Please enroll your face photo in Settings / Employee Management first.`
                 };
             }
 
-            // Fallback if employee has not enrolled a photo yet
+            const scores = await Promise.all(liveFrames.map(f => compareTwoImages(f, targetFaceImage!)));
+            const bestScore = Math.max(...scores, 0);
+
+            // Strict threshold: Must achieve >= 60% similarity to pass biometric verification
+            if (bestScore >= 60) {
+                return {
+                    match: true,
+                    similarity: bestScore,
+                    matchedUser: { ...targetProfile, name: targetName }
+                };
+            }
+
             return {
-                match: true,
-                similarity: 95,
-                matchedUser: { ...targetProfile, name: targetName }
+                match: false,
+                similarity: bestScore,
+                error: `Face Mismatch (${bestScore}% similarity). Live face does not match ${targetName}'s enrolled profile photo.`
             };
         }
 
@@ -390,11 +398,11 @@ export function FaceRecognitionModal({
             }
         }
 
-        // Successful match verification (bestScore >= 40)
-        if (bestScore >= 40 && bestMatchEmp) {
+        // Strict threshold for Quick Login: >= 60% similarity
+        if (bestScore >= 60 && bestMatchEmp) {
             return {
                 match: true,
-                similarity: Math.min(100, Math.max(88, bestScore)),
+                similarity: bestScore,
                 matchedUser: bestMatchEmp
             };
         }
