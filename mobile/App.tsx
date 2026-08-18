@@ -1845,120 +1845,50 @@ function AppContent() {
 
         </View>
 
-        {/* ====== REAL FACE VERIFICATION MODAL (Clock In/Out) ====== */}
-        <Modal visible={isFaceVerifying} transparent animationType="fade" onRequestClose={() => {}}>
-          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-            <View style={{ width: '100%', maxWidth: 360, backgroundColor: '#0f172a', borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: '#1e293b' }}>
-              {/* Header */}
-              <View style={{ backgroundColor: '#1e293b', paddingVertical: 16, paddingHorizontal: 20, alignItems: 'center' }}>
-                <Text style={{ color: '#94a3b8', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-                  Biometric Face Verification
-                </Text>
-                <Text style={{ color: '#f1f5f9', fontSize: 16, fontWeight: '800', marginTop: 4 }}>
-                  {pendingFaceAction === 'clockIn' ? '🟢 Clock In Verification' : '🔴 Clock Out Verification'}
-                </Text>
-              </View>
-
-              <View style={{ padding: 20 }}>
-                {/* Face comparison row */}
-                <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
-                  {/* Stored face */}
-                  <View style={{ flex: 1, alignItems: 'center' }}>
-                    <Text style={{ color: '#64748b', fontSize: 10, fontWeight: '700', letterSpacing: 1, marginBottom: 8, textTransform: 'uppercase' }}>Enrolled Face</Text>
-                    <View style={{ width: 110, height: 110, borderRadius: 55, overflow: 'hidden', borderWidth: 2, borderColor: '#6366f1', backgroundColor: '#1e293b', justifyContent: 'center', alignItems: 'center' }}>
-                      {isRealFaceImage(enrolledFaceUser?.faceImage) ? (
-                        <Image source={{ uri: enrolledFaceUser.faceImage }} style={{ width: 110, height: 110 }} resizeMode="cover" />
-                      ) : (
-                        <Text style={{ fontSize: 36 }}>👤</Text>
-                      )}
-                    </View>
-                    <View style={{ marginTop: 8, backgroundColor: '#312e81', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20 }}>
-                      <Text style={{ color: '#818cf8', fontSize: 10, fontWeight: '700' }}>SAVED</Text>
-                    </View>
-                  </View>
-
-                  {/* VS divider */}
-                  <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                    <View style={{ width: 1, flex: 1, backgroundColor: '#1e293b' }} />
-                    <View style={{ backgroundColor: '#0f172a', paddingVertical: 6, paddingHorizontal: 2 }}>
-                      <Text style={{ color: '#475569', fontSize: 11, fontWeight: '800' }}>VS</Text>
-                    </View>
-                    <View style={{ width: 1, flex: 1, backgroundColor: '#1e293b' }} />
-                  </View>
-
-                  {/* Live capture */}
-                  <View style={{ flex: 1, alignItems: 'center' }}>
-                    <Text style={{ color: '#64748b', fontSize: 10, fontWeight: '700', letterSpacing: 1, marginBottom: 8, textTransform: 'uppercase' }}>Live Capture</Text>
-                    <View style={{ width: 110, height: 110, borderRadius: 55, overflow: 'hidden', borderWidth: 2, borderColor: faceVerifyStep === 'success' ? '#10b981' : faceVerifyStep === 'failed' ? '#ef4444' : '#334155', backgroundColor: '#1e293b', justifyContent: 'center', alignItems: 'center' }}>
-                      {capturedFaceUri ? (
-                        <Image source={{ uri: capturedFaceUri }} style={{ width: 110, height: 110 }} resizeMode="cover" />
-                      ) : (
-                        <Text style={{ fontSize: 36 }}>📷</Text>
-                      )}
-                    </View>
-                    <View style={{ marginTop: 8, backgroundColor: faceVerifyStep === 'success' ? '#052e16' : faceVerifyStep === 'failed' ? '#450a0a' : '#0f172a', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20, borderWidth: 1, borderColor: faceVerifyStep === 'success' ? '#10b981' : faceVerifyStep === 'failed' ? '#ef4444' : '#334155' }}>
-                      <Text style={{ color: faceVerifyStep === 'success' ? '#10b981' : faceVerifyStep === 'failed' ? '#ef4444' : '#64748b', fontSize: 10, fontWeight: '700' }}>
-                        {faceVerifyStep === 'capturing' ? 'CAPTURING...' : faceVerifyStep === 'verifying' ? 'SCANNING...' : faceVerifyStep === 'success' ? 'VERIFIED ✓' : faceVerifyStep === 'failed' ? 'FAILED ✗' : 'LIVE'}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Status bar */}
-                <View style={{ backgroundColor: '#1e293b', borderRadius: 12, padding: 16, alignItems: 'center' }}>
-                  {faceVerifyStep === 'verifying' && (
-                    <>
-                      <ActivityIndicator color="#818cf8" size="small" style={{ marginBottom: 8 }} />
-                      <Text style={{ color: '#818cf8', fontSize: 13, fontWeight: '700', textAlign: 'center' }}>Analyzing facial geometry...</Text>
-                      <Text style={{ color: '#64748b', fontSize: 11, marginTop: 4, textAlign: 'center' }}>Matching biometric signature with enrolled profile</Text>
-                    </>
-                  )}
-                  {faceVerifyStep === 'success' && (
-                    <>
-                      <Text style={{ fontSize: 28, marginBottom: 4 }}>✅</Text>
-                      <Text style={{ color: '#10b981', fontSize: 14, fontWeight: '800', textAlign: 'center' }}>Face Verified Successfully!</Text>
-                      <Text style={{ color: '#6ee7b7', fontSize: 11, marginTop: 4, textAlign: 'center' }}>
-                        {pendingFaceAction === 'clockIn' ? 'Processing Clock In...' : 'Processing Clock Out...'}
-                      </Text>
-                    </>
-                  )}
-                  {faceVerifyStep === 'failed' && (
-                    <>
-                      <Text style={{ fontSize: 28, marginBottom: 4 }}>❌</Text>
-                      <Text style={{ color: '#ef4444', fontSize: 14, fontWeight: '800', textAlign: 'center' }}>Verification Failed</Text>
-                      <Text style={{ color: '#fca5a5', fontSize: 11, marginTop: 4, textAlign: 'center' }}>Face does not match enrolled profile</Text>
-                    </>
-                  )}
-                  {(faceVerifyStep === 'capturing' || faceVerifyStep === 'idle') && (
-                    <>
-                      <ActivityIndicator color="#6366f1" size="small" style={{ marginBottom: 8 }} />
-                      <Text style={{ color: '#6366f1', fontSize: 13, fontWeight: '700', textAlign: 'center' }}>Opening camera for face scan...</Text>
-                    </>
-                  )}
-                </View>
-              </View>
-            </View>
-          </View>
-        </Modal>
-
-        {/* Mobile Face Recognition Modal */}
+        {/* Biometric Face Recognition Modal (Matching Web Portal Design) */}
         <Modal visible={isFaceModalOpen} transparent animationType="fade" onRequestClose={() => setIsFaceModalOpen(false)}>
-
-          <View style={{ flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.90)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
-            <View style={{ width: '100%', maxWidth: 380, backgroundColor: '#0f172a', borderRadius: 32, borderWidth: 1, borderColor: '#1e293b', padding: 24, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 15 }}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.75)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
+            <View style={{ width: '100%', maxWidth: 360, backgroundColor: '#ffffff', borderRadius: 28, borderWidth: 1, borderColor: '#e2e8f0', padding: 24, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.25, shadowRadius: 20, elevation: 15, position: 'relative' }}>
               
-              <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: 'bold', marginBottom: 4 }}>Biometric Face Recognition</Text>
-                <Text style={{ color: '#94a3b8', fontSize: 12, textAlign: 'center' }}>
-                  {pendingFaceAction === 'login' 
-                    ? (enrolledFaceUser ? `Enrolled User: ${enrolledFaceUser.name}` : 'Scanning User Identity')
-                    : `Verifying for ${pendingFaceAction === 'clockIn' ? 'Clock In' : 'Clock Out'}`}
+              {/* Close Button Top Right */}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setIsFaceModalOpen(false)}
+                style={{ position: 'absolute', top: 16, right: 16, width: 32, height: 32, borderRadius: 16, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
+              >
+                <Text style={{ color: '#64748b', fontSize: 16, fontWeight: '700' }}>✕</Text>
+              </TouchableOpacity>
+
+              {/* Header Title with Shield Check Icon */}
+              <View style={{ alignItems: 'center', marginBottom: 18, width: '100%', paddingHorizontal: 20 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 4 }}>
+                  <Text style={{ fontSize: 18 }}>🛡️</Text>
+                  <Text style={{ color: '#0f172a', fontSize: 18, fontWeight: '800' }}>Biometric Face Recognition</Text>
+                </View>
+                <Text style={{ color: '#64748b', fontSize: 13, textAlign: 'center' }}>
+                  Facial scan for <Text style={{ color: '#0f172a', fontWeight: '700' }}>{user?.name || enrolledFaceUser?.name || 'geo manu'}</Text>
                 </Text>
               </View>
 
-              {/* Large Circular Camera Scanner View */}
-              <View style={{ width: 240, height: 240, borderRadius: 120, borderWidth: 4, borderColor: faceScanState === 'failed' ? '#f43f5e' : '#22c55e', overflow: 'hidden', justifyContent: 'center', alignItems: 'center', position: 'relative', backgroundColor: '#020617', marginBottom: 16 }}>
-                
+              {/* Thick Green Circular Live Camera Viewport */}
+              <View style={{
+                width: 250,
+                height: 250,
+                borderRadius: 125,
+                borderWidth: 8,
+                borderColor: faceScanState === 'failed' ? '#f43f5e' : '#22c55e',
+                overflow: 'hidden',
+                justifyContent: 'center',
+                alignItems: 'center',
+                position: 'relative',
+                backgroundColor: '#020617',
+                marginVertical: 10,
+                shadowColor: '#22c55e',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 10,
+                elevation: 6
+              }}>
                 {/* Live Front Camera Feed */}
                 <CameraView
                   ref={loginCameraRef}
@@ -1966,39 +1896,67 @@ function AppContent() {
                   style={{ width: '100%', height: '100%' }}
                 />
 
-                {/* Concentric Biometric Target Reticle */}
+                {/* Inner White/Green Concentric Circle Guide */}
                 {faceScanState !== 'verified' && (
-                  <View pointerEvents="none" style={{ position: 'absolute', width: 180, height: 180, borderRadius: 90, borderWidth: 2, borderStyle: 'dashed', borderColor: faceScanState === 'failed' ? '#f43f5e' : '#34d399', backgroundColor: 'transparent' }} />
+                  <View pointerEvents="none" style={{ position: 'absolute', width: 170, height: 170, borderRadius: 85, borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.75)', borderStyle: 'solid', backgroundColor: 'transparent' }} />
                 )}
 
-                {/* Failed Overlay Only */}
+                {/* Moving Green Laser Sweep Line */}
+                {faceScanState === 'scanning' && (
+                  <View pointerEvents="none" style={{ position: 'absolute', left: 24, right: 24, height: 2.5, backgroundColor: '#34d399', borderRadius: 2, top: `${Math.min(88, Math.max(12, faceScanProgress))}%` }} />
+                )}
+
+                {/* Failed Overlay */}
                 {faceScanState === 'failed' && (
-                  <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(136, 19, 55, 0.85)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
-                    <Text style={{ fontSize: 32, color: '#f43f5e', marginBottom: 4 }}>✕</Text>
-                    <Text style={{ color: '#fecdd3', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}>
+                  <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(136, 19, 55, 0.88)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+                    <Text style={{ fontSize: 36, color: '#f43f5e', marginBottom: 4 }}>✕</Text>
+                    <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: 'bold', textAlign: 'center' }}>
                       Unrecognized Face
                     </Text>
                   </View>
                 )}
               </View>
 
-              {/* Progress & Status Readout Below Circle */}
-              <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                <Text style={{ fontSize: 32, fontWeight: '800', color: faceScanState === 'verified' ? '#34d399' : faceScanState === 'failed' ? '#f43f5e' : '#ffffff', marginBottom: 4 }}>
+              {/* Progress & Live Scan Feedback Readout */}
+              <View style={{ alignItems: 'center', marginVertical: 14 }}>
+                <Text style={{ fontSize: 32, fontWeight: '800', color: faceScanState === 'verified' ? '#10b981' : faceScanState === 'failed' ? '#f43f5e' : '#0f172a', marginBottom: 4 }}>
                   {faceScanProgress}%
                 </Text>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: faceScanState === 'verified' ? '#34d399' : faceScanState === 'failed' ? '#f43f5e' : '#94a3b8', textAlign: 'center' }}>
-                  {faceScanState === 'verified' ? `✓ Welcome, ${user?.name || enrolledFaceUser?.name || 'Akhil'}!` : (faceStatusMessage || 'Please wait...')}
+                <Text style={{ fontSize: 13, fontWeight: '600', color: faceScanState === 'verified' ? '#10b981' : faceScanState === 'failed' ? '#f43f5e' : '#1e3a8a', textAlign: 'center', maxWidth: 280 }}>
+                  {faceScanState === 'verified' ? `✓ Welcome, ${user?.name || enrolledFaceUser?.name || 'geo manu'}!` : (faceStatusMessage || 'Position face within camera circle...')}
                 </Text>
               </View>
 
-              <TouchableOpacity 
-                activeOpacity={0.7}
-                style={{ width: '100%', height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: '#334155', justifyContent: 'center', alignItems: 'center' }} 
-                onPress={() => setIsFaceModalOpen(false)}
-              >
-                <Text style={{ color: '#cbd5e1', fontSize: 14, fontWeight: '600' }}>Cancel</Text>
-              </TouchableOpacity>
+              {/* Bottom Action Pill Buttons */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, width: '100%', marginTop: 6 }}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={{ backgroundColor: '#0f172a', paddingHorizontal: 22, height: 46, borderRadius: 23, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 3 }}
+                  onPress={async () => {
+                    if (faceScanState === 'failed') {
+                      triggerFaceModal(pendingFaceAction);
+                    } else if (pendingFaceAction === 'login') {
+                      await executeFaceLogin();
+                    } else if (pendingFaceAction === 'clockIn' || pendingFaceAction === 'clockOut') {
+                      await handleSnapAndVerifyFaceForClock();
+                    }
+                  }}
+                >
+                  <Text style={{ fontSize: 15 }}>📷</Text>
+                  <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '700' }}>
+                    {faceScanState === 'failed' ? 'Try Scanning Again' : 'Scan Face Now'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={{ backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', paddingHorizontal: 22, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' }}
+                  onPress={() => setIsFaceModalOpen(false)}
+                >
+                  <Text style={{ color: '#0f172a', fontSize: 14, fontWeight: '700' }}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+
             </View>
           </View>
         </Modal>
@@ -3764,49 +3722,50 @@ function AppContent() {
       </ScrollView>
 
       {/* Biometric Face Recognition & Enrollment Camera Scanner Modal */}
-      <Modal visible={isFaceModalOpen} animationType="slide" transparent>
-        <View style={{ flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.92)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}>
-          <View style={{ width: '100%', maxWidth: 400, backgroundColor: '#0f172a', borderRadius: 32, borderWidth: 1, borderColor: '#1e293b', padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 15, alignItems: 'center' }}>
+      <Modal visible={isFaceModalOpen} animationType="fade" transparent onRequestClose={() => setIsFaceModalOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.75)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
+          <View style={{ width: '100%', maxWidth: 360, backgroundColor: '#ffffff', borderRadius: 28, borderWidth: 1, borderColor: '#e2e8f0', padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.25, shadowRadius: 20, elevation: 15, alignItems: 'center', position: 'relative' }}>
             
+            {/* Close Button Top Right */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setIsFaceModalOpen(false)}
+              style={{ position: 'absolute', top: 16, right: 16, width: 32, height: 32, borderRadius: 16, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
+            >
+              <Text style={{ color: '#64748b', fontSize: 16, fontWeight: '700' }}>✕</Text>
+            </TouchableOpacity>
+
             {/* Modal Header */}
-            <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-              <View style={{ flex: 1, paddingRight: 10 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <Text style={{ fontSize: 18 }}>🛡️</Text>
-                  <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: 'bold' }}>
-                    {pendingFaceAction === 'enroll' ? 'Biometric Face ID Enrollment' : 'Biometric Face Verification'}
-                  </Text>
-                </View>
-                <Text style={{ color: '#94a3b8', fontSize: 12, lineHeight: 16 }}>
-                  {pendingFaceAction === 'enroll'
-                    ? 'Position your face inside circle to capture profile photo — '
-                    : `Verify identity for ${pendingFaceAction === 'clockIn' ? 'Clock In' : pendingFaceAction === 'clockOut' ? 'Clock Out' : 'Login'} — `}
-                  <Text style={{ color: '#34d399', fontWeight: 'bold' }}>{user?.name || enrolledFaceUser?.name || 'Employee'}</Text>
+            <View style={{ alignItems: 'center', marginBottom: 18, width: '100%', paddingHorizontal: 20 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 4 }}>
+                <Text style={{ fontSize: 18 }}>🛡️</Text>
+                <Text style={{ color: '#0f172a', fontSize: 18, fontWeight: '800' }}>
+                  {pendingFaceAction === 'enroll' ? 'Biometric Face ID Enrollment' : 'Biometric Face Recognition'}
                 </Text>
               </View>
-
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => setIsFaceModalOpen(false)}
-                style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <Text style={{ color: '#94a3b8', fontSize: 16, fontWeight: 'bold' }}>✕</Text>
-              </TouchableOpacity>
+              <Text style={{ color: '#64748b', fontSize: 13, textAlign: 'center' }}>
+                Facial scan for <Text style={{ color: '#0f172a', fontWeight: '700' }}>{user?.name || enrolledFaceUser?.name || 'geo manu'}</Text>
+              </Text>
             </View>
 
-            {/* Circular Camera View with Green Progress Ring & Bounding Box */}
+            {/* Circular Camera View with Bright Green Progress Ring */}
             <View style={{
-              width: 240,
-              height: 240,
-              borderRadius: 120,
-              borderWidth: 4,
-              borderColor: (capturedFaceUri || faceScanState === 'verified') ? '#10b981' : faceScanState === 'failed' ? '#f43f5e' : '#34d399',
+              width: 250,
+              height: 250,
+              borderRadius: 125,
+              borderWidth: 8,
+              borderColor: (capturedFaceUri || faceScanState === 'verified') ? '#22c55e' : faceScanState === 'failed' ? '#f43f5e' : '#22c55e',
               overflow: 'hidden',
               position: 'relative',
               backgroundColor: '#020617',
               alignItems: 'center',
               justifyContent: 'center',
-              marginBottom: 16
+              marginVertical: 10,
+              shadowColor: '#22c55e',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 10,
+              elevation: 6
             }}>
               {capturedFaceUri ? (
                 <Image source={{ uri: capturedFaceUri }} style={{ width: '100%', height: '100%', resizeMode: 'cover' }} />
@@ -3818,9 +3777,14 @@ function AppContent() {
                 />
               )}
 
-              {/* Circular Concentric Face Target Guide */}
+              {/* Inner White/Green Concentric Circle Guide */}
               {!capturedFaceUri && faceScanState !== 'verified' && (
-                <View pointerEvents="none" style={{ position: 'absolute', width: 170, height: 170, borderRadius: 85, borderWidth: 2, borderStyle: 'dashed', borderColor: '#34d399', backgroundColor: 'transparent' }} />
+                <View pointerEvents="none" style={{ position: 'absolute', width: 170, height: 170, borderRadius: 85, borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.75)', borderStyle: 'solid', backgroundColor: 'transparent' }} />
+              )}
+
+              {/* Moving Green Laser Sweep Line */}
+              {faceScanState === 'scanning' && !capturedFaceUri && (
+                <View pointerEvents="none" style={{ position: 'absolute', left: 24, right: 24, height: 2.5, backgroundColor: '#34d399', borderRadius: 2, top: `${Math.min(88, Math.max(12, faceScanProgress))}%` }} />
               )}
 
               {/* Verified Badge Overlay */}
@@ -3828,48 +3792,40 @@ function AppContent() {
                 <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(6, 78, 59, 0.85)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
                   <Text style={{ fontSize: 40, color: '#34d399', marginBottom: 4 }}>✓</Text>
                   <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: 'bold', textAlign: 'center' }}>
-                    {user?.name || enrolledFaceUser?.name || 'User'}
+                    {user?.name || enrolledFaceUser?.name || 'geo manu'}
                   </Text>
                   <Text style={{ color: '#34d399', fontSize: 12, fontWeight: '700', marginTop: 4 }}>
-                    ✓ 100% Match Enrolled
+                    ✓ 100% Match Verified
+                  </Text>
+                </View>
+              )}
+
+              {/* Failed Overlay */}
+              {faceScanState === 'failed' && (
+                <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(136, 19, 55, 0.88)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+                  <Text style={{ fontSize: 36, color: '#f43f5e', marginBottom: 4 }}>✕</Text>
+                  <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: 'bold', textAlign: 'center' }}>
+                    Unrecognized Face
                   </Text>
                 </View>
               )}
             </View>
 
             {/* Live Progress & Status Readout */}
-            <View style={{ alignItems: 'center', marginBottom: 20 }}>
-              <Text style={{ fontSize: 28, fontWeight: '800', color: faceScanState === 'failed' ? '#f43f5e' : '#ffffff', marginBottom: 4 }}>
-                {faceScanProgress > 0 ? `${faceScanProgress}%` : (capturedFaceUri ? '100%' : '100% Ready')}
+            <View style={{ alignItems: 'center', marginVertical: 14 }}>
+              <Text style={{ fontSize: 32, fontWeight: '800', color: faceScanState === 'verified' ? '#10b981' : faceScanState === 'failed' ? '#f43f5e' : '#0f172a', marginBottom: 4 }}>
+                {faceScanProgress > 0 ? `${faceScanProgress}%` : (capturedFaceUri ? '100%' : '100%')}
               </Text>
-              <Text style={{ color: '#34d399', fontSize: 12, fontWeight: '600', textAlign: 'center' }}>
-                {faceStatusMessage || (pendingFaceAction === 'enroll' ? '👁️ Align Eyes, Nose & 👈 👉 Profile' : `Biometric Verification (${faceScanProgress}%)`)}
+              <Text style={{ fontSize: 13, fontWeight: '600', color: faceScanState === 'verified' ? '#10b981' : faceScanState === 'failed' ? '#f43f5e' : '#1e3a8a', textAlign: 'center', maxWidth: 280 }}>
+                {faceStatusMessage || (pendingFaceAction === 'enroll' ? 'Position face inside the green circle to enroll...' : `Biometric Verification (${faceScanProgress}%)`)}
               </Text>
             </View>
 
-            {/* Bottom Action Footer */}
-            <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+            {/* Bottom Action Pill Buttons */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, width: '100%', marginTop: 6 }}>
               <TouchableOpacity
                 activeOpacity={0.8}
-                onPress={() => {
-                  if (capturedFaceUri && pendingFaceAction === 'enroll') {
-                    setCapturedFaceUri(null);
-                    setCapturedBase64(null);
-                    setFaceScanState('scanning');
-                    setFaceStatusMessage('Position your face within the circle frame...');
-                  } else {
-                    setIsFaceModalOpen(false);
-                  }
-                }}
-                style={{ flex: 1, height: 46, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: '#334155', justifyContent: 'center', alignItems: 'center' }}
-              >
-                <Text style={{ color: '#cbd5e1', fontSize: 14, fontWeight: '600' }}>
-                  {capturedFaceUri && pendingFaceAction === 'enroll' ? 'Retake' : 'Cancel'}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.8}
+                style={{ backgroundColor: '#0f172a', paddingHorizontal: 22, height: 46, borderRadius: 23, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 3 }}
                 onPress={async () => {
                   if (pendingFaceAction === 'enroll') {
                     if (capturedFaceUri) {
@@ -3893,24 +3849,31 @@ function AppContent() {
                     }
                   }
                 }}
-                style={{
-                  flex: 2,
-                  height: 46,
-                  borderRadius: 14,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  backgroundColor: (capturedFaceUri || faceScanState === 'verified') ? '#059669' : '#0284c7',
-                  borderWidth: 1,
-                  borderColor: (capturedFaceUri || faceScanState === 'verified') ? '#34d399' : '#38bdf8'
+              >
+                <Text style={{ fontSize: 15 }}>{(capturedFaceUri || faceScanState === 'verified') ? '✓' : '📷'}</Text>
+                <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '700' }}>
+                  {pendingFaceAction === 'enroll'
+                    ? (capturedFaceUri ? 'Confirm & Save' : 'Scan Face Now')
+                    : (faceScanState === 'verified' ? 'Confirm Verification' : 'Scan Face Now')}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={{ backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', paddingHorizontal: 22, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' }}
+                onPress={() => {
+                  if (capturedFaceUri && pendingFaceAction === 'enroll') {
+                    setCapturedFaceUri(null);
+                    setCapturedBase64(null);
+                    setFaceScanState('scanning');
+                    setFaceStatusMessage('Position your face within the circle frame...');
+                  } else {
+                    setIsFaceModalOpen(false);
+                  }
                 }}
               >
-                <Text style={{ fontSize: 16 }}>{(capturedFaceUri || faceScanState === 'verified') ? '✓' : '📷'}</Text>
-                <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: 'bold' }}>
-                  {pendingFaceAction === 'enroll'
-                    ? (capturedFaceUri ? 'Confirm & Save Face ID' : '📷 Scan & Enroll Face ID')
-                    : (faceScanState === 'verified' ? `✓ 100% Match — Confirm` : '📷 Scan & Verify Face')}
+                <Text style={{ color: '#0f172a', fontSize: 14, fontWeight: '700' }}>
+                  {capturedFaceUri && pendingFaceAction === 'enroll' ? 'Retake' : 'Cancel'}
                 </Text>
               </TouchableOpacity>
             </View>
