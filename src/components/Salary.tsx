@@ -681,59 +681,58 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3.5 sm:p-6 md:p-8 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2>Salary Management</h2>
-          <p className="text-muted-foreground">Manage employee salaries and payroll processing</p>
+          <h2 className="text-xl sm:text-2xl font-bold">Salary Management</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground">Manage employee salaries and payroll processing</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" className="gap-2" onClick={exportToExcel}>
+          <Button variant="outline" size="sm" className="gap-1.5 flex-1 sm:flex-initial text-xs font-semibold" onClick={exportToExcel}>
             <Download className="h-4 w-4" />
             Export
           </Button>
-          <Button variant="outline" className="gap-2" onClick={() => setIsCalcOpen(true)}>
+          <Button variant="outline" size="sm" className="gap-1.5 flex-1 sm:flex-initial text-xs font-semibold" onClick={() => setIsCalcOpen(true)}>
             <Calculator className="h-4 w-4 text-primary" />
             Calculate
           </Button>
           {selectedEmployeeIds.length > 0 && (
-            <Button className="gap-2" style={{ backgroundColor: '#2563eb', color: 'white' }} onClick={handleProcessSelected}>
+            <Button size="sm" className="gap-1.5 flex-1 sm:flex-initial text-xs font-semibold" style={{ backgroundColor: '#2563eb', color: 'white' }} onClick={handleProcessSelected}>
               <CheckSquare className="h-4 w-4" />
               Process Selected ({selectedEmployeeIds.length})
             </Button>
           )}
-          <Button className="gap-2" style={{ backgroundColor: '#16a34a', color: 'white' }} onClick={handleProcessPayroll}>
+          <Button size="sm" className="gap-1.5 flex-1 sm:flex-initial text-xs font-semibold" style={{ backgroundColor: '#16a34a', color: 'white' }} onClick={handleProcessPayroll}>
             <Send className="h-4 w-4" />
             Process All Pending
           </Button>
         </div>
       </div>
 
-
-      <Card className="p-4 sm:p-6">
-        <div className="flex flex-wrap gap-3 items-center">
-          <div className="relative flex items-center flex-1 sm:flex-initial min-w-[200px] sm:w-64">
+      <Card className="p-3.5 sm:p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-center">
+          <div className="relative flex items-center w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
             <Input
               placeholder="Search employees..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 w-full"
+              className="pl-9 w-full text-xs sm:text-sm"
             />
           </div>
 
-          <div className="relative flex items-center flex-1 sm:flex-initial min-w-[140px]">
+          <div className="relative flex items-center w-full">
             <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
             <Input
               type="month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-full sm:w-40 pl-10"
+              className="w-full pl-10 text-xs sm:text-sm"
             />
           </div>
 
           <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-            <SelectTrigger className="w-full sm:w-40">
+            <SelectTrigger className="w-full text-xs sm:text-sm">
               <SelectValue placeholder="Department" />
             </SelectTrigger>
             <SelectContent>
@@ -745,7 +744,7 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
           </Select>
 
           <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="w-full sm:w-32">
+            <SelectTrigger className="w-full text-xs sm:text-sm">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -758,10 +757,10 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
       </Card>
 
       <Card>
-        <div className="p-4 sm:p-6">
-          <h3 className="mb-4">Employee Salary Details</h3>
+        <div className="p-3.5 sm:p-6">
+          <h3 className="mb-4 text-base sm:text-lg font-bold">Employee Salary Details</h3>
           <div className="overflow-x-auto rounded-xl border border-border">
-          <Table>
+          <Table className="min-w-[720px]">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[50px]">
