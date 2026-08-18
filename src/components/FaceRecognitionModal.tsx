@@ -321,20 +321,21 @@ export function FaceRecognitionModal({
 
             const targetName = userName && userName !== 'Employee' ? userName : (targetProfile?.name || currentUser?.name || 'Employee');
 
-            // Strictly require enrolled photo for Clock In / Clock Out
+            // 1. First Check: Uploaded / enrolled profile face photo MUST exist
             if (!targetFaceImage) {
                 return {
                     match: false,
                     similarity: 0,
-                    error: `No enrolled biometric photo found for ${targetName}. Please enroll your face photo in Settings / Employee Management first.`
+                    error: `No enrolled biometric photo found for ${targetName}. Please upload/enroll your face photo first.`
                 };
             }
 
+            // 2. Second Check: Compare live scanned face against uploaded profile face (Must be >= 80% accurate)
             const scores = await Promise.all(liveFrames.map(f => compareTwoImages(f, targetFaceImage!)));
             const bestScore = Math.max(...scores, 0);
 
-            // Strict threshold: Must achieve >= 60% similarity to pass biometric verification
-            if (bestScore >= 60) {
+            // Require at least 80% accuracy for successful verification
+            if (bestScore >= 80) {
                 return {
                     match: true,
                     similarity: bestScore,
@@ -345,7 +346,7 @@ export function FaceRecognitionModal({
             return {
                 match: false,
                 similarity: bestScore,
-                error: `Face Mismatch (${bestScore}% similarity). Live face does not match ${targetName}'s enrolled profile photo.`
+                error: `Face Mismatch (${bestScore}% accuracy). Scan face must match ${targetName}'s uploaded photo with at least 80% accuracy.`
             };
         }
 

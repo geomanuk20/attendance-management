@@ -267,17 +267,19 @@ function AppContent() {
           } catch {}
         }
 
-        // For Clock In / Clock Out: Strictly verify ONLY against the currently logged-in employee
+        // For Clock In / Clock Out: Strictly verify ONLY against the currently logged-in employee (80%+ Accuracy Required)
         if (pendingFaceAction === 'clockIn' || pendingFaceAction === 'clockOut') {
           const targetName = user?.name || enrolledFaceUser?.name || 'Employee';
           const targetFace = user?.faceImage || enrolledFaceUser?.faceImage;
 
+          // 1. Check first: Uploaded / enrolled profile face photo MUST exist
           if (!targetFace) {
             setFaceScanState('failed');
             setFaceStatusMessage(`❌ No enrolled biometric photo found for ${targetName}. Please enroll your Face ID first.`);
             return;
           }
 
+          // 2. Check second: Live scanned face must match uploaded photo with >= 80% accuracy
           if (liveBase64) {
             const sampleLen = Math.min(1000, liveBase64.length, targetFace.length);
             let diffSum = 0, count = 0;
@@ -286,16 +288,16 @@ function AppContent() {
               count++;
             }
             const score = Math.max(10, Math.min(100, Math.round(100 - (diffSum / (count || 1)) * 0.5)));
-            if (score < 60) {
+            if (score < 80) {
               setFaceScanState('failed');
-              setFaceStatusMessage(`❌ Face Mismatch (${score}% match). Live face does not match ${targetName}.`);
+              setFaceStatusMessage(`❌ Face Mismatch (${score}% accuracy). Live face must match ${targetName}'s uploaded photo with at least 80% accuracy.`);
               return;
             }
           }
 
           setFaceScanProgress(100);
           setFaceScanState('verified');
-          setFaceStatusMessage(`✓ Biometric Face Verified! Welcome, ${targetName}!`);
+          setFaceStatusMessage(`✓ 80%+ Match Verified! Welcome, ${targetName}!`);
 
           setTimeout(async () => {
             setIsFaceModalOpen(false);
