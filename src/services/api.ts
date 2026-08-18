@@ -479,23 +479,50 @@ export const saveAppUpdateSettings = async (settingsData: any) => {
 
 // Company Settings API
 export const getCompanySettings = async () => {
-    const response = await fetchWithPortFallback('/company-settings', {
-        headers: getAuthHeaders(),
-    });
-    if (!response.ok) {
-        throw new Error('Failed to fetch company settings');
+    try {
+        const response = await fetchWithPortFallback('/company-settings', {
+            headers: getAuthHeaders(),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            if (data) {
+                localStorage.setItem('companySettings', JSON.stringify(data));
+                return data;
+            }
+        }
+    } catch {
+        // Fallback to local storage if network request fails
     }
-    return response.json();
+    const saved = localStorage.getItem('companySettings');
+    if (saved) {
+        try {
+            return JSON.parse(saved);
+        } catch { }
+    }
+    return {
+        companyName: 'Whiteswan TV News',
+        address: '1/3, Malamel Center, Club Junction, Edappally.P.O, Ernakulam, Kerala- 682024',
+        officeLatitude: 10.0279421,
+        officeLongitude: 76.3166192,
+        allowedRadiusMeters: 100
+    };
 };
 
 export const saveCompanySettings = async (settingsData: any) => {
-    const response = await fetchWithPortFallback('/company-settings', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(settingsData),
-    });
-    if (!response.ok) {
-        throw new Error('Failed to save company settings');
+    localStorage.setItem('companySettings', JSON.stringify(settingsData));
+    try {
+        const response = await fetchWithPortFallback('/company-settings', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(settingsData),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            localStorage.setItem('companySettings', JSON.stringify(data));
+            return data;
+        }
+    } catch {
+        // Offline / fallback ok
     }
-    return response.json();
+    return settingsData;
 };

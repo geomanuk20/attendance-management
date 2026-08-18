@@ -698,23 +698,55 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
 
                   {/* Office Map Location & Geofence Section */}
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
                       <Label className="flex items-center gap-2 font-semibold text-base">
                         <MapPin className="h-4 w-4 text-indigo-600" />
-                        Office Map Location & 200m Geofence
+                        Office Geofence Location ({allowedRadiusMeters || 100}m Radius)
                       </Label>
-                      <a
-                        href={`https://www.google.com/maps?q=${officeLatitude},${officeLongitude}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                        Open Pin in Google Maps
-                      </a>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (!navigator.geolocation) {
+                              toast.error('Geolocation is not supported by your browser');
+                              return;
+                            }
+                            toast.loading('Acquiring precise GPS coordinates...', { id: 'gps-loc' });
+                            navigator.geolocation.getCurrentPosition(
+                              (pos) => {
+                                const lat = pos.coords.latitude.toFixed(7);
+                                const lng = pos.coords.longitude.toFixed(7);
+                                setOfficeLatitude(lat);
+                                setOfficeLongitude(lng);
+                                toast.success(`✓ Location Detected: ${lat}, ${lng}`, { id: 'gps-loc' });
+                              },
+                              (err) => {
+                                console.error(err);
+                                toast.error('Could not detect GPS location. Please enable location permissions in your browser.', { id: 'gps-loc' });
+                              },
+                              { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                            );
+                          }}
+                          className="gap-1.5 text-xs font-semibold text-indigo-600 border-indigo-200 hover:bg-indigo-50 dark:border-indigo-900 dark:hover:bg-indigo-950 cursor-pointer shadow-xs"
+                        >
+                          <MapPin className="h-3.5 w-3.5 text-indigo-600" />
+                          <span>Detect My GPS Location</span>
+                        </Button>
+                        <a
+                          href={`https://www.google.com/maps?q=${officeLatitude},${officeLongitude}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          <span>Google Maps</span>
+                        </a>
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="officeLat">Latitude (° N)</Label>
                         <Input
@@ -738,7 +770,7 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="geofenceRadius">Geofence Radius (Meters)</Label>
+                        <Label htmlFor="geofenceRadius">Geofence Radius (Exact Meters)</Label>
                         <Input
                           id="geofenceRadius"
                           type="number"

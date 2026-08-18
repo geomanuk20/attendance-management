@@ -7,8 +7,8 @@ import { Input } from './ui/input';
 import { Calendar } from './ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Clock, CalendarIcon, Search, Loader2, ChevronsUpDown, Check, Download, Pencil, ShieldCheck, Camera, Upload, AlertCircle, CheckCircle } from 'lucide-react';
-import { getAttendance, clockIn, clockOut, getEmployees, getEmployeeNames, getLeaveRequests, updateAttendanceRecord, updateEmployee } from '../services/api';
+import { Clock, CalendarIcon, Search, Loader2, ChevronsUpDown, Check, Download, Pencil, ShieldCheck, Camera, Upload, AlertCircle, CheckCircle, MapPin } from 'lucide-react';
+import { getAttendance, clockIn, clockOut, getEmployees, getEmployeeNames, getLeaveRequests, updateAttendanceRecord, updateEmployee, getCompanySettings } from '../services/api';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from './ui/dialog';
 import { Label } from './ui/label';
@@ -282,12 +282,35 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
     return () => clearInterval(pollInterval);
   }, [userRole]);
 
-  const OFFICE_LAT = 10.0279421;
-  const OFFICE_LNG = 76.3166192;
-  const ALLOWED_RADIUS_KM = 0.1; // 100 Meters Radius
+  // Dynamic Company Geofence Location
+  const [companyLocation, setCompanyLocation] = useState<{
+    officeLatitude: number;
+    officeLongitude: number;
+    allowedRadiusMeters: number;
+    companyName: string;
+  }>({
+    officeLatitude: 10.0279421,
+    officeLongitude: 76.3166192,
+    allowedRadiusMeters: 100,
+    companyName: 'Whiteswan TV Office'
+  });
 
-  const getDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371;
+  useEffect(() => {
+    getCompanySettings().then(data => {
+      if (data) {
+        setCompanyLocation({
+          officeLatitude: Number(data.officeLatitude) || 10.0279421,
+          officeLongitude: Number(data.officeLongitude) || 76.3166192,
+          allowedRadiusMeters: Number(data.allowedRadiusMeters) || 100,
+          companyName: data.companyName || 'Whiteswan TV Office'
+        });
+      }
+    }).catch(() => {});
+  }, []);
+
+  // Precise Haversine formula calculation returning exact distance in meters
+  const getDistanceMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371000; // Radius of the Earth in meters
     const dLat = (lat2 - lat1) * (Math.PI / 180);
     const dLon = (lon2 - lon1) * (Math.PI / 180);
     const a =
@@ -305,23 +328,45 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
         return;
       }
 
+      // Check latest settings from state or localStorage
+      let officeLat = companyLocation.officeLatitude || 10.0279421;
+      let officeLng = companyLocation.officeLongitude || 76.3166192;
+      let maxRadius = companyLocation.allowedRadiusMeters || 100;
+      let compName = companyLocation.companyName || 'Whiteswan TV Office';
+
+      try {
+        const stored = localStorage.getItem('companySettings');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.officeLatitude !== undefined) officeLat = Number(parsed.officeLatitude);
+          if (parsed.officeLongitude !== undefined) officeLng = Number(parsed.officeLongitude);
+          if (parsed.allowedRadiusMeters !== undefined) maxRadius = Number(parsed.allowedRadiusMeters);
+          if (parsed.companyName) compName = parsed.companyName;
+        }
+      } catch {}
+
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const dist = getDistanceKm(pos.coords.latitude, pos.coords.longitude, OFFICE_LAT, OFFICE_LNG);
-          if (dist > ALLOWED_RADIUS_KM) {
-            const distDisplay = dist > 1 ? `${dist.toFixed(1)}km` : `${Math.round(dist * 1000)}m`;
-            toast.error(`❌ Restricted: You are ${distDisplay} away. Clock In/Out is only allowed within 100 meters of Whiteswan TV Office.`);
+          const userLat = pos.coords.latitude;
+          const userLng = pos.coords.longitude;
+          const distMeters = getDistanceMeters(userLat, userLng, officeLat, officeLng);
+
+          if (distMeters > maxRadius) {
+            const distDisplay = distMeters >= 1000 ? `${(distMeters / 1000).toFixed(2)}km` : `${Math.round(distMeters)}m`;
+            toast.error(`❌ Restricted: You are ${distDisplay} away. Clock In/Out is only allowed within ${maxRadius} meters of ${compName}.`);
             resolve(false);
           } else {
+            const distDisplay = Math.round(distMeters);
+            toast.success(`✓ Geofence Verified: ${distDisplay}m from ${compName} (allowed: ${maxRadius}m)`);
             resolve(true);
           }
         },
         (err) => {
           console.warn('Geolocation error:', err);
-          toast.error('Location permission required to verify 100m Whiteswan TV office zone.');
+          toast.error(`Location permission required to verify ${maxRadius}m ${compName} geofence zone.`);
           resolve(false);
         },
-        { enableHighAccuracy: true, timeout: 5000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     });
   };
