@@ -859,17 +859,17 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
 
       {/* Details Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl shadow-2xl border border-border bg-background">
-          <DialogHeader className="pb-2 border-b">
-            <DialogTitle className="text-lg sm:text-xl font-bold text-foreground">Salary Details</DialogTitle>
+        <DialogContent className="w-[96vw] sm:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-7 rounded-2xl shadow-2xl border border-border bg-background">
+          <DialogHeader className="pb-3 border-b">
+            <DialogTitle className="text-xl sm:text-2xl font-bold text-foreground">Salary Details</DialogTitle>
             <DialogDescription className="text-xs sm:text-sm text-muted-foreground">
               Breakdown for {selectedRecord?.name} - {new Date(selectedMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}
             </DialogDescription>
           </DialogHeader>
           {selectedRecord && (
-            <div className="space-y-4 py-3" ref={slipRef}>
+            <div className="space-y-5 py-3" ref={slipRef}>
               {/* Employee Summary Card */}
-              <div className="bg-slate-100 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="bg-slate-100 dark:bg-slate-900/60 p-4 rounded-xl border border-slate-200 dark:border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
                 <div>
                   <span className="text-muted-foreground block text-[11px] font-medium">Employee Name</span>
                   <span className="font-bold text-foreground text-sm">{selectedRecord?.name}</span>
@@ -890,163 +890,168 @@ export function Salary({ currency = 'USD' }: SalaryProps) {
                 </div>
               </div>
 
-              {/* Additions Section */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center hide-on-print">
-                  <h4 className="text-xs font-semibold text-green-700 dark:text-green-400 uppercase tracking-wider">Earnings</h4>
-                  {!isEditing && (
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="h-7 px-2 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-950/50">
-                      <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
-                    </Button>
+              {/* 2-Column Responsive Earnings & Deductions Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                {/* Column 1: Earnings */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center hide-on-print">
+                    <h4 className="text-xs font-semibold text-green-700 dark:text-green-400 uppercase tracking-wider">Earnings</h4>
+                    {!isEditing && (
+                      <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="h-7 px-2 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-950/50">
+                        <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit
+                      </Button>
+                    )}
+                  </div>
+                  <div className="bg-green-50 dark:bg-emerald-950/30 p-4 rounded-xl space-y-3 border border-green-100 dark:border-emerald-900/40">
+                    <div className="flex justify-between text-xs sm:text-sm items-center gap-3">
+                      <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Basic Salary</span>
+                      {isEditing ? (
+                        <Input
+                          type="number"
+                          className="h-8 w-28 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500"
+                          value={editValues.basicSalary}
+                          onChange={(e) => setEditValues({ ...editValues, basicSalary: Number(e.target.value) })}
+                        />
+                      ) : (
+                        <span className="font-semibold text-foreground">{formatCurrency(selectedRecord.basicSalary)}</span>
+                      )}
+                    </div>
+                    <div className="flex justify-between text-xs sm:text-sm items-center gap-3">
+                      <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">HRA</span>
+                      {isEditing ? (
+                        <Input
+                          type="number"
+                          className="h-8 w-28 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500"
+                          value={editValues.hra}
+                          onChange={(e) => setEditValues({ ...editValues, hra: Number(e.target.value) })}
+                        />
+                      ) : (
+                        <span className="font-semibold text-foreground">{formatCurrency(selectedRecord.hra)}</span>
+                      )}
+                    </div>
+                    <div className="flex justify-between text-xs sm:text-sm items-center gap-3">
+                      <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Allowances</span>
+                      {isEditing ? (
+                        <Input
+                          type="number"
+                          className="h-8 w-28 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500"
+                          value={editValues.otherAllowances}
+                          onChange={(e) => setEditValues({ ...editValues, otherAllowances: Number(e.target.value) })}
+                        />
+                      ) : (
+                        <span className="font-semibold text-foreground">{formatCurrency(selectedRecord.otherAllowances)}</span>
+                      )}
+                    </div>
+
+                    <div className="flex justify-between text-xs sm:text-sm items-center gap-3">
+                      <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Overtime</span>
+                      {isEditing ? (
+                        <Input
+                          type="number"
+                          className="h-8 w-28 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500"
+                          value={editValues.overtime}
+                          onChange={(e) => setEditValues({ ...editValues, overtime: Number(e.target.value) })}
+                        />
+                      ) : (
+                        <span className={`font-semibold ${selectedRecord.overtime > 0 ? 'text-green-600 dark:text-green-400' : 'text-foreground'}`}>
+                          +{formatCurrency(selectedRecord.overtime || 0)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex justify-between text-xs sm:text-sm items-center gap-3">
+                      <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Bonus / Incentive</span>
+                      {isEditing ? (
+                        <Input
+                          type="number"
+                          className="h-8 w-28 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500"
+                          value={editValues.bonus}
+                          onChange={(e) => setEditValues({ ...editValues, bonus: Number(e.target.value) })}
+                        />
+                      ) : (
+                        <span className={`font-semibold ${selectedRecord.bonus > 0 ? 'text-green-600 dark:text-green-400' : 'text-foreground'}`}>
+                          +{formatCurrency(selectedRecord.bonus || 0)}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="border-t border-green-200 dark:border-emerald-900/60 pt-3 mt-2 flex justify-between items-center font-bold text-slate-900 dark:text-white">
+                      <span>Gross Earnings</span>
+                      <span className="text-base">{formatCurrency(calculatedGross + (isEditing ? editValues.overtime : (selectedRecord.overtime || 0)) + (isEditing ? editValues.bonus : (selectedRecord.bonus || 0)))}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Column 2: Deductions & Net Pay */}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-semibold text-red-700 dark:text-red-400 uppercase tracking-wider">Deductions</h4>
+                    <div className="bg-red-50 dark:bg-rose-950/30 p-4 rounded-xl space-y-3 border border-red-100 dark:border-rose-900/40">
+                      <div className="flex justify-between text-xs sm:text-sm items-center gap-3">
+                        <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Tax / Standard Deductions</span>
+                        {isEditing ? (
+                          <Input
+                            type="number"
+                            className="h-8 w-28 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-rose-500"
+                            value={editValues.deductions}
+                            onChange={(e) => setEditValues({ ...editValues, deductions: Number(e.target.value) })}
+                          />
+                        ) : (
+                          <span className="font-semibold text-red-600 dark:text-red-400">-{formatCurrency(selectedRecord.deductions || 0)}</span>
+                        )}
+                      </div>
+                      <div className="flex justify-between text-xs sm:text-sm items-center gap-3">
+                        <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Salary Advance / Loan</span>
+                        {isEditing ? (
+                          <Input
+                            type="number"
+                            className="h-8 w-28 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-rose-500"
+                            value={editValues.advance}
+                            onChange={(e) => setEditValues({ ...editValues, advance: Number(e.target.value) })}
+                          />
+                        ) : (
+                          <span className={`font-semibold ${selectedRecord.advance > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-400'}`}>
+                            -{formatCurrency(selectedRecord.advance || 0)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="border-t border-red-200 dark:border-rose-900/60 pt-3 mt-2 flex justify-between items-center font-bold text-red-700 dark:text-red-400">
+                        <span>Total Deductions</span>
+                        <span className="text-base">-{formatCurrency((isEditing ? editValues.deductions : (selectedRecord.deductions || 0)) + (isEditing ? editValues.advance : (selectedRecord.advance || 0)))}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Net Pay */}
+                  <div className="bg-slate-900 dark:bg-slate-800 text-white p-4 rounded-xl flex justify-between items-center shadow-lg border border-slate-800">
+                    <div>
+                      <p className="text-xs text-slate-400">Net Pay</p>
+                      <h3 className="text-xl font-bold">{formatCurrency(calculatedNetSalary)}</h3>
+                    </div>
+                    <Badge variant="outline" className={`bg-white/10 text-white border-0 ${(isEditing ? editValues.status : selectedRecord.status) === 'Paid' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                      {isEditing ? editValues.status : selectedRecord.status}
+                    </Badge>
+                  </div>
+
+                  {/* Status Edit - Only visible in Edit Mode */}
+                  {isEditing && (
+                    <div className="space-y-1.5 pt-1">
+                      <Label htmlFor="edit-status" className="text-xs font-semibold text-slate-700 dark:text-slate-300">Payment Status</Label>
+                      <Select
+                        value={editValues.status}
+                        onValueChange={(val) => setEditValues({ ...editValues, status: val })}
+                      >
+                        <SelectTrigger className="w-full h-9 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-xs font-medium">
+                          <SelectValue placeholder="Select Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Pending">Pending</SelectItem>
+                          <SelectItem value="Paid">Paid</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   )}
                 </div>
-                <div className="bg-green-50 dark:bg-emerald-950/30 p-3.5 sm:p-4 rounded-xl space-y-2.5 border border-green-100 dark:border-emerald-900/40">
-                  <div className="flex justify-between text-xs sm:text-sm items-center gap-2 sm:gap-3">
-                    <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Basic Salary</span>
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        className="h-8 w-24 sm:w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2 sm:px-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500"
-                        value={editValues.basicSalary}
-                        onChange={(e) => setEditValues({ ...editValues, basicSalary: Number(e.target.value) })}
-                      />
-                    ) : (
-                      <span className="font-semibold text-foreground">{formatCurrency(selectedRecord.basicSalary)}</span>
-                    )}
-                  </div>
-                  <div className="flex justify-between text-xs sm:text-sm items-center gap-2 sm:gap-3">
-                    <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">HRA</span>
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        className="h-8 w-24 sm:w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2 sm:px-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500"
-                        value={editValues.hra}
-                        onChange={(e) => setEditValues({ ...editValues, hra: Number(e.target.value) })}
-                      />
-                    ) : (
-                      <span className="font-semibold text-foreground">{formatCurrency(selectedRecord.hra)}</span>
-                    )}
-                  </div>
-                  <div className="flex justify-between text-xs sm:text-sm items-center gap-2 sm:gap-3">
-                    <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Allowances</span>
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        className="h-8 w-24 sm:w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2 sm:px-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500"
-                        value={editValues.otherAllowances}
-                        onChange={(e) => setEditValues({ ...editValues, otherAllowances: Number(e.target.value) })}
-                      />
-                    ) : (
-                      <span className="font-semibold text-foreground">{formatCurrency(selectedRecord.otherAllowances)}</span>
-                    )}
-                  </div>
-
-                  <div className="flex justify-between text-xs sm:text-sm items-center gap-2 sm:gap-3">
-                    <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Overtime</span>
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        className="h-8 w-24 sm:w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2 sm:px-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500"
-                        value={editValues.overtime}
-                        onChange={(e) => setEditValues({ ...editValues, overtime: Number(e.target.value) })}
-                      />
-                    ) : (
-                      <span className={`font-semibold ${selectedRecord.overtime > 0 ? 'text-green-600 dark:text-green-400' : 'text-foreground'}`}>
-                        +{formatCurrency(selectedRecord.overtime || 0)}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex justify-between text-xs sm:text-sm items-center gap-2 sm:gap-3">
-                    <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Bonus / Incentive</span>
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        className="h-8 w-24 sm:w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2 sm:px-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500"
-                        value={editValues.bonus}
-                        onChange={(e) => setEditValues({ ...editValues, bonus: Number(e.target.value) })}
-                      />
-                    ) : (
-                      <span className={`font-semibold ${selectedRecord.bonus > 0 ? 'text-green-600 dark:text-green-400' : 'text-foreground'}`}>
-                        +{formatCurrency(selectedRecord.bonus || 0)}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="border-t border-green-200 dark:border-emerald-900/60 pt-2.5 mt-2 flex justify-between items-center font-bold text-slate-900 dark:text-white">
-                    <span>Gross Earnings</span>
-                    <span className="text-base">{formatCurrency(calculatedGross + (isEditing ? editValues.overtime : (selectedRecord.overtime || 0)) + (isEditing ? editValues.bonus : (selectedRecord.bonus || 0)))}</span>
-                  </div>
-                </div>
               </div>
-
-              {/* Deductions Section */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-semibold text-red-700 dark:text-red-400 uppercase tracking-wider">Deductions</h4>
-                <div className="bg-red-50 dark:bg-rose-950/30 p-3.5 sm:p-4 rounded-xl space-y-2.5 border border-red-100 dark:border-rose-900/40">
-                  <div className="flex justify-between text-sm items-center gap-3">
-                    <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Tax / Standard Deductions</span>
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        className="h-8 w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 focus:ring-2 focus:ring-rose-500"
-                        value={editValues.deductions}
-                        onChange={(e) => setEditValues({ ...editValues, deductions: Number(e.target.value) })}
-                      />
-                    ) : (
-                      <span className="font-semibold text-red-600 dark:text-red-400">-{formatCurrency(selectedRecord.deductions || 0)}</span>
-                    )}
-                  </div>
-                  <div className="flex justify-between text-sm items-center gap-3">
-                    <span className="text-gray-700 dark:text-slate-300 font-medium flex-1">Salary Advance / Loan</span>
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        className="h-8 w-32 shrink-0 text-right font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-xs rounded-lg px-2.5 focus:ring-2 focus:ring-rose-500"
-                        value={editValues.advance}
-                        onChange={(e) => setEditValues({ ...editValues, advance: Number(e.target.value) })}
-                      />
-                    ) : (
-                      <span className={`font-semibold ${selectedRecord.advance > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-400'}`}>
-                        -{formatCurrency(selectedRecord.advance || 0)}
-                      </span>
-                    )}
-                  </div>
-                  <div className="border-t border-red-200 dark:border-rose-900/60 pt-2.5 mt-2 flex justify-between items-center font-bold text-red-700 dark:text-red-400">
-                    <span>Total Deductions</span>
-                    <span className="text-base">-{formatCurrency((isEditing ? editValues.deductions : (selectedRecord.deductions || 0)) + (isEditing ? editValues.advance : (selectedRecord.advance || 0)))}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Net Pay */}
-              <div className="bg-slate-900 dark:bg-slate-800 text-white p-4 rounded-xl flex justify-between items-center shadow-lg border border-slate-800">
-                <div>
-                  <p className="text-xs text-slate-400">Net Pay</p>
-                  <h3 className="text-xl font-bold">{formatCurrency(calculatedNetSalary)}</h3>
-                </div>
-                <Badge variant="outline" className={`bg-white/10 text-white border-0 ${(isEditing ? editValues.status : selectedRecord.status) === 'Paid' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                  {isEditing ? editValues.status : selectedRecord.status}
-                </Badge>
-              </div>
-
-              {/* Status Edit - Only visible in Edit Mode */}
-              {isEditing && (
-                <div className="space-y-1.5 pt-1">
-                  <Label htmlFor="edit-status" className="text-xs font-semibold text-slate-700 dark:text-slate-300">Payment Status</Label>
-                  <Select
-                    value={editValues.status}
-                    onValueChange={(val) => setEditValues({ ...editValues, status: val })}
-                  >
-                    <SelectTrigger className="w-full h-9 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-xs font-medium">
-                      <SelectValue placeholder="Select Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Pending">Pending</SelectItem>
-                      <SelectItem value="Paid">Paid</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
             </div>
           )}
 
