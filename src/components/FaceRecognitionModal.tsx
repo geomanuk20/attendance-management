@@ -715,7 +715,11 @@ export function FaceRecognitionModal({
                         <DialogTitle className="text-lg font-bold text-slate-900 dark:text-white">Biometric Face Recognition</DialogTitle>
                     </div>
                     <DialogDescription className="text-slate-500 dark:text-slate-400 text-xs">
-                        Facial scan for <span className="text-emerald-500 font-semibold">{matchedUserResult?.name || (userName && userName !== 'Employee' ? userName : 'Enrolled Employee Identity')}</span>
+                        Facial scan for <span className="text-emerald-500 font-semibold">
+                            {actionType === 'Login'
+                                ? (matchedUserResult?.name || 'Enrolled Employee Identity')
+                                : (userName && userName !== 'Employee' ? userName : 'Employee')}
+                        </span>
                     </DialogDescription>
                 </DialogHeader>
 
