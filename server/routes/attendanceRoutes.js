@@ -145,13 +145,32 @@ const clockOut = asyncHandler(async (req, res) => {
                 if (period === 'AM' && h === 12) h = 0;
                 return h * 3600 + m * 60 + s;
             };
-            const inSec = toSeconds(attendance.clockIn);
-            const outSec = toSeconds(clockOutTime);
-            if (inSec !== null && outSec !== null) {
-                let diffSec = outSec - inSec;
-                if (diffSec < 0) diffSec += 24 * 3600; // Handle overnight / cross-midnight shift
-                const hrs = parseFloat((diffSec / 3600).toFixed(4));
-                attendance.workHours = hrs;
+
+            // First check if createdAt is available to get exact elapsed time
+            let calculatedHrs = null;
+            if (attendance.createdAt) {
+                const startMs = new Date(attendance.createdAt).getTime();
+                const endMs = Date.now();
+                if (!isNaN(startMs) && endMs > startMs) {
+                    const diffSec = (endMs - startMs) / 1000;
+                    if (diffSec > 0 && diffSec < 24 * 3600) {
+                        calculatedHrs = parseFloat((diffSec / 3600).toFixed(4));
+                    }
+                }
+            }
+
+            if (calculatedHrs === null) {
+                const inSec = toSeconds(attendance.clockIn);
+                const outSec = toSeconds(clockOutVal);
+                if (inSec !== null && outSec !== null) {
+                    let diffSec = outSec - inSec;
+                    if (diffSec < 0) diffSec += 24 * 3600; // Handle overnight / cross-midnight shift
+                    calculatedHrs = parseFloat((diffSec / 3600).toFixed(4));
+                }
+            }
+
+            attendance.workHours = calculatedHrs !== null ? calculatedHrs : 0;
+            const hrs = attendance.workHours;
 
                 // Lookup employee employmentType for Part-Time 4-hour rule
                 const populatedEmp = await Attendance.findById(attendance._id).populate('employeeId', 'employmentType');

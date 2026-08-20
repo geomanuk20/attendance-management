@@ -56,19 +56,41 @@ const formatRecordTime = (timeValue: any, isoFallback?: string): string => {
   return String(timeValue);
 };
 
-const calculateWorkHoursFromTimes = (clockInStr: string | null | undefined, clockOutStr: string | null | undefined): number => {
-  const inSec = parseTimeToSeconds(clockInStr);
-  const outSec = parseTimeToSeconds(clockOutStr);
-  if (inSec === null || outSec === null) return 0;
-  let diffSec = outSec - inSec;
-  if (diffSec < 0) diffSec += 24 * 3600; // Handle overnight / cross-midnight shift
-  return parseFloat((diffSec / 3600).toFixed(4));
+const getAccurateWorkHours = (record: any): number => {
+  if (!record) return 0;
+  
+  // 1. If both createdAt and updatedAt exist on completed record
+  if (record.createdAt && record.updatedAt && record.clockOut && record.clockOut !== '-' && record.clockOut !== 'In progress') {
+    const startMs = new Date(record.createdAt).getTime();
+    const endMs = new Date(record.updatedAt).getTime();
+    if (!isNaN(startMs) && !isNaN(endMs) && endMs > startMs) {
+      const diffSec = (endMs - startMs) / 1000;
+      if (diffSec > 0 && diffSec < 24 * 3600) {
+        return parseFloat((diffSec / 3600).toFixed(4));
+      }
+    }
+  }
+
+  // 2. Localized clockIn and clockOut strings comparison
+  const inStr = formatRecordTime(record.clockIn, record.createdAt);
+  const outStr = formatRecordTime(record.clockOut, record.updatedAt);
+  if (inStr && outStr && outStr !== '-' && outStr !== '--:--' && outStr !== 'In progress') {
+    const calc = calculateWorkHoursFromTimes(inStr, outStr);
+    if (calc > 0) return calc;
+  }
+
+  // 3. Fallback to record.workHours
+  return typeof record.workHours === 'number' ? record.workHours : 0;
 };
 
-const formatWorkHours = (hours: number | null | undefined, clockInStr?: string, clockOutStr?: string) => {
-  let effHours = typeof hours === 'number' ? hours : 0;
-  if ((!effHours || effHours <= 0) && clockInStr && clockOutStr && clockOutStr !== '-') {
+const formatWorkHours = (hoursOrRecord: any, clockInStr?: string, clockOutStr?: string) => {
+  let effHours = 0;
+  if (hoursOrRecord && typeof hoursOrRecord === 'object') {
+    effHours = getAccurateWorkHours(hoursOrRecord);
+  } else if (clockInStr && clockOutStr && clockOutStr !== '-') {
     effHours = calculateWorkHoursFromTimes(clockInStr, clockOutStr);
+  } else if (typeof hoursOrRecord === 'number') {
+    effHours = hoursOrRecord;
   }
 
   if (!effHours || effHours <= 0) return null;
@@ -1258,7 +1280,7 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
                       <p className="text-xs text-muted-foreground">In: {formatRecordTime(record.clockIn, record.createdAt)}</p>
                       <p className="text-xs text-muted-foreground">Out: {formatRecordTime(record.clockOut, record.updatedAt)}</p>
                       <p className="text-xs text-muted-foreground">
-                        {record.workHours > 0 ? `${formatWorkHours(record.workHours, record.clockIn, record.clockOut)} worked` : record.clockIn && !record.clockOut ? 'In progress' : ''}
+                        {formatWorkHours(record) ? `${formatWorkHours(record)} worked` : record.clockIn && !record.clockOut ? 'In progress' : ''}
                       </p>
                     </div>
                   </div>
@@ -1541,7 +1563,7 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
                     <TableCell>{formatRecordTime(record.clockIn, record.createdAt)}</TableCell>
                     <TableCell>{formatRecordTime(record.clockOut, record.updatedAt)}</TableCell>
                     <TableCell>
-                      {formatWorkHours(record.workHours, record.clockIn, record.clockOut) ||
+                      {formatWorkHours(record) ||
                         (record.clockIn && (!record.clockOut || record.clockOut === '-') ? 'In progress' : '-')}
                     </TableCell>
                     <TableCell>{getStatusBadge(record.status)}</TableCell>

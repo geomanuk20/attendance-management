@@ -118,6 +118,21 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
     }
   };
 
+  const getAccurateWorkHours = (record: any): number => {
+    if (!record) return 0;
+    if (record.createdAt && record.updatedAt && record.clockOut && record.clockOut !== '-' && record.clockOut !== 'In progress') {
+      const startMs = new Date(record.createdAt).getTime();
+      const endMs = new Date(record.updatedAt).getTime();
+      if (!isNaN(startMs) && !isNaN(endMs) && endMs > startMs) {
+        const diffSec = (endMs - startMs) / 1000;
+        if (diffSec > 0 && diffSec < 24 * 3600) {
+          return parseFloat((diffSec / 3600).toFixed(4));
+        }
+      }
+    }
+    return typeof record.workHours === 'number' ? record.workHours : 0;
+  };
+
   const [allEmployees, setAllEmployees] = useState<any[]>([]);
 
   const [isTodayWeekOff, setIsTodayWeekOff] = useState(false);
@@ -262,7 +277,7 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
         data.forEach((rec: any) => {
           const d = new Date(rec.date);
           if (d >= monday) {
-            const h = rec.workHours || 0;
+            const h = getAccurateWorkHours(rec);
             sumHours += h;
             const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
             if (dayMap[dayName] !== undefined) {
@@ -276,16 +291,19 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
 
         // Recent activity feed
         const sorted = [...data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
-        const acts = sorted.map((rec, idx) => ({
-          id: rec._id || idx,
-          action: rec.clockOut ? `Clocked out (${rec.workHours ? rec.workHours.toFixed(1) + 'h' : 'Done'})` : 'Clocked in',
-          time: rec.clockOut
-            ? (rec.updatedAt ? new Date(rec.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : rec.clockOut)
-            : rec.clockIn
-            ? (rec.createdAt ? new Date(rec.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : rec.clockIn)
-            : '9:00 AM',
-          date: String(rec.date).split('T')[0] === today ? 'Today' : String(rec.date).split('T')[0],
-        }));
+        const acts = sorted.map((rec, idx) => {
+          const effH = getAccurateWorkHours(rec);
+          return {
+            id: rec._id || idx,
+            action: rec.clockOut ? `Clocked out (${effH > 0 ? (effH < 1 ? Math.round(effH * 60) + 'm' : effH.toFixed(1) + 'h') : 'Done'})` : 'Clocked in',
+            time: rec.clockOut
+              ? (rec.updatedAt ? new Date(rec.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : rec.clockOut)
+              : rec.clockIn
+              ? (rec.createdAt ? new Date(rec.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : rec.clockIn)
+              : '9:00 AM',
+            date: String(rec.date).split('T')[0] === today ? 'Today' : String(rec.date).split('T')[0],
+          };
+        });
         setUserActivities(acts);
       }
     } catch (error) {

@@ -1711,6 +1711,21 @@ function AppContent() {
     return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
+  const getAccurateWorkHours = (record: any): number => {
+    if (!record) return 0;
+    if (record.createdAt && record.updatedAt && record.clockOut && record.clockOut !== '-' && record.clockOut !== 'In progress') {
+      const startMs = new Date(record.createdAt).getTime();
+      const endMs = new Date(record.updatedAt).getTime();
+      if (!isNaN(startMs) && !isNaN(endMs) && endMs > startMs) {
+        const diffSec = (endMs - startMs) / 1000;
+        if (diffSec > 0 && diffSec < 24 * 3600) {
+          return parseFloat((diffSec / 3600).toFixed(4));
+        }
+      }
+    }
+    return typeof record.workHours === 'number' ? record.workHours : 0;
+  };
+
   const getWeeklyHours = () => {
     let totalHours = 0;
     const now = new Date();
@@ -1724,25 +1739,17 @@ function AppContent() {
       const dateStr = log.date ? String(log.date).split('T')[0] : (log.createdAt ? String(log.createdAt).split('T')[0] : '');
       const logDate = new Date(dateStr + 'T00:00:00');
       if (!isNaN(logDate.getTime()) && logDate >= startOfWeek) {
-        if (typeof log.workHours === 'number' && log.workHours > 0) {
-          totalHours += log.workHours;
-        } else if (log.clockIn && log.clockOut) {
-          try {
-            const [inH, inM] = String(log.clockIn).split(':').map(Number);
-            const [outH, outM] = String(log.clockOut).split(':').map(Number);
-            if (!isNaN(inH) && !isNaN(outH)) {
-              const diff = (outH + outM / 60) - (inH + inM / 60);
-              if (diff > 0) totalHours += diff;
-            }
-          } catch {}
+        const effH = getAccurateWorkHours(log);
+        if (effH > 0) {
+          totalHours += effH;
         } else if (log.clockIn && !log.clockOut) {
           try {
-            const [inH, inM] = String(log.clockIn).split(':').map(Number);
-            const currentH = now.getHours();
-            const currentM = now.getMinutes();
-            if (!isNaN(inH)) {
-              const diff = (currentH + currentM / 60) - (inH + inM / 60);
-              if (diff > 0) totalHours += diff;
+            const inDate = log.createdAt ? new Date(log.createdAt) : parseTimeToDate(log.clockIn);
+            if (inDate && !isNaN(inDate.getTime())) {
+              const diffMs = now.getTime() - inDate.getTime();
+              if (diffMs > 0 && diffMs < 24 * 3600 * 1000) {
+                totalHours += diffMs / (3600 * 1000);
+              }
             }
           } catch {}
         }
@@ -2676,9 +2683,9 @@ function AppContent() {
                           <Text style={[styles.itemSub, { color: theme.textSub, fontSize: 12 }]}>
                             Out: {log.clockOut ? formatTime(log.clockOut, log.updatedAt) : '--:--'}
                           </Text>
-                          {log.workHours > 0 && (
+                          {getAccurateWorkHours(log) > 0 && (
                             <Text style={{ fontSize: 10, color: '#818cf8', fontWeight: 'bold', marginTop: 2 }}>
-                              {log.workHours} hrs
+                              {getAccurateWorkHours(log) < 1 ? Math.round(getAccurateWorkHours(log) * 60) + ' mins' : getAccurateWorkHours(log).toFixed(1) + ' hrs'}
                             </Text>
                           )}
                         </View>
@@ -4287,9 +4294,9 @@ function AppContent() {
                           <Text style={[styles.itemSub, { color: theme.textSub, fontSize: 12 }]}>
                             Out: {log.clockOut ? formatTime(log.clockOut, log.updatedAt) : '--:--'}
                           </Text>
-                          {log.workHours > 0 && (
+                          {getAccurateWorkHours(log) > 0 && (
                             <Text style={{ fontSize: 10, color: '#818cf8', fontWeight: 'bold', marginTop: 2 }}>
-                              {log.workHours} hrs
+                              {getAccurateWorkHours(log) < 1 ? Math.round(getAccurateWorkHours(log) * 60) + ' mins' : getAccurateWorkHours(log).toFixed(1) + ' hrs'}
                             </Text>
                           )}
                         </View>
