@@ -172,18 +172,17 @@ const clockOut = asyncHandler(async (req, res) => {
             attendance.workHours = calculatedHrs !== null ? calculatedHrs : 0;
             const hrs = attendance.workHours;
 
-                // Lookup employee employmentType for Part-Time 4-hour rule
-                const populatedEmp = await Attendance.findById(attendance._id).populate('employeeId', 'employmentType');
-                const isPartTime = populatedEmp?.employeeId?.employmentType === 'Part-Time';
-                const halfDayCutoff = isPartTime ? 2 : 4;
+            // Lookup employee employmentType for Part-Time 4-hour rule
+            const populatedEmp = await Attendance.findById(attendance._id).populate('employeeId', 'employmentType');
+            const isPartTime = populatedEmp?.employeeId?.employmentType === 'Part-Time';
+            const halfDayCutoff = isPartTime ? 2 : 4;
 
-                if (hrs >= 4) {
-                    attendance.status = 'Present'; // 4 hours complete is Full Day Present for all (including Part-Time)
-                } else if (hrs >= halfDayCutoff && hrs < 4) {
-                    attendance.status = 'Half-Day';
-                } else if (hrs > 0 && hrs < halfDayCutoff) {
-                    attendance.status = 'Half-Day';
-                }
+            if (hrs >= 4) {
+                attendance.status = 'Present'; // 4 hours complete is Full Day Present for all (including Part-Time)
+            } else if (hrs >= halfDayCutoff && hrs < 4) {
+                attendance.status = 'Half-Day';
+            } else if (hrs > 0 && hrs < halfDayCutoff) {
+                attendance.status = 'Half-Day';
             }
         } catch (e) {
             attendance.workHours = 0;

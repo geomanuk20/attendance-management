@@ -56,6 +56,15 @@ const formatRecordTime = (timeValue: any, isoFallback?: string): string => {
   return String(timeValue);
 };
 
+const calculateWorkHoursFromTimes = (clockInStr: string | null | undefined, clockOutStr: string | null | undefined): number => {
+  const inSec = parseTimeToSeconds(clockInStr);
+  const outSec = parseTimeToSeconds(clockOutStr);
+  if (inSec === null || outSec === null) return 0;
+  let diffSec = outSec - inSec;
+  if (diffSec < 0) diffSec += 24 * 3600; // Handle overnight / cross-midnight shift
+  return parseFloat((diffSec / 3600).toFixed(4));
+};
+
 const getAccurateWorkHours = (record: any): number => {
   if (!record) return 0;
   
