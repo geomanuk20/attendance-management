@@ -6,6 +6,7 @@ import { Progress } from './ui/progress';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 import { Clock, Calendar, AlertCircle, LogIn, LogOut, Loader2, ShieldCheck, MapPin } from 'lucide-react';
 import { getAttendance, clockIn, clockOut, getEmployees, getLeaveRequests, getCompanySettings } from '../services/api';
+import { getCurrentLocation, getDistanceMeters } from '../services/geolocation';
 import { toast } from 'sonner';
 import { FaceRecognitionModal } from './FaceRecognitionModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
@@ -94,6 +95,26 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
       return dateStr;
     } catch {
       return dateStr;
+    }
+  };
+
+  const getDaysUntilText = (dateStr: string) => {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const parts = dateStr.split('-');
+      if (parts.length !== 3) return '';
+      const target = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      target.setHours(0, 0, 0, 0);
+      const diffTime = target.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) return 'Passed';
+      if (diffDays === 0) return 'Today 🎉';
+      if (diffDays === 1) return 'Tomorrow';
+      return `${diffDays} Days Left`;
+    } catch {
+      return '';
     }
   };
 
@@ -258,7 +279,11 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
         const acts = sorted.map((rec, idx) => ({
           id: rec._id || idx,
           action: rec.clockOut ? `Clocked out (${rec.workHours ? rec.workHours.toFixed(1) + 'h' : 'Done'})` : 'Clocked in',
-          time: rec.clockOut || rec.clockIn || '9:00 AM',
+          time: rec.clockOut
+            ? (rec.updatedAt ? new Date(rec.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : rec.clockOut)
+            : rec.clockIn
+            ? (rec.createdAt ? new Date(rec.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : rec.clockIn)
+            : '9:00 AM',
           date: String(rec.date).split('T')[0] === today ? 'Today' : String(rec.date).split('T')[0],
         }));
         setUserActivities(acts);
@@ -297,66 +322,44 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
   }, []);
 
   // Precise Haversine formula calculation returning exact distance in meters
-  const getDistanceMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371000; // Radius of the Earth in meters
-    const dLat = (lat2 - lat1) * (Math.PI / 180);
-    const dLon = (lon2 - lon1) * (Math.PI / 180);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
+  const verifyLocation = async (): Promise<boolean> => {
+    // Check latest settings from state or localStorage
+    let officeLat = companyLocation.officeLatitude || 10.0279421;
+    let officeLng = companyLocation.officeLongitude || 76.3166192;
+    let maxRadius = companyLocation.allowedRadiusMeters || 100;
+    let compName = companyLocation.companyName || 'Whiteswan TV Office';
 
-  const verifyLocation = (): Promise<boolean> => {
-    return new Promise((resolve) => {
-      if (!navigator.geolocation) {
-        toast.error('Geolocation is not supported by your browser');
-        resolve(false);
-        return;
+    try {
+      const stored = localStorage.getItem('companySettings');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.officeLatitude !== undefined) officeLat = Number(parsed.officeLatitude);
+        if (parsed.officeLongitude !== undefined) officeLng = Number(parsed.officeLongitude);
+        if (parsed.allowedRadiusMeters !== undefined) maxRadius = Number(parsed.allowedRadiusMeters);
+        if (parsed.companyName) compName = parsed.companyName;
       }
+    } catch {}
 
-      // Check latest settings from state or localStorage
-      let officeLat = companyLocation.officeLatitude || 10.0279421;
-      let officeLng = companyLocation.officeLongitude || 76.3166192;
-      let maxRadius = companyLocation.allowedRadiusMeters || 100;
-      let compName = companyLocation.companyName || 'Whiteswan TV Office';
+    toast.loading(`Detecting location for ${compName} (${maxRadius}m zone)...`, { id: 'loc-check' });
 
-      try {
-        const stored = localStorage.getItem('companySettings');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed.officeLatitude !== undefined) officeLat = Number(parsed.officeLatitude);
-          if (parsed.officeLongitude !== undefined) officeLng = Number(parsed.officeLongitude);
-          if (parsed.allowedRadiusMeters !== undefined) maxRadius = Number(parsed.allowedRadiusMeters);
-          if (parsed.companyName) compName = parsed.companyName;
-        }
-      } catch {}
+    try {
+      const pos = await getCurrentLocation();
+      const distMeters = getDistanceMeters(pos.latitude, pos.longitude, officeLat, officeLng);
 
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const userLat = pos.coords.latitude;
-          const userLng = pos.coords.longitude;
-          const distMeters = getDistanceMeters(userLat, userLng, officeLat, officeLng);
-
-          if (distMeters > maxRadius) {
-            const distDisplay = distMeters >= 1000 ? `${(distMeters / 1000).toFixed(2)}km` : `${Math.round(distMeters)}m`;
-            toast.error(`❌ Restricted: You are ${distDisplay} away. Clock In/Out is only allowed within ${maxRadius} meters of ${compName}.`);
-            resolve(false);
-          } else {
-            const distDisplay = Math.round(distMeters);
-            toast.success(`✓ Geofence Verified: ${distDisplay}m from ${compName} (allowed: ${maxRadius}m)`);
-            resolve(true);
-          }
-        },
-        (err) => {
-          console.warn('Geolocation error:', err);
-          toast.error(`Location permission required to verify ${maxRadius}m ${compName} geofence zone.`);
-          resolve(false);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    });
+      if (distMeters > maxRadius) {
+        const distDisplay = distMeters >= 1000 ? `${(distMeters / 1000).toFixed(2)}km` : `${Math.round(distMeters)}m`;
+        toast.error(`❌ Restricted: You are ${distDisplay} away. Clock In/Out is only allowed within ${maxRadius} meters of ${compName}.`, { id: 'loc-check', duration: 5000 });
+        return false;
+      } else {
+        const distDisplay = Math.round(distMeters);
+        toast.success(`✓ Geofence Verified: ${distDisplay}m from ${compName} (allowed: ${maxRadius}m)`, { id: 'loc-check' });
+        return true;
+      }
+    } catch (err: any) {
+      console.warn('Geolocation error:', err);
+      toast.error(err.message || `Location permission required to verify ${maxRadius}m ${compName} geofence zone.`, { id: 'loc-check', duration: 7000 });
+      return false;
+    }
   };
 
   const handleClockIn = async () => {
@@ -681,60 +684,83 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
         <DialogContent className="max-w-lg w-full p-6 rounded-2xl border border-border bg-card text-card-foreground shadow-2xl space-y-4">
           <DialogHeader className="p-0 space-y-1">
             <DialogTitle className="text-lg font-bold flex items-center gap-2 text-foreground">
-              <span>🎉</span> Official Holidays (2026-2027)
+              <span>🎉</span> Upcoming Holidays (2026 - 2027)
             </DialogTitle>
             <DialogDescription className="text-muted-foreground text-xs">
-              Company Annual Holiday Schedule & Observances
+              Annual company holiday schedule and festival observances
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto pr-1 pt-2">
-            {COMPANY_HOLIDAYS.map((holiday) => {
-              const isNext = holiday.id === nextHoliday?.id;
-              const isPast = holiday.date < todayDateStr;
+          <div className="space-y-3 pt-2">
+            {/* Next Holiday Top Banner */}
+            {nextHoliday && (
+              <div className="p-4 rounded-xl holiday-banner-emerald flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold holiday-banner-title flex items-center gap-1">
+                    <span>🌟 Next Upcoming Holiday</span>
+                  </p>
+                  <p className="text-2xl font-bold text-foreground mt-0.5">{nextHoliday.name}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {formatHolidayDate(nextHoliday.date)} • {nextHoliday.day}
+                  </p>
+                </div>
+                <div className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs sm:text-sm shadow-xs whitespace-nowrap">
+                  {getDaysUntilText(nextHoliday.date)}
+                </div>
+              </div>
+            )}
 
-              return (
-                <div
-                  key={holiday.id}
-                  className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${
-                    isNext
-                      ? 'bg-emerald-500/10 border-emerald-500/40 shadow-xs'
-                      : isPast
-                      ? 'bg-muted/20 border-border/40 opacity-60'
-                      : 'bg-muted/40 border-border/70'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{holiday.icon}</span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground">{holiday.name}</p>
-                        {isNext && (
-                          <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500 text-white leading-none">
-                            Next
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {formatHolidayDate(holiday.date)} • {holiday.day}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge
-                    variant="outline"
-                    className={`text-xs ${
-                      holiday.type === 'National Holiday'
-                        ? 'text-indigo-600 dark:text-indigo-400 border-indigo-500/30 bg-indigo-500/10'
-                        : holiday.type === 'Festival Holiday'
-                        ? 'text-purple-600 dark:text-purple-400 border-purple-500/30 bg-purple-500/10'
-                        : 'text-cyan-600 dark:text-cyan-400 border-cyan-500/30 bg-cyan-500/10'
+            {/* List of Holiday items */}
+            <div className="max-h-[380px] overflow-y-auto space-y-3 pr-1 pt-1">
+              {COMPANY_HOLIDAYS.map((holiday) => {
+                const isNext = holiday.id === nextHoliday?.id;
+                const isPast = holiday.date < todayDateStr;
+                const daysText = getDaysUntilText(holiday.date);
+
+                return (
+                  <div
+                    key={holiday.id}
+                    className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${
+                      isNext
+                        ? 'bg-emerald-500/10 border-emerald-500/40 hover:bg-emerald-500/15'
+                        : isPast
+                        ? 'bg-muted/20 border-border/40 opacity-60 hover:opacity-80'
+                        : 'bg-muted/40 border-border/70 hover:bg-muted/60'
                     }`}
                   >
-                    {holiday.type}
-                  </Badge>
-                </div>
-              );
-            })}
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{holiday.icon}</span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-foreground">{holiday.name}</p>
+                          {isNext && (
+                            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500 text-white leading-none">
+                              Next
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {formatHolidayDate(holiday.date)} • {holiday.day} • {holiday.type}
+                        </p>
+                      </div>
+                    </div>
+                    <span
+                      className={`px-3.5 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap ${
+                        isNext
+                          ? 'leave-pill-emerald'
+                          : isPast
+                          ? 'leave-pill-slate'
+                          : holiday.date.startsWith('2026')
+                          ? 'leave-pill-blue'
+                          : 'leave-pill-amber'
+                      }`}
+                    >
+                      {daysText}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

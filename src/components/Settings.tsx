@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { getAppUpdateSettings, saveAppUpdateSettings, getCompanySettings, saveCompanySettings } from '../services/api';
+import { getCurrentLocation } from '../services/geolocation';
 import { Switch } from './ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
@@ -71,11 +72,12 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
   const [annualVacationDays, setAnnualVacationDays] = useState('25');
   const [sickLeaveDays, setSickLeaveDays] = useState('10');
   const [personalDays, setPersonalDays] = useState('5');
+  const [timezone, setTimezone] = useState('Asia/Kolkata');
   const [companySaving, setCompanySaving] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState('general');
 
   const handleGlobalSave = async () => {
-    if (activeSettingsTab === 'company') {
+    if (activeSettingsTab === 'company' || activeSettingsTab === 'general') {
       try {
         setCompanySaving(true);
         await saveCompanySettings({
@@ -87,8 +89,9 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
           annualVacationDays: Number(annualVacationDays),
           sickLeaveDays: Number(sickLeaveDays),
           personalDays: Number(personalDays),
+          timezone,
         });
-        toast.success('Company settings saved successfully');
+        toast.success('Settings saved successfully');
       } catch (err: any) {
         toast.error(err.message || 'Failed to save company settings');
       } finally {
@@ -136,6 +139,9 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
           setAnnualVacationDays(String(data.annualVacationDays ?? 25));
           setSickLeaveDays(String(data.sickLeaveDays ?? 10));
           setPersonalDays(String(data.personalDays ?? 5));
+          if (data.timezone) {
+            setTimezone(data.timezone);
+          }
           if (data.quickFaceScanLoginEnabled !== undefined) {
             setQuickFaceScanLogin(Boolean(data.quickFaceScanLoginEnabled));
             localStorage.setItem('quickFaceScanLoginEnabled', data.quickFaceScanLoginEnabled ? 'true' : 'false');
@@ -219,16 +225,26 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="timezone">Timezone</Label>
-                  <Select defaultValue="america/new_york">
+                  <Select value={timezone} onValueChange={async (val) => {
+                    setTimezone(val);
+                    try {
+                      await saveCompanySettings({ timezone: val });
+                      toast.success(`Timezone updated to ${val}`);
+                    } catch (e) {}
+                  }}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select timezone" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="america/new_york">Eastern Time (UTC-5)</SelectItem>
-                      <SelectItem value="america/chicago">Central Time (UTC-6)</SelectItem>
-                      <SelectItem value="america/denver">Mountain Time (UTC-7)</SelectItem>
-                      <SelectItem value="america/los_angeles">Pacific Time (UTC-8)</SelectItem>
-                      <SelectItem value="utc">UTC (UTC+0)</SelectItem>
+                      <SelectItem value="Asia/Kolkata">India Standard Time - IST (UTC+5:30)</SelectItem>
+                      <SelectItem value="Asia/Dubai">Gulf Standard Time - GST (UTC+4)</SelectItem>
+                      <SelectItem value="Asia/Singapore">Singapore / Malaysia - SGT (UTC+8)</SelectItem>
+                      <SelectItem value="Europe/London">London / GMT (UTC+0/+1)</SelectItem>
+                      <SelectItem value="America/New_York">Eastern Time (UTC-5)</SelectItem>
+                      <SelectItem value="America/Chicago">Central Time (UTC-6)</SelectItem>
+                      <SelectItem value="America/Denver">Mountain Time (UTC-7)</SelectItem>
+                      <SelectItem value="America/Los_Angeles">Pacific Time (UTC-8)</SelectItem>
+                      <SelectItem value="UTC">UTC (UTC+0)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -722,26 +738,19 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            if (!navigator.geolocation) {
-                              toast.error('Geolocation is not supported by your browser');
-                              return;
+                          onClick={async () => {
+                            toast.loading('Acquiring location coordinates...', { id: 'gps-loc' });
+                            try {
+                              const pos = await getCurrentLocation();
+                              const lat = pos.latitude.toFixed(7);
+                              const lng = pos.longitude.toFixed(7);
+                              setOfficeLatitude(lat);
+                              setOfficeLongitude(lng);
+                              toast.success(`✓ Location Detected: ${lat}, ${lng}`, { id: 'gps-loc' });
+                            } catch (err: any) {
+                              console.error(err);
+                              toast.error(err.message || 'Could not detect location. Please check browser and OS location permissions.', { id: 'gps-loc', duration: 7000 });
                             }
-                            toast.loading('Acquiring precise GPS coordinates...', { id: 'gps-loc' });
-                            navigator.geolocation.getCurrentPosition(
-                              (pos) => {
-                                const lat = pos.coords.latitude.toFixed(7);
-                                const lng = pos.coords.longitude.toFixed(7);
-                                setOfficeLatitude(lat);
-                                setOfficeLongitude(lng);
-                                toast.success(`✓ Location Detected: ${lat}, ${lng}`, { id: 'gps-loc' });
-                              },
-                              (err) => {
-                                console.error(err);
-                                toast.error('Could not detect GPS location. Please enable location permissions in your browser.', { id: 'gps-loc' });
-                              },
-                              { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                            );
                           }}
                           className="gap-1.5 text-xs font-semibold text-indigo-600 border-indigo-200 hover:bg-indigo-50 dark:border-indigo-900 dark:hover:bg-indigo-950 cursor-pointer shadow-xs"
                         >

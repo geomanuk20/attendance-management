@@ -24,7 +24,7 @@ router.post('/', asyncHandler(async (req, res) => {
         officeLatitude, officeLongitude, allowedRadiusMeters,
         workStartTime, workEndTime,
         annualVacationDays, sickLeaveDays, personalDays,
-        quickFaceScanLoginEnabled
+        quickFaceScanLoginEnabled, timezone
     } = req.body;
 
     let settings = await CompanySettings.findOne();
@@ -44,6 +44,7 @@ router.post('/', asyncHandler(async (req, res) => {
         if (sickLeaveDays !== undefined) settings.sickLeaveDays = sickLeaveDays;
         if (personalDays !== undefined) settings.personalDays = personalDays;
         if (quickFaceScanLoginEnabled !== undefined) settings.quickFaceScanLoginEnabled = quickFaceScanLoginEnabled;
+        if (timezone !== undefined) settings.timezone = timezone;
         await settings.save();
     } else {
         settings = await CompanySettings.create(req.body);

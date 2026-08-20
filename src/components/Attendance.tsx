@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Clock, CalendarIcon, Search, Loader2, ChevronsUpDown, Check, Download, Pencil, ShieldCheck, Camera, Upload, AlertCircle, CheckCircle, MapPin } from 'lucide-react';
 import { getAttendance, clockIn, clockOut, getEmployees, getEmployeeNames, getLeaveRequests, updateAttendanceRecord, updateEmployee, getCompanySettings } from '../services/api';
+import { getCurrentLocation, getDistanceMeters } from '../services/geolocation';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from './ui/dialog';
 import { Label } from './ui/label';
@@ -35,6 +36,24 @@ const parseTimeToSeconds = (tStr: string | null | undefined): number | null => {
   if (period === 'PM' && h !== 12) h += 12;
   if (period === 'AM' && h === 12) h = 0;
   return h * 3600 + m * 60 + s;
+};
+
+const formatRecordTime = (timeValue: any, isoFallback?: string): string => {
+  if (!timeValue || timeValue === '-' || timeValue === '--:--' || timeValue === 'In progress') {
+    return timeValue || '--:--';
+  }
+  if (isoFallback) {
+    const isoDate = new Date(isoFallback);
+    if (!isNaN(isoDate.getTime())) {
+      return isoDate.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+    }
+  }
+  return String(timeValue);
 };
 
 const calculateWorkHoursFromTimes = (clockInStr: string | null | undefined, clockOutStr: string | null | undefined): number => {
@@ -308,67 +327,44 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
     }).catch(() => {});
   }, []);
 
-  // Precise Haversine formula calculation returning exact distance in meters
-  const getDistanceMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371000; // Radius of the Earth in meters
-    const dLat = (lat2 - lat1) * (Math.PI / 180);
-    const dLon = (lon2 - lon1) * (Math.PI / 180);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
+  const verifyLocation = async (): Promise<boolean> => {
+    // Check latest settings from state or localStorage
+    let officeLat = companyLocation.officeLatitude || 10.0279421;
+    let officeLng = companyLocation.officeLongitude || 76.3166192;
+    let maxRadius = companyLocation.allowedRadiusMeters || 100;
+    let compName = companyLocation.companyName || 'Whiteswan TV Office';
 
-  const verifyLocation = (): Promise<boolean> => {
-    return new Promise((resolve) => {
-      if (!navigator.geolocation) {
-        toast.error('Geolocation is not supported by your browser');
-        resolve(false);
-        return;
+    try {
+      const stored = localStorage.getItem('companySettings');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.officeLatitude !== undefined) officeLat = Number(parsed.officeLatitude);
+        if (parsed.officeLongitude !== undefined) officeLng = Number(parsed.officeLongitude);
+        if (parsed.allowedRadiusMeters !== undefined) maxRadius = Number(parsed.allowedRadiusMeters);
+        if (parsed.companyName) compName = parsed.companyName;
       }
+    } catch {}
 
-      // Check latest settings from state or localStorage
-      let officeLat = companyLocation.officeLatitude || 10.0279421;
-      let officeLng = companyLocation.officeLongitude || 76.3166192;
-      let maxRadius = companyLocation.allowedRadiusMeters || 100;
-      let compName = companyLocation.companyName || 'Whiteswan TV Office';
+    toast.loading(`Detecting location for ${compName} (${maxRadius}m zone)...`, { id: 'loc-check' });
 
-      try {
-        const stored = localStorage.getItem('companySettings');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed.officeLatitude !== undefined) officeLat = Number(parsed.officeLatitude);
-          if (parsed.officeLongitude !== undefined) officeLng = Number(parsed.officeLongitude);
-          if (parsed.allowedRadiusMeters !== undefined) maxRadius = Number(parsed.allowedRadiusMeters);
-          if (parsed.companyName) compName = parsed.companyName;
-        }
-      } catch {}
+    try {
+      const pos = await getCurrentLocation();
+      const distMeters = getDistanceMeters(pos.latitude, pos.longitude, officeLat, officeLng);
 
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const userLat = pos.coords.latitude;
-          const userLng = pos.coords.longitude;
-          const distMeters = getDistanceMeters(userLat, userLng, officeLat, officeLng);
-
-          if (distMeters > maxRadius) {
-            const distDisplay = distMeters >= 1000 ? `${(distMeters / 1000).toFixed(2)}km` : `${Math.round(distMeters)}m`;
-            toast.error(`❌ Restricted: You are ${distDisplay} away. Clock In/Out is only allowed within ${maxRadius} meters of ${compName}.`);
-            resolve(false);
-          } else {
-            const distDisplay = Math.round(distMeters);
-            toast.success(`✓ Geofence Verified: ${distDisplay}m from ${compName} (allowed: ${maxRadius}m)`);
-            resolve(true);
-          }
-        },
-        (err) => {
-          console.warn('Geolocation error:', err);
-          toast.error(`Location permission required to verify ${maxRadius}m ${compName} geofence zone.`);
-          resolve(false);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    });
+      if (distMeters > maxRadius) {
+        const distDisplay = distMeters >= 1000 ? `${(distMeters / 1000).toFixed(2)}km` : `${Math.round(distMeters)}m`;
+        toast.error(`❌ Restricted: You are ${distDisplay} away. Clock In/Out is only allowed within ${maxRadius} meters of ${compName}.`, { id: 'loc-check', duration: 5000 });
+        return false;
+      } else {
+        const distDisplay = Math.round(distMeters);
+        toast.success(`✓ Geofence Verified: ${distDisplay}m from ${compName} (allowed: ${maxRadius}m)`, { id: 'loc-check' });
+        return true;
+      }
+    } catch (err: any) {
+      console.warn('Geolocation error:', err);
+      toast.error(err.message || `Location permission required to verify ${maxRadius}m ${compName} geofence zone.`, { id: 'loc-check', duration: 7000 });
+      return false;
+    }
   };
 
   const handleClockIn = async () => {
@@ -1233,11 +1229,11 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
           <div className="flex gap-8 text-center">
             <div>
               <p className="text-sm text-muted-foreground">Check In</p>
-              <p className="font-semibold">{todayRecord?.clockIn || '--:--'}</p>
+              <p className="font-semibold">{todayRecord ? formatRecordTime(todayRecord.clockIn, todayRecord.createdAt) : '--:--'}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Check Out</p>
-              <p className="font-semibold text-muted-foreground">{todayRecord?.clockOut || '--:--'}</p>
+              <p className="font-semibold text-muted-foreground">{todayRecord?.clockOut ? formatRecordTime(todayRecord.clockOut, todayRecord.updatedAt) : '--:--'}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Status</p>
@@ -1259,10 +1255,10 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
                       <p className="text-xs text-muted-foreground">{record.status}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-muted-foreground">In: {record.clockIn || '-'}</p>
-                      <p className="text-xs text-muted-foreground">Out: {record.clockOut || '-'}</p>
+                      <p className="text-xs text-muted-foreground">In: {formatRecordTime(record.clockIn, record.createdAt)}</p>
+                      <p className="text-xs text-muted-foreground">Out: {formatRecordTime(record.clockOut, record.updatedAt)}</p>
                       <p className="text-xs text-muted-foreground">
-                        {record.workHours > 0 ? `${formatWorkHours(record.workHours)} worked` : record.clockIn && !record.clockOut ? 'In progress' : ''}
+                        {record.workHours > 0 ? `${formatWorkHours(record.workHours, record.clockIn, record.clockOut)} worked` : record.clockIn && !record.clockOut ? 'In progress' : ''}
                       </p>
                     </div>
                   </div>
@@ -1542,8 +1538,8 @@ export function Attendance({ userRole = 'admin' }: AttendanceProps) {
                     </TableCell>
                     <TableCell>{record.employeeId?.department || '-'}</TableCell>
                     <TableCell>{record.date}</TableCell>
-                    <TableCell>{record.clockIn || '-'}</TableCell>
-                    <TableCell>{record.clockOut || '-'}</TableCell>
+                    <TableCell>{formatRecordTime(record.clockIn, record.createdAt)}</TableCell>
+                    <TableCell>{formatRecordTime(record.clockOut, record.updatedAt)}</TableCell>
                     <TableCell>
                       {formatWorkHours(record.workHours, record.clockIn, record.clockOut) ||
                         (record.clockIn && (!record.clockOut || record.clockOut === '-') ? 'In progress' : '-')}

@@ -336,11 +336,27 @@ export const getAttendance = async (employeeId?: string) => {
     return [];
 };
 
-export const clockIn = async (employeeId: string) => {
+export const clockIn = async (employeeId: string, customTimezone?: string) => {
+    const timezone = customTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata';
+    const now = new Date();
+    const localTimeStr = now.toLocaleTimeString('en-US', {
+        timeZone: timezone,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+    });
+    const localDateStr = now.toLocaleDateString('en-CA', { timeZone: timezone });
     const response = await fetchWithPortFallback('/attendance/clockin', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ employeeId }),
+        body: JSON.stringify({
+            employeeId,
+            timezone,
+            clockInTime: localTimeStr,
+            clockIn: localTimeStr,
+            date: localDateStr
+        }),
     });
     if (!response.ok) {
         throw new Error('Failed to clock in');
@@ -348,11 +364,27 @@ export const clockIn = async (employeeId: string) => {
     return response.json();
 };
 
-export const clockOut = async (employeeId: string) => {
+export const clockOut = async (employeeId: string, customTimezone?: string) => {
+    const timezone = customTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata';
+    const now = new Date();
+    const localTimeStr = now.toLocaleTimeString('en-US', {
+        timeZone: timezone,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+    });
+    const localDateStr = now.toLocaleDateString('en-CA', { timeZone: timezone });
     const response = await fetchWithPortFallback('/attendance/clockout', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ employeeId }),
+        body: JSON.stringify({
+            employeeId,
+            timezone,
+            clockOutTime: localTimeStr,
+            clockOut: localTimeStr,
+            date: localDateStr
+        }),
     });
     if (!response.ok) {
         throw new Error('Failed to clock out');

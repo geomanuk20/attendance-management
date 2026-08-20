@@ -737,7 +737,7 @@ function AppContent() {
       if (empId) {
         try {
           const logs = await getAttendance(empId);
-          const today = new Date().toISOString().split('T')[0];
+          const today = getLocalDateStr();
           const todayRec = Array.isArray(logs) ? logs.find((r: any) => String(r.date).split('T')[0] === today) : null;
 
           if (!todayRec || !todayRec.clockIn) {
@@ -1634,25 +1634,52 @@ function AppContent() {
     }
   };
 
-  const formatTime = (timeValue: any) => {
-    if (!timeValue) return '--';
-    const str = String(timeValue);
+  const getLocalDateStr = (d = new Date()) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
 
-    let d: Date | null = null;
+  const parseTimeToDate = (timeValue: any, baseDate = new Date()) => {
+    if (!timeValue) return null;
+    const str = String(timeValue).trim();
     if (str.includes('T')) {
-      d = new Date(timeValue);
-    } else {
-      const match = str.match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM|am|pm)?/i);
-      if (match) {
-        let hour = parseInt(match[1], 10);
-        const min = match[2];
-        const ampm = match[3] ? match[3].toUpperCase() : '';
-        if (ampm === 'PM' && hour < 12) hour += 12;
-        if (ampm === 'AM' && hour === 12) hour = 0;
-        d = new Date();
-        d.setHours(hour, parseInt(min, 10), 0);
+      const d = new Date(str);
+      if (!isNaN(d.getTime())) return d;
+    }
+    const match = str.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM|am|pm)?/i);
+    if (match) {
+      let hour = parseInt(match[1], 10);
+      const min = parseInt(match[2], 10) || 0;
+      const sec = parseInt(match[3], 10) || 0;
+      const ampm = match[4] ? match[4].toUpperCase() : '';
+      if (ampm === 'PM' && hour < 12) hour += 12;
+      if (ampm === 'AM' && hour === 12) hour = 0;
+      const d = new Date(baseDate);
+      d.setHours(hour, min, sec, 0);
+      return d;
+    }
+    const d = new Date(timeValue);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  const formatTime = (timeValue: any, isoFallback?: string) => {
+    if (!timeValue || timeValue === '-' || timeValue === '--:--' || timeValue === 'In progress') return timeValue || '--';
+    if (isoFallback) {
+      const isoD = new Date(isoFallback);
+      if (!isNaN(isoD.getTime())) {
+        if (is24HourFormat) {
+          const h = String(isoD.getHours()).padStart(2, '0');
+          const m = String(isoD.getMinutes()).padStart(2, '0');
+          return `${h}:${m}`;
+        } else {
+          return isoD.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }
       }
     }
+
+    const d = parseTimeToDate(timeValue);
 
     if (d && !isNaN(d.getTime())) {
       if (is24HourFormat) {
@@ -1664,7 +1691,7 @@ function AppContent() {
       }
     }
 
-    return str;
+    return String(timeValue);
   };
 
   const formatCurrentClockTime = (dateObj: Date) => {
@@ -1732,7 +1759,7 @@ function AppContent() {
   };
 
   const getNextHoliday = () => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateStr();
     const holidays = [
       { name: 'Independence Day', date: '2026-08-15', formatted: 'August 15th, 2026' },
       { name: 'Gandhi Jayanti', date: '2026-10-02', formatted: 'October 2nd, 2026' },
@@ -1758,15 +1785,16 @@ function AppContent() {
 
   const getTodayWorkedHours = () => {
     if (!attendanceLogs || attendanceLogs.length === 0) return '';
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateStr();
     const todayLog = attendanceLogs.find(l => {
       const d = l.date || (l.createdAt ? l.createdAt.split('T')[0] : '');
       return d === todayStr || d.startsWith(todayStr);
     });
     if (!todayLog || !todayLog.clockIn) return '';
-    const inDate = new Date(todayLog.clockIn);
-    if (isNaN(inDate.getTime())) return '';
-    const outDate = todayLog.clockOut ? new Date(todayLog.clockOut) : currentTime;
+    const inDate = parseTimeToDate(todayLog.clockIn);
+    if (!inDate || isNaN(inDate.getTime())) return '';
+    const outDate = todayLog.clockOut ? parseTimeToDate(todayLog.clockOut) : currentTime;
+    if (!outDate || isNaN(outDate.getTime())) return '';
     const diffMs = outDate.getTime() - inDate.getTime();
     if (diffMs <= 0) return '';
     const totalMins = Math.floor(diffMs / 60000);
@@ -2266,11 +2294,11 @@ function AppContent() {
                 {cell.status === 'present' && (
                   <View style={styles.timeDetailContainer}>
                     <Text numberOfLines={1} style={[styles.timeDetailText, { color: '#4ade80' }]}>
-                      In: {formatTime(cell.attendanceRec.clockIn)}
+                      In: {formatTime(cell.attendanceRec.clockIn, cell.attendanceRec.createdAt)}
                     </Text>
                     {cell.attendanceRec.clockOut && (
                       <Text numberOfLines={1} style={[styles.timeDetailText, { color: '#4ade80' }]}>
-                        Out: {formatTime(cell.attendanceRec.clockOut)}
+                        Out: {formatTime(cell.attendanceRec.clockOut, cell.attendanceRec.updatedAt)}
                       </Text>
                     )}
                   </View>
@@ -2410,14 +2438,14 @@ function AppContent() {
                     </View>
                     <Text style={{ fontSize: 22, fontWeight: 'bold', color: theme.text }}>
                       {allAttendanceLogs.filter((a: any) => {
-                        const todayStr = new Date().toISOString().split('T')[0];
+                        const todayStr = getLocalDateStr();
                         const logDate = a.date || (a.createdAt && a.createdAt.split('T')[0]) || '';
                         return logDate.startsWith(todayStr);
                       }).length}
                     </Text>
                     <Text style={{ fontSize: 10, color: '#818cf8', fontWeight: '500', marginTop: 4 }}>
                       {employees.length > 0 ? Math.round((allAttendanceLogs.filter((a: any) => {
-                        const todayStr = new Date().toISOString().split('T')[0];
+                        const todayStr = getLocalDateStr();
                         const logDate = a.date || (a.createdAt && a.createdAt.split('T')[0]) || '';
                         return logDate.startsWith(todayStr);
                       }).length / employees.length) * 100) : 0}% attendance rate
@@ -2643,10 +2671,10 @@ function AppContent() {
                         </View>
                         <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
                           <Text style={[styles.itemSub, { color: theme.text, fontWeight: '700' }]}>
-                            In: {formatTime(log.clockIn)}
+                            In: {formatTime(log.clockIn, log.createdAt)}
                           </Text>
                           <Text style={[styles.itemSub, { color: theme.textSub, fontSize: 12 }]}>
-                            Out: {log.clockOut ? formatTime(log.clockOut) : '--:--'}
+                            Out: {log.clockOut ? formatTime(log.clockOut, log.updatedAt) : '--:--'}
                           </Text>
                           {log.workHours > 0 && (
                             <Text style={{ fontSize: 10, color: '#818cf8', fontWeight: 'bold', marginTop: 2 }}>
@@ -2761,9 +2789,9 @@ function AppContent() {
                     <View key={log._id || index} style={[styles.listRow, { borderBottomColor: theme.border }]}>
                       <View>
                         <Text style={[styles.itemTitle, { color: theme.text }]}>{formatDate(log.date || log.createdAt)}</Text>
-                        <Text style={[styles.itemSub, { color: theme.textSub }]}>In: {formatTime(log.clockIn)}</Text>
+                        <Text style={[styles.itemSub, { color: theme.textSub }]}>In: {formatTime(log.clockIn, log.createdAt)}</Text>
                       </View>
-                      <Text style={[styles.itemSub, { color: theme.textSub }]}>Out: {formatTime(log.clockOut)}</Text>
+                      <Text style={[styles.itemSub, { color: theme.textSub }]}>Out: {formatTime(log.clockOut, log.updatedAt)}</Text>
                     </View>
                   ))
                 )}
@@ -3281,7 +3309,7 @@ function AppContent() {
 
                 <View style={[styles.salaryRow, { borderBottomColor: theme.border }]}>
                   <Text style={[styles.salaryLabel, { color: theme.textSub }]}>Timezone:</Text>
-                  <Text style={[styles.salaryValue, { color: theme.text }]}>Eastern Time (UTC-5)</Text>
+                  <Text style={[styles.salaryValue, { color: theme.text }]}>India Standard Time (IST, UTC+5:30)</Text>
                 </View>
 
                 <View style={[styles.salaryRow, { borderBottomColor: theme.border }]}>
@@ -4254,10 +4282,10 @@ function AppContent() {
                         </View>
                         <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
                           <Text style={[styles.itemSub, { color: theme.text, fontSize: 12, fontWeight: '700' }]}>
-                            In: {formatTime(log.clockIn)}
+                            In: {formatTime(log.clockIn, log.createdAt)}
                           </Text>
                           <Text style={[styles.itemSub, { color: theme.textSub, fontSize: 12 }]}>
-                            Out: {log.clockOut ? formatTime(log.clockOut) : '--:--'}
+                            Out: {log.clockOut ? formatTime(log.clockOut, log.updatedAt) : '--:--'}
                           </Text>
                           {log.workHours > 0 && (
                             <Text style={{ fontSize: 10, color: '#818cf8', fontWeight: 'bold', marginTop: 2 }}>

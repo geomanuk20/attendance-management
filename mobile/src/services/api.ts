@@ -179,12 +179,29 @@ export const getAttendance = async (employeeId?: string) => {
   return data;
 };
 
-export const clockIn = async (employeeId: string) => {
+export const clockIn = async (employeeId: string, customTimezone?: string) => {
   const headers = await getHeaders();
+  const timezone = customTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata';
+  const now = new Date();
+  const localTimeStr = now.toLocaleTimeString('en-US', {
+    timeZone: timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  });
+  const localDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
   const response = await fetchWithFallback('/attendance/clockin', {
     method: 'POST',
     headers,
-    body: JSON.stringify({ employeeId }),
+    body: JSON.stringify({
+      employeeId,
+      timezone,
+      clockInTime: localTimeStr,
+      clockIn: localTimeStr,
+      date: localDateStr,
+    }),
   });
 
   const contentType = response.headers.get('content-type');
@@ -197,12 +214,29 @@ export const clockIn = async (employeeId: string) => {
   return data;
 };
 
-export const clockOut = async (employeeId: string) => {
+export const clockOut = async (employeeId: string, customTimezone?: string) => {
   const headers = await getHeaders();
+  const timezone = customTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata';
+  const now = new Date();
+  const localTimeStr = now.toLocaleTimeString('en-US', {
+    timeZone: timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  });
+  const localDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
   const response = await fetchWithFallback('/attendance/clockout', {
     method: 'POST',
     headers,
-    body: JSON.stringify({ employeeId }),
+    body: JSON.stringify({
+      employeeId,
+      timezone,
+      clockOutTime: localTimeStr,
+      clockOut: localTimeStr,
+      date: localDateStr,
+    }),
   });
 
   const contentType = response.headers.get('content-type');

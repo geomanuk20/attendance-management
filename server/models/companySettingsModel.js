@@ -15,6 +15,7 @@ const companySettingsSchema = mongoose.Schema({
     sickLeaveDays: { type: Number, default: 10 },
     personalDays: { type: Number, default: 5 },
     quickFaceScanLoginEnabled: { type: Boolean, default: true },
+    timezone: { type: String, default: 'Asia/Kolkata' },
 }, {
     timestamps: true,
 });

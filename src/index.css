@@ -3099,6 +3099,22 @@ html {
   color: #fde68a !important;
 }
 
+.holiday-banner-emerald {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5) !important;
+  border: 1px solid #a7f3d0 !important;
+}
+.dark .holiday-banner-emerald {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(20, 184, 166, 0.18)) !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+}
+
+.holiday-banner-title {
+  color: #065f46 !important;
+}
+.dark .holiday-banner-title {
+  color: #a7f3d0 !important;
+}
+
 /* Login Page Premium Oceanic Gradient Background */
 .login-clean-bg {
   background: radial-gradient(circle at 50% 18%, #1e3a8a 0%, #0d213f 40%, #07101e 100%);

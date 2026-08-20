@@ -1,20 +1,68 @@
 import express from 'express';
 import asyncHandler from 'express-async-handler';
 import Attendance from '../models/attendanceModel.js';
+import CompanySettings from '../models/companySettingsModel.js';
 
 const router = express.Router();
+
+// Helper to get company timezone or request timezone (defaults to Asia/Kolkata)
+const resolveTimezone = async (reqTimezone) => {
+    if (reqTimezone && typeof reqTimezone === 'string' && reqTimezone.trim()) {
+        try {
+            // Verify if valid timezone
+            Intl.DateTimeFormat(undefined, { timeZone: reqTimezone.trim() });
+            return reqTimezone.trim();
+        } catch {}
+    }
+    try {
+        const settings = await CompanySettings.findOne();
+        if (settings && settings.timezone) {
+            return settings.timezone;
+        }
+    } catch {}
+    return 'Asia/Kolkata';
+};
+
+const getTodayDateStr = (timeZone = 'Asia/Kolkata') => {
+    try {
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+        return formatter.format(new Date()); // Formats as YYYY-MM-DD
+    } catch {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+};
+
+const getNowTimeStr = (timeZone = 'Asia/Kolkata') => {
+    try {
+        return new Date().toLocaleTimeString('en-US', {
+            timeZone,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+    } catch {
+        return new Date().toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+    }
+};
 
 // @desc    Get all attendance records (optionally filter by employeeId or date)
 // @route   GET /api/attendance
 // @access  Public
-const getTodayDateStr = () => {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-};
-
 const getAttendance = asyncHandler(async (req, res) => {
     const { employeeId, date } = req.query;
     let query = {};
@@ -34,8 +82,10 @@ const getAttendance = asyncHandler(async (req, res) => {
 // @route   POST /api/attendance/clockin
 // @access  Public
 const clockIn = asyncHandler(async (req, res) => {
-    const { employeeId } = req.body;
-    const date = getTodayDateStr();
+    const { employeeId, timezone: reqTimezone, date: reqDate, clockInTime, clockIn: clientClockIn } = req.body;
+    const clientTimezone = reqTimezone || req.headers['x-timezone'];
+    const timeZone = await resolveTimezone(clientTimezone);
+    const date = reqDate || getTodayDateStr(timeZone);
 
     // Check if already clocked in for today
     const existingRecord = await Attendance.findOne({ employeeId, date });
@@ -44,10 +94,12 @@ const clockIn = asyncHandler(async (req, res) => {
         throw new Error('Already clocked in for today');
     }
 
+    const clockInVal = clientClockIn || clockInTime || getNowTimeStr(timeZone);
+
     const attendance = await Attendance.create({
         employeeId,
         date,
-        clockIn: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
+        clockIn: clockInVal,
         status: 'Present',
     });
 
@@ -59,14 +111,23 @@ const clockIn = asyncHandler(async (req, res) => {
 // @route   POST /api/attendance/clockout
 // @access  Public
 const clockOut = asyncHandler(async (req, res) => {
-    const { employeeId } = req.body;
-    const date = getTodayDateStr();
+    const { employeeId, timezone: reqTimezone, date: reqDate, clockOutTime, clockOut: clientClockOut } = req.body;
+    const clientTimezone = reqTimezone || req.headers['x-timezone'];
+    const timeZone = await resolveTimezone(clientTimezone);
+    const date = reqDate || getTodayDateStr(timeZone);
 
-    const attendance = await Attendance.findOne({ employeeId, date });
+    let attendance = await Attendance.findOne({ employeeId, date });
+    if (!attendance) {
+        // Fallback: check for any open attendance log for this employee
+        attendance = await Attendance.findOne({
+            employeeId,
+            $or: [{ clockOut: null }, { clockOut: '' }, { clockOut: '-' }, { clockOut: { $exists: false } }]
+        }).sort({ date: -1, createdAt: -1 });
+    }
 
     if (attendance) {
-        const clockOutTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-        attendance.clockOut = clockOutTime;
+        const clockOutVal = clientClockOut || clockOutTime || getNowTimeStr(timeZone);
+        attendance.clockOut = clockOutVal;
 
         // Calculate work hours from clockIn and clockOut
         try {
