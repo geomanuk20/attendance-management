@@ -46,9 +46,11 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
   const [autoLogout, setAutoLogout] = useState(true);
   const [twoFactorAuth, setTwoFactorAuth] = useState(false);
   const [timeFormat, setTimeFormat] = useState(() => localStorage.getItem('timeFormat') || '12h');
+  const [language, setLanguage] = useState(() => localStorage.getItem('language') || 'en');
+  const [dateFormat, setDateFormat] = useState(() => localStorage.getItem('dateFormat') || 'mm/dd/yyyy');
   const [quickFaceScanLogin, setQuickFaceScanLogin] = useState<boolean>(() => {
     const stored = localStorage.getItem('quickFaceScanLoginEnabled');
-    return stored !== null ? stored === 'true' : true;
+    return stored !== null ? stored === 'true' : false;
   });
 
   const [appVersion, setAppVersion] = useState('1.0.2');
@@ -250,7 +252,11 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="language">Language</Label>
-                  <Select defaultValue="en">
+                  <Select value={language} onValueChange={(val) => {
+                    setLanguage(val);
+                    localStorage.setItem('language', val);
+                    toast.success('Language preference saved');
+                  }}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select language" />
                     </SelectTrigger>
@@ -267,7 +273,11 @@ export function Settings({ userRole = 'admin', onLogout, currency = 'INR', onCur
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="dateFormat">Date Format</Label>
-                  <Select defaultValue="mm/dd/yyyy">
+                  <Select value={dateFormat} onValueChange={(val) => {
+                    setDateFormat(val);
+                    localStorage.setItem('dateFormat', val);
+                    toast.success('Date format preference saved');
+                  }}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select date format" />
                     </SelectTrigger>

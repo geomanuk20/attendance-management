@@ -29,7 +29,7 @@ export default function App() {
         }
       }
     } catch { }
-    return localStorage.getItem('currency') || 'USD';
+    return localStorage.getItem('currency') || 'INR';
   });
   const [darkMode, setDarkMode] = useState(() => {
     // Sync read on init to avoid flash: check if there's a stored user and their dark mode preference
