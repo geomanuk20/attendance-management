@@ -1047,11 +1047,15 @@ function AppContent() {
   };
 
   const executeClockAction = async () => {
-    if (!user?._id) return;
+    const empId = user?._id || user?.id;
+    if (!empId) {
+      Alert.alert('Session Error', 'Please log in again to continue.');
+      return;
+    }
     setLoading(true);
     try {
       if (clockedIn) {
-        const res = await clockOut(user._id);
+        const res = await clockOut(empId);
         setClockedIn(false);
         const totalHours = res.workHours || 0;
         const h = Math.floor(totalHours);
@@ -1067,20 +1071,20 @@ function AppContent() {
           `Clocked out successfully at ${res.clockOut || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} from office location (within 100m zone).\n\nToday's Working Hours: ${workedTimeStr}${halfDayNote}`
         );
       } else {
-        const res = await clockIn(user._id);
+        const res = await clockIn(empId);
         setClockedIn(true);
         Alert.alert(
           'Success 📍 Whiteswan TV LLP',
           `Clocked in successfully at ${res.clockIn || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} at office location (within 100m zone).`
         );
       }
-      fetchAttendance(user._id);
+      fetchAttendance(empId);
     } catch (err: any) {
       if (err.message && err.message.includes('Already clocked in')) {
         setClockedIn(true);
       }
       Alert.alert('Attendance Notice', err.message || 'Attendance request failed');
-      fetchAttendance(user._id);
+      fetchAttendance(empId);
     } finally {
       setLoading(false);
     }
