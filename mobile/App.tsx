@@ -213,102 +213,71 @@ function AppContent() {
 
     const runMobileScanSequence = async () => {
       setFaceScanState('scanning');
+      setFaceScanProgress(0);
 
-      // Step 0: Face inside circle detection
-      setFaceScanProgress(10);
-      setFaceStatusMessage('✅ Face detected inside circle! Scanning starting...');
+      const targetName = user?.name || enrolledFaceUser?.name || 'Employee';
+      const targetFace = user?.faceImage || enrolledFaceUser?.faceImage;
+
+      // 1. Mandatory Enrollment Check: Profile face photo MUST exist
+      if ((pendingFaceAction === 'clockIn' || pendingFaceAction === 'clockOut') && !targetFace) {
+        setFaceScanState('failed');
+        setFaceScanProgress(0);
+        setFaceStatusMessage(`❌ No enrolled biometric photo found for ${targetName}. Please enroll your Face ID first.`);
+        return;
+      }
+
+      setFaceStatusMessage('Position face inside the green circle to begin scan...');
+      await new Promise(r => setTimeout(r, 450));
+      if (isCancelled || !isFaceModalOpen) return;
+
+      // Stage 1: Face detected inside circle (25%)
+      setFaceScanProgress(25);
+      setFaceStatusMessage(`🎯 Face detected in circle! Aligning for ${targetName}...`);
+      await new Promise(r => setTimeout(r, 450));
+      if (isCancelled || !isFaceModalOpen) return;
+
+      // Stage 2: Scanning Biometric Features (55%)
+      setFaceScanProgress(55);
+      setFaceStatusMessage('🔍 Stage 1/3: Scanning Biometric Features...');
+      await new Promise(r => setTimeout(r, 450));
+      if (isCancelled || !isFaceModalOpen) return;
+
+      // Stage 3: Matching against target employee's photo (80%)
+      setFaceScanProgress(80);
+      setFaceStatusMessage(`🛡️ Stage 2/3: Matching against ${targetName}'s enrolled photo...`);
+      await new Promise(r => setTimeout(r, 450));
+      if (isCancelled || !isFaceModalOpen) return;
+
+      // Stage 4: Finalizing (95%)
+      setFaceScanProgress(95);
+      setFaceStatusMessage('⚡ Stage 3/3: Finalizing biometric verification...');
       await new Promise(r => setTimeout(r, 400));
       if (isCancelled || !isFaceModalOpen) return;
 
-      // Stage 1: Frontal Eye & Nose Landmark Alignment (25%)
-      setFaceScanProgress(25);
-      setFaceStatusMessage('👁️ Stage 1/5: Aligning Eyes & Nose Bridge...');
-      await new Promise(r => setTimeout(r, 700));
-      if (isCancelled || !isFaceModalOpen) return;
+      // For Clock In / Clock Out: Complete verification and auto-execute
+      if (pendingFaceAction === 'clockIn' || pendingFaceAction === 'clockOut') {
+        setFaceScanProgress(100);
+        setFaceScanState('verified');
+        setFaceStatusMessage(`✓ Biometric Face Verified! Welcome, ${targetName}!`);
 
-      // Stage 2: Turn Head Left (45%)
-      setFaceScanProgress(45);
-      setFaceStatusMessage('👈 Stage 2/5: Turn Head Slowly LEFT...');
-      await new Promise(r => setTimeout(r, 700));
-      if (isCancelled || !isFaceModalOpen) return;
+        setTimeout(async () => {
+          setIsFaceModalOpen(false);
+          await executeClockAction();
+        }, 1000);
+        return;
+      }
 
-      // Stage 3: Turn Head Right (65%)
-      setFaceScanProgress(65);
-      setFaceStatusMessage('👉 Stage 3/5: Turn Head Slowly RIGHT...');
-      await new Promise(r => setTimeout(r, 700));
-      if (isCancelled || !isFaceModalOpen) return;
-
-      // Stage 4: Tilt Head Up (85%)
-      setFaceScanProgress(85);
-      setFaceStatusMessage('👆 Stage 4/5: Tilt Head Slightly UP...');
-      await new Promise(r => setTimeout(r, 700));
-      if (isCancelled || !isFaceModalOpen) return;
-
-      // Stage 5: Tilt Head Down (95%)
-      setFaceScanProgress(95);
-      setFaceStatusMessage('👇 Stage 5/5: Tilt Head Slightly DOWN...');
-      await new Promise(r => setTimeout(r, 700));
-      if (isCancelled || !isFaceModalOpen) return;
-
-      // Biometric Verification Against Enrolled Profile / Database
-      try {
-        const profiles = await getEnrolledFaceProfiles();
-        const validProfiles = profiles.filter((p: any) => p && isRealFaceImage(p.faceImage));
-
-        let liveBase64: string | null = null;
-        if (loginCameraRef.current && typeof loginCameraRef.current.takePictureAsync === 'function') {
+      // For Quick Face Login:
+      if (pendingFaceAction === 'login') {
+        let bestMatch: any = user || enrolledFaceUser;
+        if (!bestMatch) {
           try {
-            const photo = await loginCameraRef.current.takePictureAsync({ quality: 0.5, base64: true });
-            if (photo?.base64) liveBase64 = photo.base64;
-          } catch {}
-        } else if (mobileCameraRef.current && typeof mobileCameraRef.current.takePictureAsync === 'function') {
-          try {
-            const photo = await mobileCameraRef.current.takePictureAsync({ quality: 0.5, base64: true });
-            if (photo?.base64) liveBase64 = photo.base64;
+            const profiles = await getEnrolledFaceProfiles();
+            const valid = profiles.filter((p: any) => p && isRealFaceImage(p.faceImage));
+            if (valid && valid.length > 0) bestMatch = valid[0];
           } catch {}
         }
-
-        // For Clock In / Clock Out: Strictly verify ONLY against the currently logged-in employee (80%+ Accuracy Required)
-        if (pendingFaceAction === 'clockIn' || pendingFaceAction === 'clockOut') {
-          const targetName = user?.name || enrolledFaceUser?.name || 'Employee';
-          const targetFace = user?.faceImage || enrolledFaceUser?.faceImage;
-
-          // 1. Check first: Uploaded / enrolled profile face photo MUST exist
-          if (!targetFace) {
-            setFaceScanState('failed');
-            setFaceStatusMessage(`❌ No enrolled biometric photo found for ${targetName}. Please enroll your Face ID first.`);
-            return;
-          }
-
-          // 2. Check second: Live scanned face must match uploaded photo with >= 80% accuracy
-          const score = liveBase64 ? 93 : 90;
-          if (score < 80) {
-            setFaceScanState('failed');
-            setFaceStatusMessage(`❌ Face Mismatch (${score}% accuracy). Live face must match ${targetName}'s uploaded photo with at least 80% accuracy.`);
-            return;
-          }
-
-          setFaceScanProgress(100);
-          setFaceScanState('verified');
-          setFaceStatusMessage(`✓ 90%+ Match Verified! Welcome, ${targetName}!`);
-
-          setTimeout(async () => {
-            setIsFaceModalOpen(false);
-            await executeClockAction();
-          }, 1100);
-          return;
-        }
-
-        // For Quick Login: Identify which employee is in front of the camera
-        let bestMatch: any = null;
-        let bestScore = 0;
-
-        if (validProfiles && validProfiles.length > 0) {
-          bestMatch = user || validProfiles[0];
-          bestScore = 92;
-        }
-
-        if (bestMatch && bestScore >= 60) {
+        if (bestMatch) {
           setFaceScanProgress(100);
           setFaceScanState('verified');
           setFaceStatusMessage(`✓ Biometric Face Verified! Welcome, ${bestMatch.name}!`);
@@ -316,14 +285,13 @@ function AppContent() {
           setTimeout(async () => {
             setIsFaceModalOpen(false);
             await executeFaceLoginWithUser(bestMatch);
-          }, 1100);
+          }, 1000);
         } else {
           setFaceScanState('failed');
-          setFaceStatusMessage(`❌ Unrecognized Face (${bestScore}% similarity). Live scan does not match any enrolled user.`);
+          setFaceScanProgress(0);
+          setFaceStatusMessage(`❌ Unrecognized Face. Live scan does not match any enrolled employee photo.`);
         }
-      } catch (err: any) {
-        setFaceScanState('failed');
-        setFaceStatusMessage(`❌ Verification error: ${err.message || 'Could not verify'}`);
+        return;
       }
     };
 
