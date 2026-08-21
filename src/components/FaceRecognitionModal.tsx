@@ -525,18 +525,20 @@ export function FaceRecognitionModal({
         return () => clearInterval(interval);
     }, [isOpen, scanState]);
 
-    const checkFaceInCircle = (video: HTMLVideoElement | null): boolean => {
-        if (!video || video.readyState < 2 || !video.videoWidth || !video.videoHeight) return false;
+    const checkFaceInCircleStatus = (video: HTMLVideoElement | null): { ok: boolean; message: string } => {
+        if (!video || video.readyState < 2 || !video.videoWidth || !video.videoHeight) {
+            return { ok: false, message: '👤 Initializing camera...' };
+        }
         try {
             const canvas = document.createElement('canvas');
             canvas.width = 64;
             canvas.height = 64;
             const ctx = canvas.getContext('2d');
-            if (!ctx) return false;
+            if (!ctx) return { ok: false, message: '👤 Position face inside the circle' };
 
             const cw = video.videoWidth;
             const ch = video.videoHeight;
-            const size = Math.min(cw, ch) * 0.75;
+            const size = Math.min(cw, ch) * 0.72;
             const cropX = (cw - size) / 2;
             const cropY = (ch - size) / 2;
 
@@ -565,7 +567,6 @@ export function FaceRecognitionModal({
                     const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
                     const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
 
-                    // Standard human skin detection boundary across diverse tones & lighting
                     const isSkinYCbCr = (cr >= 115 && cr <= 188 && cb >= 68 && cb <= 145);
                     const isSkinRGB = (r > 35 && g > 20 && b > 15) && (r > g && r > b) && (r - g >= 6);
 
@@ -581,22 +582,37 @@ export function FaceRecognitionModal({
             const meanLum = sumLum / totalPixels;
             const lumVariance = (sumLumSq / totalPixels) - (meanLum * meanLum);
 
-            // Must have sufficient lighting, natural facial contrast variation, and skin presence inside circular viewport
-            if (meanLum < 12 || lumVariance < 10 || skinRatio < 0.08) {
-                return false;
+            if (meanLum < 15 || lumVariance < 10) {
+                return { ok: false, message: '💡 Increase lighting or move closer to camera' };
             }
 
-            // Must be centered within the circular viewfinder
+            // PROXIMITY / DISTANCE CHECK:
+            // Face must be close enough (occupying at least 20% of the circle)
+            // Rejects distant / far away faces taking up only background
+            if (skinRatio < 0.20) {
+                return { ok: false, message: '🔍 Move Closer: Your face is too far away to scan' };
+            }
+
+            // Face is too close / covering camera lens
+            if (skinRatio > 0.75) {
+                return { ok: false, message: '🔍 Step Back: Position face inside the circle' };
+            }
+
+            // Centering check inside circular frame
             const centroidX = sumX / skinPixelCount;
             const centroidY = sumY / skinPixelCount;
-            if (centroidX < 10 || centroidX > 54 || centroidY < 10 || centroidY > 54) {
-                return false;
+            if (centroidX < 16 || centroidX > 48 || centroidY < 14 || centroidY > 50) {
+                return { ok: false, message: '👤 Center your face inside the green circle' };
             }
 
-            return true;
+            return { ok: true, message: '🎯 Face properly positioned in circle' };
         } catch {
-            return false;
+            return { ok: false, message: '👤 Position face inside the circle' };
         }
+    };
+
+    const checkFaceInCircle = (video: HTMLVideoElement | null): boolean => {
+        return checkFaceInCircleStatus(video).ok;
     };
 
     useEffect(() => {
@@ -614,16 +630,16 @@ export function FaceRecognitionModal({
             }
             if (isCancelled) return;
 
-            // 2. Active Face Detection Loop: ONLY proceed if a face is inside the circle!
+            // 2. Active Face Detection & Proximity Loop: ONLY proceed if a face is close and inside the circle!
             let faceDetected = false;
             while (!isCancelled && !faceDetected) {
-                const hasFace = checkFaceInCircle(videoRef.current);
-                if (hasFace) {
+                const status = checkFaceInCircleStatus(videoRef.current);
+                if (status.ok) {
                     faceDetected = true;
                     break;
                 }
                 setScanProgress(0);
-                setStatusMessage('👤 Position face inside the green circle to begin scan...');
+                setStatusMessage(status.message);
                 await new Promise(r => setTimeout(r, 200));
             }
             if (isCancelled) return;
@@ -633,9 +649,10 @@ export function FaceRecognitionModal({
             setStatusMessage(`🎯 Face detected in circle! Aligning for ${targetDisplayName}...`);
             await new Promise(r => setTimeout(r, 450));
             if (isCancelled) return;
-            if (!checkFaceInCircle(videoRef.current)) {
+            const check1 = checkFaceInCircleStatus(videoRef.current);
+            if (!check1.ok) {
                 setScanProgress(0);
-                setStatusMessage('👤 Face moved out of circle. Position face inside to resume...');
+                setStatusMessage(check1.message);
                 runScanSequence();
                 return;
             }
@@ -645,9 +662,10 @@ export function FaceRecognitionModal({
             setStatusMessage('🔍 Stage 1/3: Scanning Biometric Features...');
             await new Promise(r => setTimeout(r, 450));
             if (isCancelled) return;
-            if (!checkFaceInCircle(videoRef.current)) {
+            const check2 = checkFaceInCircleStatus(videoRef.current);
+            if (!check2.ok) {
                 setScanProgress(0);
-                setStatusMessage('👤 Face moved out of circle. Position face inside to resume...');
+                setStatusMessage(check2.message);
                 runScanSequence();
                 return;
             }
