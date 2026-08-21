@@ -76,7 +76,8 @@ import {
   createPayroll,
   updateEmployee,
   API_URL,
-  checkIsBackendReachable
+  checkIsBackendReachable,
+  fetchWithFallback
 } from './src/services/api';
 
 const formatName = (str?: string) => {
@@ -519,25 +520,18 @@ function AppContent() {
       if (stored !== null) {
         setQuickFaceScanLoginEnabled(stored === 'true');
       }
-      const urls = Platform.OS === 'android'
-        ? [`${API_URL}/company-settings`, 'http://10.0.2.2:5001/api/company-settings', 'http://127.0.0.1:5001/api/company-settings']
-        : [`${API_URL}/company-settings`];
-
-      for (const url of urls) {
-        try {
-          const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-          if (res.ok) {
-            const data = await res.json();
-            if (data && data.quickFaceScanLoginEnabled !== undefined) {
-              const isEnabled = Boolean(data.quickFaceScanLoginEnabled);
-              setQuickFaceScanLoginEnabled(isEnabled);
-              await AsyncStorage.setItem('quickFaceScanLoginEnabled', isEnabled ? 'true' : 'false');
-              break;
-            }
+      try {
+        const res = await fetchWithFallback('/company-settings');
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data && data.quickFaceScanLoginEnabled !== undefined) {
+            const isEnabled = Boolean(data.quickFaceScanLoginEnabled);
+            setQuickFaceScanLoginEnabled(isEnabled);
+            await AsyncStorage.setItem('quickFaceScanLoginEnabled', isEnabled ? 'true' : 'false');
           }
-        } catch (e) {
-          // ignore candidate error
         }
+      } catch (e) {
+        // network fallback handled
       }
     } catch (e) {
       console.warn('Face settings load completed');
@@ -3497,7 +3491,7 @@ function AppContent() {
                       setQuickFaceScanLoginEnabled(val);
                       await AsyncStorage.setItem('quickFaceScanLoginEnabled', val ? 'true' : 'false');
                       try {
-                        await fetch(`${API_URL}/company-settings`, {
+                        await fetchWithFallback('/company-settings', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ quickFaceScanLoginEnabled: val })
