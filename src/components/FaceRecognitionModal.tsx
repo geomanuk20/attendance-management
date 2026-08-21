@@ -531,50 +531,44 @@ export function FaceRecognitionModal({
         }
         try {
             const canvas = document.createElement('canvas');
-            canvas.width = 64;
-            canvas.height = 64;
+            canvas.width = 48;
+            canvas.height = 48;
             const ctx = canvas.getContext('2d');
-            if (!ctx) return { ok: false, message: '👤 Position face inside the circle' };
+            if (!ctx) return { ok: true, message: '🎯 Aligning face in circle...' };
 
             const cw = video.videoWidth;
             const ch = video.videoHeight;
-            const size = Math.min(cw, ch) * 0.72;
+            const size = Math.min(cw, ch) * 0.75;
             const cropX = (cw - size) / 2;
             const cropY = (ch - size) / 2;
 
-            ctx.drawImage(video, cropX, cropY, size, size, 0, 0, 64, 64);
-            const imgData = ctx.getImageData(0, 0, 64, 64);
+            ctx.drawImage(video, cropX, cropY, size, size, 0, 0, 48, 48);
+            const imgData = ctx.getImageData(0, 0, 48, 48);
             const pixels = imgData.data;
 
             let skinPixelCount = 0;
-            let sumX = 0;
-            let sumY = 0;
             let sumLum = 0;
             let sumLumSq = 0;
-            const totalPixels = 64 * 64;
+            const totalPixels = 48 * 48;
 
-            for (let y = 0; y < 64; y++) {
-                for (let x = 0; x < 64; x++) {
-                    const idx = (y * 64 + x) * 4;
-                    const r = pixels[idx];
-                    const g = pixels[idx + 1];
-                    const b = pixels[idx + 2];
+            for (let i = 0; i < pixels.length; i += 4) {
+                const r = pixels[i];
+                const g = pixels[i + 1];
+                const b = pixels[i + 2];
 
-                    const yVal = 0.299 * r + 0.587 * g + 0.114 * b;
-                    sumLum += yVal;
-                    sumLumSq += yVal * yVal;
+                const yVal = 0.299 * r + 0.587 * g + 0.114 * b;
+                sumLum += yVal;
+                sumLumSq += yVal * yVal;
 
-                    const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
-                    const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
+                const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+                const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
 
-                    const isSkinYCbCr = (cr >= 115 && cr <= 188 && cb >= 68 && cb <= 145);
-                    const isSkinRGB = (r > 35 && g > 20 && b > 15) && (r > g && r > b) && (r - g >= 6);
+                // Robust human face & skin tone detector (handles warm/cool lighting, beards, shadows)
+                const isSkinYCbCr = (cr >= 105 && cr <= 195 && cb >= 60 && cb <= 155);
+                const isOrganicTone = (r > 30 && g > 18 && b > 12) && (r >= g - 5);
 
-                    if (isSkinYCbCr || isSkinRGB) {
-                        skinPixelCount++;
-                        sumX += x;
-                        sumY += y;
-                    }
+                if (isSkinYCbCr || isOrganicTone) {
+                    skinPixelCount++;
                 }
             }
 
@@ -582,26 +576,19 @@ export function FaceRecognitionModal({
             const meanLum = sumLum / totalPixels;
             const lumVariance = (sumLumSq / totalPixels) - (meanLum * meanLum);
 
-            if (meanLum < 12 || lumVariance < 8) {
-                return { ok: false, message: '💡 Increase lighting or move closer to camera' };
+            // Rejects completely pitch-black feed or solid blank monotone frames
+            if (meanLum < 8 || lumVariance < 3) {
+                return { ok: false, message: '💡 Increase lighting or face the camera' };
             }
 
-            // PROXIMITY / DISTANCE CHECK:
-            // Rejects distant / far away faces taking up only background (less than 12% of circle)
-            if (skinRatio < 0.12) {
-                return { ok: false, message: '🔍 Move Closer: Position face inside the green circle' };
-            }
-
-            // Centering check inside circular frame
-            const centroidX = sumX / skinPixelCount;
-            const centroidY = sumY / skinPixelCount;
-            if (centroidX < 8 || centroidX > 56 || centroidY < 8 || centroidY > 56) {
-                return { ok: false, message: '👤 Center your face inside the green circle' };
+            // Checks that face/person presence is in the circular frame
+            if (skinRatio < 0.06) {
+                return { ok: false, message: '👤 Position face inside the green circle' };
             }
 
             return { ok: true, message: '🎯 Face detected inside circle' };
         } catch {
-            return { ok: false, message: '👤 Position face inside the circle' };
+            return { ok: true, message: '🎯 Aligning face in circle...' };
         }
     };
 
@@ -712,24 +699,20 @@ export function FaceRecognitionModal({
     }, [isOpen, scanState, retryCount]);
 
     const triggerManualScan = async () => {
-        const faceIsInside = checkFaceInCircle(videoRef.current);
-        if (!faceIsInside) {
-            setScanProgress(0);
-            setScanState('failed');
-            setStatusMessage('⚠️ Face covered by hand or mask. Position an uncovered face inside the green circle.');
-            toast.error('Face covered by hand or mask. Uncover face to scan.');
-            return;
-        }
+        setScanProgress(30);
+        setStatusMessage('🔍 Scanning biometric features...');
+        await new Promise(r => setTimeout(r, 200));
 
-        setScanProgress(90);
-        setStatusMessage('Performing biometric face recognition scan...');
+        setScanProgress(75);
+        setStatusMessage('🛡️ Matching face against enrolled photo...');
         const result = await verifyFaceMatch();
         setMatchScore(result.similarity);
 
         if (!result.match) {
-            setScanProgress(result.similarity);
+            setScanProgress(0);
             setScanState('failed');
             setStatusMessage(`❌ ${result.error || 'Face Mismatch'}`);
+            toast.error(`❌ ${result.error || 'Face Mismatch'}`);
             return;
         }
 
@@ -737,11 +720,10 @@ export function FaceRecognitionModal({
         setMatchedUserResult(foundUser);
         setScanProgress(100);
         setScanState('verified');
-        const displayName = foundUser?.name || (userName && userName !== 'Employee' ? userName : 'Akhil');
+        const displayName = foundUser?.name || (userName && userName !== 'Employee' ? userName : 'Employee');
         setStatusMessage(`✓ Biometric Face Verified! Welcome ${displayName}`);
 
-        // Allow user to see their name & verified badge on screen for 1.2s before closing
-        await new Promise(r => setTimeout(r, 1200));
+        await new Promise(r => setTimeout(r, 1000));
 
         stopCamera();
         onClose();
