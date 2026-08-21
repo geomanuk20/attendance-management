@@ -32,7 +32,7 @@ const protect = asyncHandler(async (req, res, next) => {
             }
 
             if (!req.user) {
-                req.user = { id: '66abc1234567890123456789', role: 'superadmin', name: 'Super Admin' };
+                req.user = { _id: '66abc1234567890123456789', id: '66abc1234567890123456789', role: 'superadmin', name: 'Super Admin' };
             }
 
             return next();

@@ -75,7 +75,8 @@ const updateEmployee = asyncHandler(async (req, res) => {
         throw new Error('Employee not found');
     }
 
-    const isSelf = req.user && req.user._id.toString() === req.params.id;
+    const userId = req.user ? (req.user._id ? String(req.user._id) : (req.user.id ? String(req.user.id) : '')) : '';
+    const isSelf = Boolean(userId && userId === String(req.params.id));
     const isAdminOrHr = !req.user || (req.user && (req.user.role === 'admin' || req.user.role === 'superadmin' || req.user.role === 'hr'));
 
     // Save face biometric photo & embedding if provided
