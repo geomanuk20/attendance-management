@@ -99,7 +99,7 @@ export function FaceRecognitionModal({
                 loaded++;
                 if (loaded < 2) return;
                 try {
-                    const grid = 48;
+                    const grid = 64;
                     const c1 = document.createElement('canvas');
                     const c2 = document.createElement('canvas');
                     const c2Flip = document.createElement('canvas');
@@ -110,16 +110,16 @@ export function FaceRecognitionModal({
                     const ctx1 = c1.getContext('2d');
                     const ctx2 = c2.getContext('2d');
                     const ctx2Flip = c2Flip.getContext('2d');
-                    if (!ctx1 || !ctx2 || !ctx2Flip) { resolve(88); return; }
+                    if (!ctx1 || !ctx2 || !ctx2Flip) { resolve(0); return; }
 
                     // Center-weighted face crop
-                    const cropW1 = i1.width * 0.85;
-                    const cropH1 = i1.height * 0.85;
+                    const cropW1 = i1.width * 0.80;
+                    const cropH1 = i1.height * 0.80;
                     const cropX1 = (i1.width - cropW1) / 2;
                     const cropY1 = (i1.height - cropH1) / 2;
 
-                    const cropW2 = i2.width * 0.85;
-                    const cropH2 = i2.height * 0.85;
+                    const cropW2 = i2.width * 0.80;
+                    const cropH2 = i2.height * 0.80;
                     const cropX2 = (i2.width - cropW2) / 2;
                     const cropY2 = (i2.height - cropH2) / 2;
 
@@ -134,70 +134,148 @@ export function FaceRecognitionModal({
                     const d1 = ctx1.getImageData(0, 0, grid, grid).data;
                     const d2 = ctx2.getImageData(0, 0, grid, grid).data;
                     const d2F = ctx2Flip.getImageData(0, 0, grid, grid).data;
-                    const numPixels = grid * grid;
 
-                    const calcScore = (dataA: Uint8ClampedArray, dataB: Uint8ClampedArray) => {
-                        let skinA = 0, skinB = 0;
-                        let rSumA = 0, gSumA = 0, bSumA = 0;
-                        let rSumB = 0, gSumB = 0, bSumB = 0;
-                        const lA = new Float32Array(numPixels);
-                        const lB = new Float32Array(numPixels);
+                    const extractFeatures = (data: Uint8ClampedArray) => {
+                        const blockSize = 8; // 8x8 blocks = 64 spatial cells across face
+                        const numBlocks = 8;
+                        const blockFeatures = new Float32Array(numBlocks * numBlocks);
+                        const gradHFeatures = new Float32Array(numBlocks * numBlocks);
+                        const gradVFeatures = new Float32Array(numBlocks * numBlocks);
 
-                        for (let i = 0, p = 0; i < dataA.length; i += 4, p++) {
-                            const rA = dataA[i], gA = dataA[i + 1], bA = dataA[i + 2];
-                            const rB = dataB[i], gB = dataB[i + 1], bB = dataB[i + 2];
+                        let totalY = 0, totalCb = 0, totalCr = 0;
+                        const lumMatrix = new Float32Array(grid * grid);
 
-                            rSumA += rA; gSumA += gA; bSumA += bA;
-                            rSumB += rB; gSumB += gB; bSumB += bB;
+                        for (let y = 0; y < grid; y++) {
+                            for (let x = 0; x < grid; x++) {
+                                const idx = (y * grid + x) * 4;
+                                const r = data[idx], g = data[idx + 1], b = data[idx + 2];
+                                const yVal = 0.299 * r + 0.587 * g + 0.114 * b;
+                                const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+                                const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
 
-                            const yA = 0.299 * rA + 0.587 * gA + 0.114 * bA;
-                            const yB = 0.299 * rB + 0.587 * gB + 0.114 * bB;
-                            lA[p] = yA;
-                            lB[p] = yB;
-
-                            // Skin chrominance
-                            const cbA = 128 - 0.168736 * rA - 0.331264 * gA + 0.5 * bA;
-                            const crA = 128 + 0.5 * rA - 0.418688 * gA - 0.081312 * bA;
-                            if (crA >= 115 && crA <= 190 && cbA >= 65 && cbA <= 145) skinA++;
-
-                            const cbB = 128 - 0.168736 * rB - 0.331264 * gB + 0.5 * bB;
-                            const crB = 128 + 0.5 * rB - 0.418688 * gB - 0.081312 * bB;
-                            if (crB >= 115 && crB <= 190 && cbB >= 65 && cbB <= 145) skinB++;
+                                lumMatrix[y * grid + x] = yVal;
+                                totalY += yVal;
+                                totalCb += cb;
+                                totalCr += cr;
+                            }
                         }
 
-                        const skinRatioA = skinA / numPixels;
-                        const skinRatioB = skinB / numPixels;
+                        const globalMeanLum = totalY / (grid * grid);
+                        const avgCb = totalCb / (grid * grid);
+                        const avgCr = totalCr / (grid * grid);
 
-                        if (skinRatioA < 0.04 || skinRatioB < 0.04) {
-                            return 15; // Non-face or covered
+                        // Extract block statistics (Normalized Intensity & Local Sobel Gradients)
+                        for (let by = 0; by < numBlocks; by++) {
+                            for (let bx = 0; bx < numBlocks; bx++) {
+                                let blockLumSum = 0;
+                                let blockGradH = 0;
+                                let blockGradV = 0;
+                                const bIdx = by * numBlocks + bx;
+
+                                for (let py = 0; py < blockSize; py++) {
+                                    for (let px = 0; px < blockSize; px++) {
+                                        const y = by * blockSize + py;
+                                        const x = bx * blockSize + px;
+                                        const val = lumMatrix[y * grid + x];
+                                        blockLumSum += (val - globalMeanLum);
+
+                                        // Horizontal gradient (edges of nose, eyes, face border)
+                                        if (x > 0 && x < grid - 1) {
+                                            blockGradH += Math.abs(lumMatrix[y * grid + x + 1] - lumMatrix[y * grid + x - 1]);
+                                        }
+                                        // Vertical gradient (eyebrows, eyelids, lips, chin)
+                                        if (y > 0 && y < grid - 1) {
+                                            blockGradV += Math.abs(lumMatrix[(y + 1) * grid + x] - lumMatrix[(y - 1) * grid + x]);
+                                        }
+                                    }
+                                }
+
+                                const cellPixels = blockSize * blockSize;
+                                blockFeatures[bIdx] = blockLumSum / cellPixels;
+                                gradHFeatures[bIdx] = blockGradH / cellPixels;
+                                gradVFeatures[bIdx] = blockGradV / cellPixels;
+                            }
                         }
 
-                        // Color balance similarity
-                        const rDiff = Math.abs(rSumA - rSumB) / (numPixels * 255);
-                        const gDiff = Math.abs(gSumA - gSumB) / (numPixels * 255);
-                        const bDiff = Math.abs(bSumA - bSumB) / (numPixels * 255);
-                        const colorSim = Math.max(0, 1 - (rDiff + gDiff + bDiff) / 3);
-
-                        // Regional gradient & quadrant structural similarity
-                        let quadDiff = 0;
-                        for (let p = 0; p < numPixels; p++) {
-                            quadDiff += Math.abs(lA[p] - lB[p]);
-                        }
-                        const structSim = Math.max(0, 1 - (quadDiff / (numPixels * 255)));
-                        const skinMatch = 1 - Math.min(1, Math.abs(skinRatioA - skinRatioB) * 2);
-
-                        const baseScore = (colorSim * 40) + (structSim * 40) + (skinMatch * 20);
-                        const finalScore = Math.min(97, Math.max(84, Math.round(76 + (baseScore * 0.22))));
-                        return finalScore;
+                        return { blockFeatures, gradHFeatures, gradVFeatures, avgCb, avgCr };
                     };
 
-                    const scoreNormal = calcScore(d1, d2);
-                    const scoreFlipped = calcScore(d1, d2F);
+                    const computeCorrelation = (fA: any, fB: any): number => {
+                        const len = fA.blockFeatures.length; // 64 blocks
+                        let sumA = 0, sumB = 0;
+                        let sumGradA = 0, sumGradB = 0;
+
+                        for (let i = 0; i < len; i++) {
+                            sumA += fA.blockFeatures[i];
+                            sumB += fB.blockFeatures[i];
+                            sumGradA += (fA.gradHFeatures[i] + fA.gradVFeatures[i]);
+                            sumGradB += (fB.gradHFeatures[i] + fB.gradVFeatures[i]);
+                        }
+
+                        const meanA = sumA / len, meanB = sumB / len;
+                        const meanGradA = sumGradA / len, meanGradB = sumGradB / len;
+
+                        let numInt = 0, denIntA = 0, denIntB = 0;
+                        let numGrad = 0, denGradA = 0, denGradB = 0;
+
+                        for (let i = 0; i < len; i++) {
+                            const nA = fA.blockFeatures[i] - meanA;
+                            const nB = fB.blockFeatures[i] - meanB;
+                            numInt += nA * nB;
+                            denIntA += nA * nA;
+                            denIntB += nB * nB;
+
+                            const gA = (fA.gradHFeatures[i] + fA.gradVFeatures[i]) - meanGradA;
+                            const gB = (fB.gradHFeatures[i] + fB.gradVFeatures[i]) - meanGradB;
+                            numGrad += gA * gB;
+                            denGradA += gA * gA;
+                            denGradB += gB * gB;
+                        }
+
+                        const denomInt = Math.sqrt(denIntA * denIntB);
+                        const rInt = denomInt > 0 ? (numInt / denomInt) : 0;
+
+                        const denomGrad = Math.sqrt(denGradA * denGradB);
+                        const rGrad = denomGrad > 0 ? (numGrad / denomGrad) : 0;
+
+                        const cbDiff = Math.abs(fA.avgCb - fB.avgCb);
+                        const crDiff = Math.abs(fA.avgCr - fB.avgCr);
+                        const colorDistance = Math.sqrt(cbDiff * cbDiff + crDiff * crDiff);
+                        const colorSimilarity = Math.max(0, 1 - (colorDistance / 45));
+
+                        // Combined biometric feature correlation (-1 to 1)
+                        const rCombined = (rInt * 0.50) + (rGrad * 0.35) + (colorSimilarity * 0.15);
+
+                        // Calibrate into human-accurate similarity percentage (0% to 100%)
+                        let accuracyPercent = 0;
+                        if (rCombined >= 0.50) {
+                            // Same person strong match: 80% to 98%
+                            accuracyPercent = Math.round(80 + Math.min(18, (rCombined - 0.50) * 45));
+                        } else if (rCombined >= 0.35) {
+                            // Borderline / Moderate similarity: 60% to 78%
+                            accuracyPercent = Math.round(60 + (rCombined - 0.35) * 120);
+                        } else if (rCombined >= 0.18) {
+                            // Weak correlation (different person): 25% to 50%
+                            accuracyPercent = Math.round(25 + (rCombined - 0.18) * 145);
+                        } else {
+                            // Complete mismatch (different person / unknown face): 5% to 22%
+                            accuracyPercent = Math.max(5, Math.round(Math.max(0, rCombined) * 90));
+                        }
+
+                        return Math.min(99, Math.max(0, accuracyPercent));
+                    };
+
+                    const feat1 = extractFeatures(d1);
+                    const feat2 = extractFeatures(d2);
+                    const feat2F = extractFeatures(d2F);
+
+                    const scoreNormal = computeCorrelation(feat1, feat2);
+                    const scoreFlipped = computeCorrelation(feat1, feat2F);
                     const best = Math.max(scoreNormal, scoreFlipped);
 
                     resolve(best);
                 } catch {
-                    resolve(88);
+                    resolve(0);
                 }
             };
 
@@ -205,8 +283,8 @@ export function FaceRecognitionModal({
             i2.crossOrigin = 'anonymous';
             i1.onload = check;
             i2.onload = check;
-            i1.onerror = () => resolve(88);
-            i2.onerror = () => resolve(88);
+            i1.onerror = () => resolve(0);
+            i2.onerror = () => resolve(0);
             i1.src = formatImageSrc(src1);
             i2.src = formatImageSrc(src2);
         });
@@ -257,6 +335,10 @@ export function FaceRecognitionModal({
             await new Promise(r => setTimeout(r, 80));
         }
 
+        if (liveFrames.length === 0) {
+            return { match: false, similarity: 0, error: 'Webcam video stream unavailable. Please ensure camera access is allowed.' };
+        }
+
         let currentUser: any = null;
         try {
             const stored = localStorage.getItem('user');
@@ -269,7 +351,7 @@ export function FaceRecognitionModal({
         const isClockAction = actionType === 'Clock In' || actionType === 'Clock Out';
 
         if (isClockAction) {
-            // Strict 1-to-1 Verification: Verify live scan for the logged-in/target employee
+            // Strict 1-to-1 Verification: Verify live scan ONLY against the logged-in/target employee's enrolled photo
             let targetFaceImage: string | null = enrolledFaceImage && enrolledFaceImage.length > 20 ? enrolledFaceImage : null;
             let targetProfile: any = currentUser || { name: userName };
 
@@ -280,11 +362,9 @@ export function FaceRecognitionModal({
                     (currentUser?.email && e.email && e.email.toLowerCase() === currentUser.email.toLowerCase()) ||
                     (userName && e.name && e.name.toLowerCase() === userName.toLowerCase())
                 );
-                if (found) {
+                if (found && found.faceImage && found.faceImage.length > 20) {
+                    targetFaceImage = found.faceImage;
                     targetProfile = found;
-                    if (found.faceImage && found.faceImage.length > 20) {
-                        targetFaceImage = found.faceImage;
-                    }
                 }
             }
 
@@ -309,34 +389,32 @@ export function FaceRecognitionModal({
 
             const targetName = userName && userName !== 'Employee' ? userName : (targetProfile?.name || currentUser?.name || 'Employee');
 
-            // Auto-enroll live camera frame if no profile photo was attached yet
-            if (!targetFaceImage && liveFrames.length > 0) {
-                targetFaceImage = liveFrames[0];
-                try {
-                    localStorage.setItem('enrolledFaceProfile', JSON.stringify({
-                        ...(targetProfile || {}),
-                        name: targetName,
-                        faceImage: targetFaceImage,
-                        enrolledAt: new Date().toISOString()
-                    }));
-                } catch {}
+            // 1. Mandatory Enrollment Check: Profile face photo MUST exist
+            if (!targetFaceImage) {
+                return {
+                    match: false,
+                    similarity: 0,
+                    error: `No enrolled biometric photo found for ${targetName}. Please upload/enroll your face photo in Employee Management first.`
+                };
             }
 
-            let bestScore = 95;
-            if (targetFaceImage && liveFrames.length > 0) {
-                try {
-                    const scores = await Promise.all(liveFrames.map(f => compareTwoImages(f, targetFaceImage!)));
-                    const calcBest = Math.max(...scores, 0);
-                    bestScore = calcBest >= 80 ? calcBest : 93;
-                } catch {
-                    bestScore = 94;
-                }
+            // 2. Mandatory Biometric Face Matching: Compare live scanned face against target enrolled photo
+            const scores = await Promise.all(liveFrames.map(f => compareTwoImages(f, targetFaceImage!)));
+            const bestScore = Math.max(...scores, 0);
+
+            // Verification threshold: Requires at least 65% match accuracy
+            if (bestScore >= 65) {
+                return {
+                    match: true,
+                    similarity: bestScore,
+                    matchedUser: { ...targetProfile, name: targetName }
+                };
             }
 
             return {
-                match: true,
+                match: false,
                 similarity: bestScore,
-                matchedUser: { ...(targetProfile || currentUser || {}), name: targetName }
+                error: `Face Mismatch (${bestScore}% accuracy). Scan face does not match ${targetName}'s enrolled photo.`
             };
         }
 
@@ -353,47 +431,52 @@ export function FaceRecognitionModal({
             const localProf = localStorage.getItem('enrolledFaceProfile');
             if (localProf) {
                 const parsed = JSON.parse(localProf);
-                if (parsed) candidateProfiles.push(parsed);
-            }
-            const storedUser = localStorage.getItem('user');
-            if (storedUser) {
-                const parsed = JSON.parse(storedUser);
-                if (parsed) candidateProfiles.push(parsed);
+                if (parsed && parsed.faceImage && parsed.faceImage.length > 20) {
+                    candidateProfiles.push(parsed);
+                }
             }
         } catch {}
 
-        const validEmps = candidateProfiles.filter((emp: any) => emp && (emp.name || emp.email));
+        const validEmps = candidateProfiles.filter((emp: any) => emp && emp.faceImage && typeof emp.faceImage === 'string' && emp.faceImage.length > 20);
 
         if (validEmps.length === 0) {
             return {
                 match: false,
                 similarity: 0,
-                error: 'No registered employee profiles found. Please log in with email/password first.'
+                error: 'No enrolled biometric face photos found in database. Please log in with email/password first.'
             };
         }
 
-        let bestMatchEmp: any = validEmps[0];
-        let bestScore = 94;
+        const results = await Promise.all(
+            validEmps.map(async (emp: any) => {
+                const scores = await Promise.all(liveFrames.map(f => compareTwoImages(f, emp.faceImage)));
+                const score = Math.max(...scores, 0);
+                return { score, emp };
+            })
+        );
 
-        if (liveFrames.length > 0) {
-            for (const emp of validEmps) {
-                if (emp.faceImage && emp.faceImage.length > 20) {
-                    try {
-                        const scores = await Promise.all(liveFrames.map(f => compareTwoImages(f, emp.faceImage)));
-                        const score = Math.max(...scores, 0);
-                        if (score >= bestScore) {
-                            bestScore = score;
-                            bestMatchEmp = emp;
-                        }
-                    } catch {}
-                }
+        let bestScore = 0;
+        let bestMatchEmp: any = null;
+
+        for (const r of results) {
+            if (r.score > bestScore) {
+                bestScore = r.score;
+                bestMatchEmp = r.emp;
             }
         }
 
+        if (bestScore >= 65 && bestMatchEmp) {
+            return {
+                match: true,
+                similarity: bestScore,
+                matchedUser: bestMatchEmp
+            };
+        }
+
         return {
-            match: true,
+            match: false,
             similarity: bestScore,
-            matchedUser: bestMatchEmp
+            error: `Unrecognized Face (${bestScore}% similarity). Live scan does not match any enrolled employee photo.`
         };
     };
 
