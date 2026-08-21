@@ -1887,12 +1887,12 @@ function AppContent() {
                 </Text>
               </View>
 
-              {/* Thick Green Circular Live Camera Viewport */}
+              {/* Circular Camera Viewport */}
               <View style={{
-                width: 250,
-                height: 250,
-                borderRadius: 125,
-                borderWidth: 8,
+                width: 240,
+                height: 240,
+                borderRadius: 120,
+                borderWidth: 7,
                 borderColor: faceScanState === 'failed' ? '#f43f5e' : '#22c55e',
                 overflow: 'hidden',
                 justifyContent: 'center',
@@ -1902,7 +1902,7 @@ function AppContent() {
                 marginVertical: 10,
                 shadowColor: '#22c55e',
                 shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
+                shadowOpacity: 0.25,
                 shadowRadius: 10,
                 elevation: 6
               }}>
@@ -1915,12 +1915,12 @@ function AppContent() {
 
                 {/* Inner White/Green Concentric Circle Guide */}
                 {faceScanState !== 'verified' && (
-                  <View pointerEvents="none" style={{ position: 'absolute', width: 170, height: 170, borderRadius: 85, borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.75)', borderStyle: 'solid', backgroundColor: 'transparent' }} />
+                  <View pointerEvents="none" style={{ position: 'absolute', width: 165, height: 165, borderRadius: 82.5, borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.70)', borderStyle: 'solid', backgroundColor: 'transparent' }} />
                 )}
 
                 {/* Moving Green Laser Sweep Line */}
                 {faceScanState === 'scanning' && (
-                  <View pointerEvents="none" style={{ position: 'absolute', left: 24, right: 24, height: 2.5, backgroundColor: '#34d399', borderRadius: 2, top: `${Math.min(88, Math.max(12, faceScanProgress))}%` }} />
+                  <View pointerEvents="none" style={{ position: 'absolute', left: 20, right: 20, height: 2.5, backgroundColor: '#34d399', borderRadius: 2, top: `${Math.min(88, Math.max(12, faceScanProgress))}%` }} />
                 )}
 
                 {/* Failed Overlay */}
@@ -1935,12 +1935,12 @@ function AppContent() {
               </View>
 
               {/* Progress & Live Scan Feedback Readout */}
-              <View style={{ alignItems: 'center', marginVertical: 14 }}>
+              <View style={{ alignItems: 'center', marginVertical: 12 }}>
                 <Text style={{ fontSize: 32, fontWeight: '800', color: faceScanState === 'verified' ? '#10b981' : faceScanState === 'failed' ? '#f43f5e' : '#0f172a', marginBottom: 4 }}>
                   {faceScanProgress}%
                 </Text>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: faceScanState === 'verified' ? '#10b981' : faceScanState === 'failed' ? '#f43f5e' : '#1e3a8a', textAlign: 'center', maxWidth: 280 }}>
-                  {faceScanState === 'verified' ? `✓ Welcome, ${user?.name || enrolledFaceUser?.name || 'geo manu'}!` : (faceStatusMessage || 'Position face within camera circle...')}
+                <Text style={{ fontSize: 13, fontWeight: '600', color: faceScanState === 'verified' ? '#10b981' : faceScanState === 'failed' ? '#f43f5e' : '#334155', textAlign: 'center', maxWidth: 280 }}>
+                  {faceScanState === 'verified' ? `✓ Welcome, ${user?.name || enrolledFaceUser?.name || 'Employee'}!` : (faceStatusMessage || 'Position face inside the green circle to begin scan...')}
                 </Text>
               </View>
 
@@ -3738,39 +3738,39 @@ function AppContent() {
         )}
       </ScrollView>
 
-      {/* Biometric Face Recognition & Enrollment Camera Scanner Modal */}
+      {/* Biometric Face Recognition & Enrollment Camera Scanner Modal (Matching Website 1:1) */}
       <Modal visible={isFaceModalOpen} animationType="fade" transparent onRequestClose={() => setIsFaceModalOpen(false)}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.75)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
-          <View style={{ width: '100%', maxWidth: 360, backgroundColor: '#ffffff', borderRadius: 28, borderWidth: 1, borderColor: '#e2e8f0', padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.25, shadowRadius: 20, elevation: 15, alignItems: 'center', position: 'relative' }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.70)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
+          <View style={{ width: '100%', maxWidth: 360, backgroundColor: '#ffffff', borderRadius: 28, borderWidth: 1, borderColor: '#e2e8f0', padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 15, alignItems: 'center', position: 'relative' }}>
             
             {/* Close Button Top Right */}
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => setIsFaceModalOpen(false)}
-              style={{ position: 'absolute', top: 16, right: 16, width: 32, height: 32, borderRadius: 16, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
+              style={{ position: 'absolute', top: 16, right: 16, width: 30, height: 30, borderRadius: 15, backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
             >
-              <Text style={{ color: '#64748b', fontSize: 16, fontWeight: '700' }}>✕</Text>
+              <Text style={{ color: '#64748b', fontSize: 14, fontWeight: '700' }}>✕</Text>
             </TouchableOpacity>
 
             {/* Modal Header */}
-            <View style={{ alignItems: 'center', marginBottom: 18, width: '100%', paddingHorizontal: 20 }}>
+            <View style={{ alignItems: 'center', marginBottom: 14, width: '100%', paddingHorizontal: 20 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 4 }}>
                 <Text style={{ fontSize: 18 }}>🛡️</Text>
-                <Text style={{ color: '#0f172a', fontSize: 18, fontWeight: '800' }}>
+                <Text style={{ color: '#0f172a', fontSize: 17, fontWeight: '800' }}>
                   {pendingFaceAction === 'enroll' ? 'Biometric Face ID Enrollment' : 'Biometric Face Recognition'}
                 </Text>
               </View>
               <Text style={{ color: '#64748b', fontSize: 13, textAlign: 'center' }}>
-                Facial scan for <Text style={{ color: '#0f172a', fontWeight: '700' }}>{user?.name || enrolledFaceUser?.name || 'geo manu'}</Text>
+                Facial scan for <Text style={{ color: '#0f172a', fontWeight: '800' }}>{user?.name || enrolledFaceUser?.name || 'divya d'}</Text>
               </Text>
             </View>
 
-            {/* Circular Camera View with Bright Green Progress Ring */}
+            {/* Circular Camera View with Progress Ring */}
             <View style={{
-              width: 250,
-              height: 250,
-              borderRadius: 125,
-              borderWidth: 8,
+              width: 240,
+              height: 240,
+              borderRadius: 120,
+              borderWidth: 7,
               borderColor: (capturedFaceUri || faceScanState === 'verified') ? '#22c55e' : faceScanState === 'failed' ? '#f43f5e' : '#22c55e',
               overflow: 'hidden',
               position: 'relative',
@@ -3780,7 +3780,7 @@ function AppContent() {
               marginVertical: 10,
               shadowColor: '#22c55e',
               shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
+              shadowOpacity: 0.25,
               shadowRadius: 10,
               elevation: 6
             }}>
@@ -3796,12 +3796,12 @@ function AppContent() {
 
               {/* Inner White/Green Concentric Circle Guide */}
               {!capturedFaceUri && faceScanState !== 'verified' && (
-                <View pointerEvents="none" style={{ position: 'absolute', width: 170, height: 170, borderRadius: 85, borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.75)', borderStyle: 'solid', backgroundColor: 'transparent' }} />
+                <View pointerEvents="none" style={{ position: 'absolute', width: 165, height: 165, borderRadius: 82.5, borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.70)', borderStyle: 'solid', backgroundColor: 'transparent' }} />
               )}
 
               {/* Moving Green Laser Sweep Line */}
               {faceScanState === 'scanning' && !capturedFaceUri && (
-                <View pointerEvents="none" style={{ position: 'absolute', left: 24, right: 24, height: 2.5, backgroundColor: '#34d399', borderRadius: 2, top: `${Math.min(88, Math.max(12, faceScanProgress))}%` }} />
+                <View pointerEvents="none" style={{ position: 'absolute', left: 20, right: 20, height: 2.5, backgroundColor: '#34d399', borderRadius: 2, top: `${Math.min(88, Math.max(12, faceScanProgress))}%` }} />
               )}
 
               {/* Verified Badge Overlay */}
@@ -3809,7 +3809,7 @@ function AppContent() {
                 <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(6, 78, 59, 0.85)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
                   <Text style={{ fontSize: 40, color: '#34d399', marginBottom: 4 }}>✓</Text>
                   <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: 'bold', textAlign: 'center' }}>
-                    {user?.name || enrolledFaceUser?.name || 'geo manu'}
+                    {user?.name || enrolledFaceUser?.name || 'Employee'}
                   </Text>
                   <Text style={{ color: '#34d399', fontSize: 12, fontWeight: '700', marginTop: 4 }}>
                     ✓ 100% Match Verified
@@ -3829,12 +3829,12 @@ function AppContent() {
             </View>
 
             {/* Live Progress & Status Readout */}
-            <View style={{ alignItems: 'center', marginVertical: 14 }}>
+            <View style={{ alignItems: 'center', marginVertical: 12 }}>
               <Text style={{ fontSize: 32, fontWeight: '800', color: faceScanState === 'verified' ? '#10b981' : faceScanState === 'failed' ? '#f43f5e' : '#0f172a', marginBottom: 4 }}>
-                {faceScanProgress > 0 ? `${faceScanProgress}%` : (capturedFaceUri ? '100%' : '100%')}
+                {faceScanProgress}%
               </Text>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: faceScanState === 'verified' ? '#10b981' : faceScanState === 'failed' ? '#f43f5e' : '#1e3a8a', textAlign: 'center', maxWidth: 280 }}>
-                {faceStatusMessage || (pendingFaceAction === 'enroll' ? 'Position face inside the green circle to enroll...' : `Biometric Verification (${faceScanProgress}%)`)}
+              <Text style={{ fontSize: 13, fontWeight: '600', color: faceScanState === 'verified' ? '#10b981' : faceScanState === 'failed' ? '#f43f5e' : '#334155', textAlign: 'center', maxWidth: 280 }}>
+                {faceStatusMessage || 'Position face inside the green circle to begin scan...'}
               </Text>
             </View>
 
