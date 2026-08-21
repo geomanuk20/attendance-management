@@ -2,7 +2,7 @@
   "expo": {
     "name": "Attendance Management",
     "slug": "attendance-mobile",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
@@ -14,6 +14,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.company.attendancemanagement",
+      "buildNumber": "3",
       "icon": "./assets/icon.png",
       "infoPlist": {
         "NSCameraUsageDescription": "Camera is used to capture your face photo for biometric attendance authentication.",
@@ -24,6 +25,7 @@
     },
     "android": {
       "package": "com.company.attendancemanagement",
+      "versionCode": 3,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000000"
