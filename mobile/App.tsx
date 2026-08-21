@@ -1560,8 +1560,13 @@ function AppContent() {
 
     setLoading(true);
     try {
+      const empId = user?._id || user?.id;
+      if (!empId) {
+        Alert.alert('Session Error', 'Please log in again to apply for leave.');
+        return;
+      }
       await createLeaveRequest({
-        employeeId: user._id,
+        employeeId: empId,
         leaveType,
         startDate,
         endDate: endDate || startDate,
@@ -1570,7 +1575,7 @@ function AppContent() {
       Alert.alert('Success', 'Leave request submitted successfully');
       setLeaveModalVisible(false);
       setLeaveReason('');
-      fetchLeaves(user._id);
+      fetchLeaves(empId);
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to submit leave');
     } finally {
@@ -1583,6 +1588,29 @@ function AppContent() {
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+  };
+
+  const COMPANY_HOLIDAYS_LIST = [
+    { id: '1', name: 'Independence Day', date: '2026-08-15', formatted: 'August 15th, 2026', day: 'Saturday', badge: 'National Holiday', icon: '🇮🇳' },
+    { id: '2', name: 'Thiruvonam (Onam)', date: '2026-08-27', formatted: 'August 27th, 2026', day: 'Thursday', badge: 'Festival Holiday', icon: '🌾' },
+    { id: '3', name: 'Sree Krishna Jayanthi', date: '2026-09-04', formatted: 'September 4th, 2026', day: 'Friday', badge: 'Festival Holiday', icon: '🪈' },
+    { id: '4', name: 'Milad-un-Nabi (Id-e-Milad)', date: '2026-09-15', formatted: 'September 15th, 2026', day: 'Tuesday', badge: 'Festival Holiday', icon: '🌙' },
+    { id: '5', name: 'Gandhi Jayanti', date: '2026-10-02', formatted: 'October 2nd, 2026', day: 'Friday', badge: 'National Holiday', icon: '🕊️' },
+    { id: '6', name: 'Mahanavami / Dussehra', date: '2026-10-20', formatted: 'October 20th, 2026', day: 'Tuesday', badge: 'Festival Holiday', icon: '✨' },
+    { id: '7', name: 'Deepavali (Diwali)', date: '2026-11-08', formatted: 'November 8th, 2026', day: 'Sunday', badge: 'Festival Holiday', icon: '🪔' },
+    { id: '8', name: 'Christmas', date: '2026-12-25', formatted: 'December 25th, 2026', day: 'Friday', badge: 'Festival Holiday', icon: '🎄' },
+    { id: '9', name: 'New Year’s Day', date: '2027-01-01', formatted: 'January 1st, 2027', day: 'Friday', badge: 'Public Holiday', icon: '🎆' },
+    { id: '10', name: 'Republic Day', date: '2027-01-26', formatted: 'January 26th, 2027', day: 'Tuesday', badge: 'National Holiday', icon: '🇮🇳' },
+    { id: '11', name: 'Maha Shivratri', date: '2027-03-06', formatted: 'March 6th, 2027', day: 'Saturday', badge: 'Festival Holiday', icon: '🔱' },
+    { id: '12', name: 'Eid al-Fitr (Ramzan)', date: '2027-03-10', formatted: 'March 10th, 2027', day: 'Wednesday', badge: 'Festival Holiday', icon: '🌙' },
+    { id: '13', name: 'Vishu / Good Friday', date: '2027-04-14', formatted: 'April 14th, 2027', day: 'Wednesday', badge: 'Festival Holiday', icon: '🌿' },
+    { id: '14', name: 'May Day (Labor Day)', date: '2027-05-01', formatted: 'May 1st, 2027', day: 'Saturday', badge: 'Public Holiday', icon: '🔨' },
+  ];
+
+  const getNextHoliday = () => {
+    const todayStr = getLocalDateStr();
+    const upcoming = COMPANY_HOLIDAYS_LIST.find((h) => h.date >= todayStr);
+    return upcoming || COMPANY_HOLIDAYS_LIST[0];
   };
 
   const parseTimeToDate = (timeValue: any, baseDate = new Date()) => {
@@ -3993,17 +4021,9 @@ function AppContent() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} style={{ width: '100%' }}>
-              {[
-                { name: 'Independence Day', date: 'August 15th, 2026', day: 'Saturday', icon: '🇮🇳', badge: 'National Holiday' },
-                { name: 'Gandhi Jayanti', date: 'October 2nd, 2026', day: 'Friday', icon: '🕊️', badge: 'National Holiday' },
-                { name: 'Diwali', date: 'November 8th, 2026', day: 'Sunday', icon: '🪔', badge: 'Festival Holiday' },
-                { name: 'Christmas', date: 'December 25th, 2026', day: 'Friday', icon: '🎄', badge: 'Festival Holiday' },
-                { name: 'New Year’s Day', date: 'January 1st, 2027', day: 'Friday', icon: '🎆', badge: 'Public Holiday' },
-                { name: 'Republic Day', date: 'January 26th, 2027', day: 'Tuesday', icon: '🇮🇳', badge: 'National Holiday' },
-                { name: 'Labor Day', date: 'May 1st, 2027', day: 'Saturday', icon: '🔨', badge: 'Public Holiday' },
-              ].map((h, idx) => (
+              {COMPANY_HOLIDAYS_LIST.map((h, idx) => (
                 <View
-                  key={idx}
+                  key={h.id || idx}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -4013,13 +4033,13 @@ function AppContent() {
                     borderBottomColor: theme.border,
                   }}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
                     <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: theme.inputBg, alignItems: 'center', justifyContent: 'center' }}>
                       <Text style={{ fontSize: 20 }}>{h.icon}</Text>
                     </View>
-                    <View>
-                      <Text style={{ fontSize: 15, fontWeight: 'bold', color: theme.text }}>{h.name}</Text>
-                      <Text style={{ fontSize: 12, color: theme.textSub }}>{h.date} • {h.day}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: theme.text }}>{h.name}</Text>
+                      <Text style={{ fontSize: 11, color: theme.textSub }}>{h.formatted} • {h.day}</Text>
                     </View>
                   </View>
                   <View style={{ backgroundColor: isDarkMode ? '#1e293b' : '#f1f5f9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
