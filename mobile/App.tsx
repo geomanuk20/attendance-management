@@ -1737,21 +1737,6 @@ function AppContent() {
     return Math.max(0, totalQuota - taken);
   };
 
-  const getNextHoliday = () => {
-    const todayStr = getLocalDateStr();
-    const holidays = [
-      { name: 'Independence Day', date: '2026-08-15', formatted: 'August 15th, 2026' },
-      { name: 'Gandhi Jayanti', date: '2026-10-02', formatted: 'October 2nd, 2026' },
-      { name: 'Diwali', date: '2026-11-08', formatted: 'November 8th, 2026' },
-      { name: 'Christmas', date: '2026-12-25', formatted: 'December 25th, 2026' },
-      { name: 'New Year', date: '2027-01-01', formatted: 'January 1st, 2027' },
-      { name: 'Republic Day', date: '2027-01-26', formatted: 'January 26th, 2027' },
-      { name: 'Labor Day', date: '2027-05-01', formatted: 'May 1st, 2027' },
-    ];
-    const upcoming = holidays.find((h) => h.date >= todayStr);
-    return upcoming || holidays[0];
-  };
-
   const getLatestClockInTime = () => {
     if (attendanceLogs && attendanceLogs.length > 0) {
       const activeShift = attendanceLogs.find(l => !l.clockOut) || attendanceLogs[0];
