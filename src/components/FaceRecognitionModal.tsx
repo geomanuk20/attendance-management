@@ -582,30 +582,24 @@ export function FaceRecognitionModal({
             const meanLum = sumLum / totalPixels;
             const lumVariance = (sumLumSq / totalPixels) - (meanLum * meanLum);
 
-            if (meanLum < 15 || lumVariance < 10) {
+            if (meanLum < 12 || lumVariance < 8) {
                 return { ok: false, message: '💡 Increase lighting or move closer to camera' };
             }
 
             // PROXIMITY / DISTANCE CHECK:
-            // Face must be close enough (occupying at least 20% of the circle)
-            // Rejects distant / far away faces taking up only background
-            if (skinRatio < 0.20) {
-                return { ok: false, message: '🔍 Move Closer: Your face is too far away to scan' };
-            }
-
-            // Face is too close / covering camera lens
-            if (skinRatio > 0.75) {
-                return { ok: false, message: '🔍 Step Back: Position face inside the circle' };
+            // Rejects distant / far away faces taking up only background (less than 12% of circle)
+            if (skinRatio < 0.12) {
+                return { ok: false, message: '🔍 Move Closer: Position face inside the green circle' };
             }
 
             // Centering check inside circular frame
             const centroidX = sumX / skinPixelCount;
             const centroidY = sumY / skinPixelCount;
-            if (centroidX < 16 || centroidX > 48 || centroidY < 14 || centroidY > 50) {
+            if (centroidX < 8 || centroidX > 56 || centroidY < 8 || centroidY > 56) {
                 return { ok: false, message: '👤 Center your face inside the green circle' };
             }
 
-            return { ok: true, message: '🎯 Face properly positioned in circle' };
+            return { ok: true, message: '🎯 Face detected inside circle' };
         } catch {
             return { ok: false, message: '👤 Position face inside the circle' };
         }
@@ -630,7 +624,7 @@ export function FaceRecognitionModal({
             }
             if (isCancelled) return;
 
-            // 2. Active Face Detection & Proximity Loop: ONLY proceed if a face is close and inside the circle!
+            // 2. Active Face Detection & Proximity Loop: Wait until face is inside circle
             let faceDetected = false;
             while (!isCancelled && !faceDetected) {
                 const status = checkFaceInCircleStatus(videoRef.current);
@@ -640,40 +634,26 @@ export function FaceRecognitionModal({
                 }
                 setScanProgress(0);
                 setStatusMessage(status.message);
-                await new Promise(r => setTimeout(r, 200));
+                await new Promise(r => setTimeout(r, 180));
             }
             if (isCancelled) return;
 
             // 3. Stage 1: Face Acquired & Alignment (25%)
             setScanProgress(25);
             setStatusMessage(`🎯 Face detected in circle! Aligning for ${targetDisplayName}...`);
-            await new Promise(r => setTimeout(r, 450));
+            await new Promise(r => setTimeout(r, 380));
             if (isCancelled) return;
-            const check1 = checkFaceInCircleStatus(videoRef.current);
-            if (!check1.ok) {
-                setScanProgress(0);
-                setStatusMessage(check1.message);
-                runScanSequence();
-                return;
-            }
 
             // Stage 2: Feature Matrix (55%)
             setScanProgress(55);
             setStatusMessage('🔍 Stage 1/3: Scanning Biometric Features...');
-            await new Promise(r => setTimeout(r, 450));
+            await new Promise(r => setTimeout(r, 380));
             if (isCancelled) return;
-            const check2 = checkFaceInCircleStatus(videoRef.current);
-            if (!check2.ok) {
-                setScanProgress(0);
-                setStatusMessage(check2.message);
-                runScanSequence();
-                return;
-            }
 
             // Stage 3: Biometric Identity Match (80%)
             setScanProgress(80);
             setStatusMessage(`🛡️ Stage 2/3: Matching against ${targetDisplayName}'s enrolled photo...`);
-            await new Promise(r => setTimeout(r, 450));
+            await new Promise(r => setTimeout(r, 380));
             if (isCancelled) return;
 
             // Stage 4: Verification Result (95%)
