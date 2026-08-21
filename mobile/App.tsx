@@ -390,7 +390,7 @@ function AppContent() {
   const [clockReminders, setClockReminders] = useState(true);
   const [twoFactorAuth, setTwoFactorAuth] = useState(false);
   const [autoLogout, setAutoLogout] = useState(true);
-  const [quickFaceScanLoginEnabled, setQuickFaceScanLoginEnabled] = useState(true);
+  const [quickFaceScanLoginEnabled, setQuickFaceScanLoginEnabled] = useState(false);
 
   // Calendar Widget state
   const [calendarDate, setCalendarDate] = useState(new Date());
@@ -762,6 +762,7 @@ function AppContent() {
     await AsyncStorage.removeItem('user');
     await AsyncStorage.removeItem('token');
     setUser(null);
+    loadFaceSettings();
   };
 
   const fetchAttendance = async (userId: string, retries = 2) => {
