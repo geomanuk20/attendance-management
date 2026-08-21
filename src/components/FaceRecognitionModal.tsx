@@ -99,181 +99,166 @@ export function FaceRecognitionModal({
                 loaded++;
                 if (loaded < 2) return;
                 try {
-                    const grid = 64;
+                    const grid = 48; // standard normalized grid for feature extraction
                     const c1 = document.createElement('canvas');
-                    const c2 = document.createElement('canvas');
-                    const c2Flip = document.createElement('canvas');
-                    c1.width = grid; c1.height = grid;
-                    c2.width = grid; c2.height = grid;
-                    c2Flip.width = grid; c2Flip.height = grid;
-
+                    c1.width = grid;
+                    c1.height = grid;
                     const ctx1 = c1.getContext('2d');
-                    const ctx2 = c2.getContext('2d');
-                    const ctx2Flip = c2Flip.getContext('2d');
-                    if (!ctx1 || !ctx2 || !ctx2Flip) { resolve(0); return; }
+                    if (!ctx1) { resolve(0); return; }
 
-                    // Center-weighted face crop
-                    const cropW1 = i1.width * 0.80;
-                    const cropH1 = i1.height * 0.80;
-                    const cropX1 = (i1.width - cropW1) / 2;
-                    const cropY1 = (i1.height - cropH1) / 2;
-
-                    const cropW2 = i2.width * 0.80;
-                    const cropH2 = i2.height * 0.80;
-                    const cropX2 = (i2.width - cropW2) / 2;
-                    const cropY2 = (i2.height - cropH2) / 2;
-
-                    ctx1.drawImage(i1, cropX1, cropY1, cropW1, cropH1, 0, 0, grid, grid);
-                    ctx2.drawImage(i2, cropX2, cropY2, cropW2, cropH2, 0, 0, grid, grid);
-
-                    // Also test horizontal flip to handle mirrored webcams vs standard photos
-                    ctx2Flip.translate(grid, 0);
-                    ctx2Flip.scale(-1, 1);
-                    ctx2Flip.drawImage(i2, cropX2, cropY2, cropW2, cropH2, 0, 0, grid, grid);
-
+                    // Center crop for image 1 (live camera frame)
+                    const crop1 = Math.min(i1.width, i1.height) * 0.82;
+                    ctx1.drawImage(i1, (i1.width - crop1) / 2, (i1.height - crop1) / 2, crop1, crop1, 0, 0, grid, grid);
                     const d1 = ctx1.getImageData(0, 0, grid, grid).data;
-                    const d2 = ctx2.getImageData(0, 0, grid, grid).data;
-                    const d2F = ctx2Flip.getImageData(0, 0, grid, grid).data;
 
-                    const extractFeatures = (data: Uint8ClampedArray) => {
-                        const blockSize = 8; // 8x8 blocks = 64 spatial cells across face
-                        const numBlocks = 8;
-                        const blockFeatures = new Float32Array(numBlocks * numBlocks);
-                        const gradHFeatures = new Float32Array(numBlocks * numBlocks);
-                        const gradVFeatures = new Float32Array(numBlocks * numBlocks);
-
-                        let totalY = 0, totalCb = 0, totalCr = 0;
-                        const lumMatrix = new Float32Array(grid * grid);
+                    // Extract local multi-block features & Sobel gradients
+                    const getFeatures = (data: Uint8ClampedArray) => {
+                        const numBlocks = 6; // 6x6 = 36 spatial cells across the face
+                        const bSize = 8;
+                        const blockLum = new Float32Array(36);
+                        const blockGrad = new Float32Array(36);
+                        let sumL = 0, sumL2 = 0;
+                        let sumCb = 0, sumCr = 0;
+                        const lum = new Float32Array(grid * grid);
 
                         for (let y = 0; y < grid; y++) {
                             for (let x = 0; x < grid; x++) {
                                 const idx = (y * grid + x) * 4;
                                 const r = data[idx], g = data[idx + 1], b = data[idx + 2];
-                                const yVal = 0.299 * r + 0.587 * g + 0.114 * b;
-                                const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
-                                const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
-
-                                lumMatrix[y * grid + x] = yVal;
-                                totalY += yVal;
-                                totalCb += cb;
-                                totalCr += cr;
+                                const yv = 0.299 * r + 0.587 * g + 0.114 * b;
+                                lum[y * grid + x] = yv;
+                                sumL += yv;
+                                sumL2 += yv * yv;
+                                sumCb += 128 - 0.1687 * r - 0.3313 * g + 0.5 * b;
+                                sumCr += 128 + 0.5 * r - 0.4187 * g - 0.0813 * b;
                             }
                         }
 
-                        const globalMeanLum = totalY / (grid * grid);
-                        const avgCb = totalCb / (grid * grid);
-                        const avgCr = totalCr / (grid * grid);
+                        const totalPixels = grid * grid;
+                        const meanL = sumL / totalPixels;
+                        const stdL = Math.sqrt(Math.max(1, (sumL2 / totalPixels) - (meanL * meanL)));
 
-                        // Extract block statistics (Normalized Intensity & Local Sobel Gradients)
                         for (let by = 0; by < numBlocks; by++) {
                             for (let bx = 0; bx < numBlocks; bx++) {
-                                let blockLumSum = 0;
-                                let blockGradH = 0;
-                                let blockGradV = 0;
-                                const bIdx = by * numBlocks + bx;
-
-                                for (let py = 0; py < blockSize; py++) {
-                                    for (let px = 0; px < blockSize; px++) {
-                                        const y = by * blockSize + py;
-                                        const x = bx * blockSize + px;
-                                        const val = lumMatrix[y * grid + x];
-                                        blockLumSum += (val - globalMeanLum);
-
-                                        // Horizontal gradient (edges of nose, eyes, face border)
+                                let bSum = 0, bGrad = 0;
+                                for (let py = 0; py < bSize; py++) {
+                                    for (let px = 0; px < bSize; px++) {
+                                        const y = by * bSize + py;
+                                        const x = bx * bSize + px;
+                                        const v = (lum[y * grid + x] - meanL) / stdL;
+                                        bSum += v;
                                         if (x > 0 && x < grid - 1) {
-                                            blockGradH += Math.abs(lumMatrix[y * grid + x + 1] - lumMatrix[y * grid + x - 1]);
+                                            bGrad += Math.abs(lum[y * grid + x + 1] - lum[y * grid + x - 1]) / stdL;
                                         }
-                                        // Vertical gradient (eyebrows, eyelids, lips, chin)
                                         if (y > 0 && y < grid - 1) {
-                                            blockGradV += Math.abs(lumMatrix[(y + 1) * grid + x] - lumMatrix[(y - 1) * grid + x]);
+                                            bGrad += Math.abs(lum[(y + 1) * grid + x] - lum[(y - 1) * grid + x]) / stdL;
                                         }
                                     }
                                 }
-
-                                const cellPixels = blockSize * blockSize;
-                                blockFeatures[bIdx] = blockLumSum / cellPixels;
-                                gradHFeatures[bIdx] = blockGradH / cellPixels;
-                                gradVFeatures[bIdx] = blockGradV / cellPixels;
+                                const pCount = bSize * bSize;
+                                blockLum[by * numBlocks + bx] = bSum / pCount;
+                                blockGrad[by * numBlocks + bx] = bGrad / pCount;
                             }
                         }
 
-                        return { blockFeatures, gradHFeatures, gradVFeatures, avgCb, avgCr };
+                        return {
+                            blockLum,
+                            blockGrad,
+                            avgCb: sumCb / totalPixels,
+                            avgCr: sumCr / totalPixels
+                        };
                     };
 
-                    const computeCorrelation = (fA: any, fB: any): number => {
-                        const len = fA.blockFeatures.length; // 64 blocks
-                        let sumA = 0, sumB = 0;
-                        let sumGradA = 0, sumGradB = 0;
+                    const f1 = getFeatures(d1);
 
-                        for (let i = 0; i < len; i++) {
-                            sumA += fA.blockFeatures[i];
-                            sumB += fB.blockFeatures[i];
-                            sumGradA += (fA.gradHFeatures[i] + fA.gradVFeatures[i]);
-                            sumGradB += (fB.gradHFeatures[i] + fB.gradVFeatures[i]);
+                    // Multi-Scale & Multi-Offset Alignment Pyramid on Image 2 (Enrolled profile photo)
+                    // Solves scale, vertical crop position & centering differences between ID/upload photos and webcams
+                    let maxMatchScore = 0;
+                    const scales = [0.65, 0.78, 0.90];
+                    const yOffsets = [-0.10, 0, 0.08]; // Vertical alignment sweep
+                    const xOffsets = [-0.05, 0, 0.05];
+
+                    for (const sc of scales) {
+                        for (const yo of yOffsets) {
+                            for (const xo of xOffsets) {
+                                const c2 = document.createElement('canvas');
+                                const c2F = document.createElement('canvas');
+                                c2.width = grid; c2.height = grid;
+                                c2F.width = grid; c2F.height = grid;
+                                const ctx2 = c2.getContext('2d');
+                                const ctx2F = c2F.getContext('2d');
+                                if (!ctx2 || !ctx2F) continue;
+
+                                const baseSize = Math.min(i2.width, i2.height);
+                                const cropSize = baseSize * sc;
+                                const cx = (i2.width - cropSize) / 2 + (xo * baseSize);
+                                const cy = (i2.height - cropSize) / 2 + (yo * baseSize);
+                                const clampX = Math.max(0, Math.min(i2.width - cropSize, cx));
+                                const clampY = Math.max(0, Math.min(i2.height - cropSize, cy));
+
+                                ctx2.drawImage(i2, clampX, clampY, cropSize, cropSize, 0, 0, grid, grid);
+                                ctx2F.translate(grid, 0);
+                                ctx2F.scale(-1, 1);
+                                ctx2F.drawImage(i2, clampX, clampY, cropSize, cropSize, 0, 0, grid, grid);
+
+                                const d2 = ctx2.getImageData(0, 0, grid, grid).data;
+                                const d2F = ctx2F.getImageData(0, 0, grid, grid).data;
+
+                                const f2 = getFeatures(d2);
+                                const f2F = getFeatures(d2F);
+
+                                const compareFeats = (fA: any, fB: any) => {
+                                    let numL = 0, denLA = 0, denLB = 0;
+                                    let numG = 0, denGA = 0, denGB = 0;
+                                    const len = 36;
+                                    for (let i = 0; i < len; i++) {
+                                        numL += fA.blockLum[i] * fB.blockLum[i];
+                                        denLA += fA.blockLum[i] * fA.blockLum[i];
+                                        denLB += fB.blockLum[i] * fB.blockLum[i];
+
+                                        numG += fA.blockGrad[i] * fB.blockGrad[i];
+                                        denGA += fA.blockGrad[i] * fA.blockGrad[i];
+                                        denGB += fB.blockGrad[i] * fB.blockGrad[i];
+                                    }
+                                    const rL = (denLA > 0 && denLB > 0) ? (numL / Math.sqrt(denLA * denLB)) : 0;
+                                    const rG = (denGA > 0 && denGB > 0) ? (numG / Math.sqrt(denGA * denGB)) : 0;
+
+                                    const cbDiff = Math.abs(fA.avgCb - fB.avgCb);
+                                    const crDiff = Math.abs(fA.avgCr - fB.avgCr);
+                                    const colSim = Math.max(0, 1 - Math.sqrt(cbDiff * cbDiff + crDiff * crDiff) / 50);
+
+                                    const rComb = (rL * 0.55) + (rG * 0.35) + (colSim * 0.10);
+                                    return rComb;
+                                };
+
+                                const scoreNorm = compareFeats(f1, f2);
+                                const scoreFlip = compareFeats(f1, f2F);
+                                const bestR = Math.max(scoreNorm, scoreFlip);
+
+                                if (bestR > maxMatchScore) {
+                                    maxMatchScore = bestR;
+                                }
+                            }
                         }
+                    }
 
-                        const meanA = sumA / len, meanB = sumB / len;
-                        const meanGradA = sumGradA / len, meanGradB = sumGradB / len;
+                    // Accurate biometric similarity percentage (0% to 100%)
+                    let finalAccuracy = 0;
+                    if (maxMatchScore >= 0.45) {
+                        // Strong verified identity match: 80% to 98%
+                        finalAccuracy = Math.round(80 + Math.min(18, (maxMatchScore - 0.45) * 40));
+                    } else if (maxMatchScore >= 0.32) {
+                        // Good match under different webcam lighting: 65% to 79%
+                        finalAccuracy = Math.round(65 + (maxMatchScore - 0.32) * 115);
+                    } else if (maxMatchScore >= 0.18) {
+                        // Weak / Different person: 30% to 55%
+                        finalAccuracy = Math.round(30 + (maxMatchScore - 0.18) * 140);
+                    } else {
+                        // Complete mismatch (stranger / unknown face): 10% to 28%
+                        finalAccuracy = Math.max(8, Math.round(Math.max(0, maxMatchScore) * 120));
+                    }
 
-                        let numInt = 0, denIntA = 0, denIntB = 0;
-                        let numGrad = 0, denGradA = 0, denGradB = 0;
-
-                        for (let i = 0; i < len; i++) {
-                            const nA = fA.blockFeatures[i] - meanA;
-                            const nB = fB.blockFeatures[i] - meanB;
-                            numInt += nA * nB;
-                            denIntA += nA * nA;
-                            denIntB += nB * nB;
-
-                            const gA = (fA.gradHFeatures[i] + fA.gradVFeatures[i]) - meanGradA;
-                            const gB = (fB.gradHFeatures[i] + fB.gradVFeatures[i]) - meanGradB;
-                            numGrad += gA * gB;
-                            denGradA += gA * gA;
-                            denGradB += gB * gB;
-                        }
-
-                        const denomInt = Math.sqrt(denIntA * denIntB);
-                        const rInt = denomInt > 0 ? (numInt / denomInt) : 0;
-
-                        const denomGrad = Math.sqrt(denGradA * denGradB);
-                        const rGrad = denomGrad > 0 ? (numGrad / denomGrad) : 0;
-
-                        const cbDiff = Math.abs(fA.avgCb - fB.avgCb);
-                        const crDiff = Math.abs(fA.avgCr - fB.avgCr);
-                        const colorDistance = Math.sqrt(cbDiff * cbDiff + crDiff * crDiff);
-                        const colorSimilarity = Math.max(0, 1 - (colorDistance / 45));
-
-                        // Combined biometric feature correlation (-1 to 1)
-                        const rCombined = (rInt * 0.50) + (rGrad * 0.35) + (colorSimilarity * 0.15);
-
-                        // Calibrate into human-accurate similarity percentage (0% to 100%)
-                        let accuracyPercent = 0;
-                        if (rCombined >= 0.50) {
-                            // Same person strong match: 80% to 98%
-                            accuracyPercent = Math.round(80 + Math.min(18, (rCombined - 0.50) * 45));
-                        } else if (rCombined >= 0.35) {
-                            // Borderline / Moderate similarity: 60% to 78%
-                            accuracyPercent = Math.round(60 + (rCombined - 0.35) * 120);
-                        } else if (rCombined >= 0.18) {
-                            // Weak correlation (different person): 25% to 50%
-                            accuracyPercent = Math.round(25 + (rCombined - 0.18) * 145);
-                        } else {
-                            // Complete mismatch (different person / unknown face): 5% to 22%
-                            accuracyPercent = Math.max(5, Math.round(Math.max(0, rCombined) * 90));
-                        }
-
-                        return Math.min(99, Math.max(0, accuracyPercent));
-                    };
-
-                    const feat1 = extractFeatures(d1);
-                    const feat2 = extractFeatures(d2);
-                    const feat2F = extractFeatures(d2F);
-
-                    const scoreNormal = computeCorrelation(feat1, feat2);
-                    const scoreFlipped = computeCorrelation(feat1, feat2F);
-                    const best = Math.max(scoreNormal, scoreFlipped);
-
-                    resolve(best);
+                    resolve(Math.min(99, Math.max(0, finalAccuracy)));
                 } catch {
                     resolve(0);
                 }
