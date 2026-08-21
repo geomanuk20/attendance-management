@@ -541,13 +541,76 @@ export function FaceRecognitionModal({
     }, [isOpen, scanState]);
 
     const checkFaceInCircle = (video: HTMLVideoElement | null): boolean => {
-        if (!video) return false;
+        if (!video || video.readyState < 2 || !video.videoWidth || !video.videoHeight) return false;
         try {
-            if (video.videoWidth > 0 && video.videoHeight > 0) return true;
-            if (video.readyState >= 2) return true;
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return false;
+
+            const cw = video.videoWidth;
+            const ch = video.videoHeight;
+            const size = Math.min(cw, ch) * 0.75;
+            const cropX = (cw - size) / 2;
+            const cropY = (ch - size) / 2;
+
+            ctx.drawImage(video, cropX, cropY, size, size, 0, 0, 64, 64);
+            const imgData = ctx.getImageData(0, 0, 64, 64);
+            const pixels = imgData.data;
+
+            let skinPixelCount = 0;
+            let sumX = 0;
+            let sumY = 0;
+            let sumLum = 0;
+            let sumLumSq = 0;
+            const totalPixels = 64 * 64;
+
+            for (let y = 0; y < 64; y++) {
+                for (let x = 0; x < 64; x++) {
+                    const idx = (y * 64 + x) * 4;
+                    const r = pixels[idx];
+                    const g = pixels[idx + 1];
+                    const b = pixels[idx + 2];
+
+                    const yVal = 0.299 * r + 0.587 * g + 0.114 * b;
+                    sumLum += yVal;
+                    sumLumSq += yVal * yVal;
+
+                    const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+                    const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
+
+                    // Standard human skin detection boundary across diverse tones & lighting
+                    const isSkinYCbCr = (cr >= 115 && cr <= 188 && cb >= 68 && cb <= 145);
+                    const isSkinRGB = (r > 35 && g > 20 && b > 15) && (r > g && r > b) && (r - g >= 6);
+
+                    if (isSkinYCbCr || isSkinRGB) {
+                        skinPixelCount++;
+                        sumX += x;
+                        sumY += y;
+                    }
+                }
+            }
+
+            const skinRatio = skinPixelCount / totalPixels;
+            const meanLum = sumLum / totalPixels;
+            const lumVariance = (sumLumSq / totalPixels) - (meanLum * meanLum);
+
+            // Must have sufficient lighting, natural facial contrast variation, and skin presence inside circular viewport
+            if (meanLum < 12 || lumVariance < 10 || skinRatio < 0.08) {
+                return false;
+            }
+
+            // Must be centered within the circular viewfinder
+            const centroidX = sumX / skinPixelCount;
+            const centroidY = sumY / skinPixelCount;
+            if (centroidX < 10 || centroidX > 54 || centroidY < 10 || centroidY > 54) {
+                return false;
+            }
+
             return true;
         } catch {
-            return true;
+            return false;
         }
     };
 
@@ -560,41 +623,59 @@ export function FaceRecognitionModal({
         const runScanSequence = async () => {
             const targetDisplayName = userName && userName !== 'Employee' ? userName : 'Employee';
 
-            // Wait briefly for camera stream to stabilize
-            let waitAttempts = 0;
-            while (!isCancelled && (!videoRef.current || videoRef.current.readyState < 2) && waitAttempts < 15) {
+            // 1. Wait for live camera stream to initialize
+            while (!isCancelled && (!videoRef.current || videoRef.current.readyState < 2)) {
                 await new Promise(r => setTimeout(r, 100));
-                waitAttempts++;
             }
             if (isCancelled) return;
 
-            // Initial detection
-            setScanProgress(15);
-            setStatusMessage(`🎯 Face detected in viewfinder. Aligning for ${targetDisplayName}...`);
-            await new Promise(r => setTimeout(r, 400));
+            // 2. Active Face Detection Loop: ONLY proceed if a face is inside the circle!
+            let faceDetected = false;
+            while (!isCancelled && !faceDetected) {
+                const hasFace = checkFaceInCircle(videoRef.current);
+                if (hasFace) {
+                    faceDetected = true;
+                    break;
+                }
+                setScanProgress(0);
+                setStatusMessage('👤 Position face inside the green circle to begin scan...');
+                await new Promise(r => setTimeout(r, 200));
+            }
             if (isCancelled) return;
 
-            // Stage 1: Alignment (35%)
-            setScanProgress(35);
-            setStatusMessage('👁️ Stage 1/4: Analyzing Facial Landmarks...');
+            // 3. Stage 1: Face Acquired & Alignment (25%)
+            setScanProgress(25);
+            setStatusMessage(`🎯 Face detected in circle! Aligning for ${targetDisplayName}...`);
+            await new Promise(r => setTimeout(r, 450));
+            if (isCancelled) return;
+            if (!checkFaceInCircle(videoRef.current)) {
+                setScanProgress(0);
+                setStatusMessage('👤 Face moved out of circle. Position face inside to resume...');
+                runScanSequence();
+                return;
+            }
+
+            // Stage 2: Feature Matrix (55%)
+            setScanProgress(55);
+            setStatusMessage('🔍 Stage 1/3: Scanning Biometric Features...');
+            await new Promise(r => setTimeout(r, 450));
+            if (isCancelled) return;
+            if (!checkFaceInCircle(videoRef.current)) {
+                setScanProgress(0);
+                setStatusMessage('👤 Face moved out of circle. Position face inside to resume...');
+                runScanSequence();
+                return;
+            }
+
+            // Stage 3: Biometric Identity Match (80%)
+            setScanProgress(80);
+            setStatusMessage(`🛡️ Stage 2/3: Matching against ${targetDisplayName}'s enrolled photo...`);
             await new Promise(r => setTimeout(r, 450));
             if (isCancelled) return;
 
-            // Stage 2: Feature Matrix (60%)
-            setScanProgress(60);
-            setStatusMessage('🔍 Stage 2/4: Scanning Biometric Features...');
-            await new Promise(r => setTimeout(r, 450));
-            if (isCancelled) return;
-
-            // Stage 3: Biometric Identity Match (85%)
-            setScanProgress(85);
-            setStatusMessage(`🛡️ Stage 3/4: Matching against ${targetDisplayName}'s enrolled photo...`);
-            await new Promise(r => setTimeout(r, 450));
-            if (isCancelled) return;
-
-            // Stage 4: Verification Result
+            // Stage 4: Verification Result (95%)
             setScanProgress(95);
-            setStatusMessage('⚡ Stage 4/4: Finalizing biometric verification...');
+            setStatusMessage('⚡ Stage 3/3: Finalizing biometric verification...');
             const result = await verifyFaceMatch();
             if (isCancelled) return;
 
