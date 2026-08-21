@@ -111,13 +111,12 @@ export function FaceRecognitionModal({
                     ctx1.drawImage(i1, (i1.width - crop1) / 2, (i1.height - crop1) / 2, crop1, crop1, 0, 0, grid, grid);
                     const d1 = ctx1.getImageData(0, 0, grid, grid).data;
 
-                    // Extract local zero-mean spatial feature vector (6x6 = 36 blocks)
+                    // Extract local structural landmark topography + zero-mean spatial feature vector
                     const getFeatures = (data: Uint8ClampedArray) => {
                         const numBlocks = 6;
                         const bSize = 8;
-                        const rawLum = new Float32Array(36);
-                        const rawGradH = new Float32Array(36);
-                        const rawGradV = new Float32Array(36);
+                        const blockLum = new Float32Array(36);
+                        const blockGrad = new Float32Array(36);
                         let sumL = 0, sumL2 = 0;
                         let sumCb = 0, sumCr = 0;
                         const lum = new Float32Array(grid * grid);
@@ -139,12 +138,12 @@ export function FaceRecognitionModal({
                         const meanL = sumL / totalPixels;
                         const stdL = Math.sqrt(Math.max(1, (sumL2 / totalPixels) - (meanL * meanL)));
 
-                        let sumBlockLum = 0;
-                        let sumBlockGrad = 0;
+                        let sumBL = 0;
+                        let sumBG = 0;
 
                         for (let by = 0; by < numBlocks; by++) {
                             for (let bx = 0; bx < numBlocks; bx++) {
-                                let bSum = 0, bGradH = 0, bGradV = 0;
+                                let bSum = 0, bGrad = 0;
                                 for (let py = 0; py < bSize; py++) {
                                     for (let px = 0; px < bSize; px++) {
                                         const y = by * bSize + py;
@@ -152,40 +151,56 @@ export function FaceRecognitionModal({
                                         const v = (lum[y * grid + x] - meanL) / stdL;
                                         bSum += v;
                                         if (x > 0 && x < grid - 1) {
-                                            bGradH += Math.abs(lum[y * grid + x + 1] - lum[y * grid + x - 1]) / stdL;
+                                            bGrad += Math.abs(lum[y * grid + x + 1] - lum[y * grid + x - 1]) / stdL;
                                         }
                                         if (y > 0 && y < grid - 1) {
-                                            bGradV += Math.abs(lum[(y + 1) * grid + x] - lum[(y - 1) * grid + x]) / stdL;
+                                            bGrad += Math.abs(lum[(y + 1) * grid + x] - lum[(y - 1) * grid + x]) / stdL;
                                         }
                                     }
                                 }
                                 const pCount = bSize * bSize;
                                 const bIdx = by * numBlocks + bx;
-                                const lVal = bSum / pCount;
-                                const gVal = (bGradH + bGradV) / pCount;
-                                rawLum[bIdx] = lVal;
-                                rawGradH[bIdx] = bGradH / pCount;
-                                rawGradV[bIdx] = bGradV / pCount;
-                                sumBlockLum += lVal;
-                                sumBlockGrad += gVal;
+                                blockLum[bIdx] = bSum / pCount;
+                                blockGrad[bIdx] = bGrad / pCount;
+                                sumBL += blockLum[bIdx];
+                                sumBG += blockGrad[bIdx];
                             }
                         }
 
-                        // ZERO-MEAN NORMALIZATION across the 36 facial blocks:
-                        // This eliminates generic "top is hair, middle is face" bias that causes false matches between different people!
-                        const meanBlockLum = sumBlockLum / 36;
-                        const meanBlockGrad = sumBlockGrad / 36;
+                        // Zero-mean block descriptors
+                        const meanBL = sumBL / 36;
+                        const meanBG = sumBG / 36;
                         const diffLum = new Float32Array(36);
                         const diffGrad = new Float32Array(36);
-
                         for (let i = 0; i < 36; i++) {
-                            diffLum[i] = rawLum[i] - meanBlockLum;
-                            diffGrad[i] = (rawGradH[i] + rawGradV[i]) - meanBlockGrad;
+                            diffLum[i] = blockLum[i] - meanBL;
+                            diffGrad[i] = blockGrad[i] - meanBG;
                         }
+
+                        // Unique Facial Landmarks Topography:
+                        const forehead = (blockLum[1] + blockLum[2] + blockLum[3] + blockLum[4]) / 4;
+                        const leftEye = (blockLum[7] + blockLum[8]) / 2;
+                        const rightEye = (blockLum[9] + blockLum[10]) / 2;
+                        const nose = (blockLum[14] + blockLum[15]) / 2;
+                        const leftCheek = blockLum[12];
+                        const rightCheek = blockLum[17];
+                        const mouth = (blockLum[20] + blockLum[21]) / 2;
+                        const chin = (blockLum[25] + blockLum[26] + blockLum[27] + blockLum[28] + blockLum[31] + blockLum[32] + blockLum[33] + blockLum[34]) / 8;
+
+                        const landmarks = [
+                            leftEye - rightEye,               // Eye symmetry
+                            nose - ((leftCheek + rightCheek) / 2), // Nose vs cheek prominence
+                            mouth - chin,                     // Lip vs chin / beard profile
+                            forehead - chin,                  // Upper vs lower face contrast
+                            ((leftEye + rightEye) / 2) - nose, // Eye-to-nose gradient
+                            leftCheek - rightCheek,           // Lateral balance
+                            chin - nose                       // Lower face depth
+                        ];
 
                         return {
                             diffLum,
                             diffGrad,
+                            landmarks,
                             avgCb: sumCb / totalPixels,
                             avgCr: sumCr / totalPixels
                         };
@@ -227,6 +242,15 @@ export function FaceRecognitionModal({
                             const f2F = getFeatures(d2F);
 
                             const compareFeats = (fA: any, fB: any) => {
+                                // 1. Structural Landmark Vector Similarity (Euclidean distance)
+                                let landmarkDiffSq = 0;
+                                for (let i = 0; i < fA.landmarks.length; i++) {
+                                    const d = fA.landmarks[i] - fB.landmarks[i];
+                                    landmarkDiffSq += d * d;
+                                }
+                                const landmarkSim = Math.max(0, 1 - (Math.sqrt(landmarkDiffSq) / 2.0));
+
+                                // 2. Zero-Mean Spatial Block Correlation
                                 let numL = 0, denLA = 0, denLB = 0;
                                 let numG = 0, denGA = 0, denGB = 0;
                                 for (let i = 0; i < 36; i++) {
@@ -243,9 +267,9 @@ export function FaceRecognitionModal({
 
                                 const cbDiff = Math.abs(fA.avgCb - fB.avgCb);
                                 const crDiff = Math.abs(fA.avgCr - fB.avgCr);
-                                const colSim = Math.max(0, 1 - Math.sqrt(cbDiff * cbDiff + crDiff * crDiff) / 40);
+                                const colSim = Math.max(0, 1 - Math.sqrt(cbDiff * cbDiff + crDiff * crDiff) / 35);
 
-                                return (rL * 0.60) + (rG * 0.30) + (colSim * 0.10);
+                                return (landmarkSim * 0.45) + (Math.max(0, rL) * 0.35) + (Math.max(0, rG) * 0.10) + (colSim * 0.10);
                             };
 
                             const scoreNorm = compareFeats(f1, f2);
@@ -260,18 +284,18 @@ export function FaceRecognitionModal({
 
                     // Precise biometric discrimination percentage
                     let finalAccuracy = 0;
-                    if (maxMatchScore >= 0.50) {
+                    if (maxMatchScore >= 0.65) {
                         // Confirmed same person: 82% to 98%
-                        finalAccuracy = Math.round(82 + Math.min(16, (maxMatchScore - 0.50) * 35));
-                    } else if (maxMatchScore >= 0.38) {
-                        // Moderate similarity: 65% to 78%
-                        finalAccuracy = Math.round(65 + (maxMatchScore - 0.38) * 110);
-                    } else if (maxMatchScore >= 0.20) {
+                        finalAccuracy = Math.round(82 + Math.min(16, (maxMatchScore - 0.65) * 55));
+                    } else if (maxMatchScore >= 0.52) {
+                        // Moderate similarity: 65% to 79%
+                        finalAccuracy = Math.round(65 + (maxMatchScore - 0.52) * 105);
+                    } else if (maxMatchScore >= 0.30) {
                         // Weak correlation (different person): 25% to 50%
-                        finalAccuracy = Math.round(25 + (maxMatchScore - 0.20) * 135);
+                        finalAccuracy = Math.round(25 + (maxMatchScore - 0.30) * 115);
                     } else {
                         // Unrecognized face (different gender, different person, impostor): 5% to 22%
-                        finalAccuracy = Math.max(5, Math.round(Math.max(0, maxMatchScore) * 100));
+                        finalAccuracy = Math.max(5, Math.round(Math.max(0, maxMatchScore) * 80));
                     }
 
                     resolve(Math.min(99, Math.max(0, finalAccuracy)));
