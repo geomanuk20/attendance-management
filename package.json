@@ -80,7 +80,7 @@
             "cap:sync": "npx cap sync android",
             "cap:open": "npx cap open android",
             "build:android": "npm run build && npx cap sync android",
-            "build:apk": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug"
+            "build:apk": "npm run build && npx cap sync android && export JAVA_HOME=\"/Applications/Android Studio.app/Contents/jbr/Contents/Home\" && export PATH=\"$JAVA_HOME/bin:$PATH\" && cd android && ./gradlew assembleDebug"
       },
       "overrides": {
             "esbuild": "^0.25.0"
