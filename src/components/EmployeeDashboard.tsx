@@ -599,6 +599,7 @@ export function EmployeeDashboard({ currency = 'USD', onNavigate }: EmployeeDash
         userName={user?.name || 'Employee'}
         actionType={pendingClockAction}
         enrolledFaceImage={user?.faceImage}
+        enrolledEmployees={allEmployees}
       />
 
       {/* Leave Balance Breakdown Dialog Modal */}
